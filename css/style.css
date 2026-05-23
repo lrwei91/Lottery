@@ -167,9 +167,43 @@ body {
 }
 
 .logo-icon {
-  font-size: 2rem;
-  filter: drop-shadow(0 0 8px rgba(0, 245, 212, 0.4));
+  display: flex;
+  align-items: center;
+  position: relative;
+  width: 50px;
+  height: 34px;
   animation: pulse 3s ease-in-out infinite;
+}
+
+.logo-ball-red,
+.logo-ball-blue {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #fff;
+  position: absolute;
+}
+
+.logo-ball-red {
+  background: linear-gradient(135deg, var(--front-start), var(--front-end));
+  left: 0;
+  top: 4px;
+  z-index: 2;
+  box-shadow: var(--shadow-glow-front), 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.logo-ball-blue {
+  background: linear-gradient(135deg, var(--back-start), var(--back-end));
+  right: 0;
+  top: 4px;
+  z-index: 1;
+  box-shadow: var(--shadow-glow-back), 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
 .logo-text h1 {
@@ -1547,6 +1581,21 @@ body {
 
   .hotcold-grid {
     grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+  }
+
+  .heatmap-cell {
+    padding: 8px 4px;
+    gap: 2px;
+  }
+
+  .cell-num {
+    font-size: 0.95rem;
+  }
+
+  .cell-tag {
+    font-size: 0.6rem;
+    padding: 1px 4px;
   }
 
   .data-table th,
@@ -1607,12 +1656,29 @@ body {
 
   .hotcold-grid {
     grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
   }
 
   .ball {
     width: 38px;
     height: 38px;
     font-size: 0.9rem;
+  }
+
+  /* 预测卡片在超窄手机屏下的彩球微调，防止和前后区标签挤压 */
+  .prediction-card .ball {
+    width: 35px;
+    height: 35px;
+    font-size: 0.85rem;
+  }
+
+  .prediction-card .zone-tag {
+    min-width: 26px;
+    font-size: 0.65rem;
+  }
+
+  .pred-zone {
+    gap: var(--space-xs);
   }
 }
 
