@@ -1,9 +1,6 @@
 name: Auto Update Lottery Data
 
 on:
-  schedule:
-    # 每天北京时间 21:36 运行一次 (21:36 UTC+8 = 13:36 UTC)，确保在大乐透/排列三 21:25 开奖之后抓取
-    - cron: '36 13 * * *'
   workflow_dispatch: # 支持手动触发
 
 permissions:
