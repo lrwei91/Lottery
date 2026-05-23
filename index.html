@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="体彩超级大乐透历史中奖号码查询、统计分析与智能预测。提供2873期完整历史数据，频率分析、冷热号走势、遗漏值分析等专业工具。">
+  <meta name="keywords" content="大乐透,超级大乐透,体彩,开奖号码,历史数据,预测,统计分析">
+  <title>超级大乐透 · 数据分析与智能预测</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <!-- 背景装饰粒子 -->
+    <div class="bg-particles" id="bgParticles"></div>
+
+    <!-- 头部导航 -->
+    <header class="header">
+      <div class="header-inner">
+        <div class="logo">
+          <div class="logo-icon">
+            <span class="logo-ball">🎱</span>
+          </div>
+          <div class="logo-text">
+            <h1>超级大乐透</h1>
+            <span class="logo-subtitle">数据分析与智能预测</span>
+          </div>
+        </div>
+        <div class="header-meta">
+          <span class="data-badge" id="dataCount">
+            <span class="badge-dot"></span>
+            加载中...
+          </span>
+          <span class="update-time" id="updateTime"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- 标签导航 -->
+    <nav class="nav-tabs" id="navTabs">
+      <button class="nav-tab active" data-section="home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        开奖大厅
+      </button>
+      <button class="nav-tab" data-section="history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+        历史数据
+      </button>
+      <button class="nav-tab" data-section="stats">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        统计分析
+      </button>
+      <button class="nav-tab" data-section="predict">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        智能预测
+      </button>
+    </nav>
+
+    <!-- ==================== 开奖大厅 ==================== -->
+    <section class="section active" id="sectionHome">
+      <!-- 最新开奖 -->
+      <div class="latest-draw card" id="latestDraw">
+        <div class="card-header">
+          <h2>最新开奖结果</h2>
+          <div class="draw-info">
+            <span class="draw-issue" id="latestIssue">--</span>
+            <span class="draw-date" id="latestDate">--</span>
+          </div>
+        </div>
+        <div class="draw-result">
+          <div class="zone-label">前区</div>
+          <div class="ball-row" id="latestFront">
+            <!-- 动态生成球 -->
+          </div>
+          <div class="zone-divider">
+            <span>+</span>
+          </div>
+          <div class="zone-label">后区</div>
+          <div class="ball-row" id="latestBack">
+            <!-- 动态生成球 -->
+          </div>
+        </div>
+        <div class="draw-extra">
+          <div class="extra-item">
+            <span class="extra-label">销售额</span>
+            <span class="extra-value" id="latestSales">--</span>
+          </div>
+          <div class="extra-item">
+            <span class="extra-label">奖池滚存</span>
+            <span class="extra-value" id="latestPool">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 开奖倒计时 -->
+      <div class="countdown card" id="countdownCard">
+        <div class="card-header">
+          <h2>下期开奖倒计时</h2>
+          <span class="countdown-label" id="nextDrawDay">--</span>
+        </div>
+        <div class="countdown-timer" id="countdownTimer">
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cdDays">0</span>
+            <span class="countdown-text">天</span>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cdHours">0</span>
+            <span class="countdown-text">时</span>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cdMinutes">0</span>
+            <span class="countdown-text">分</span>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="cdSeconds">0</span>
+            <span class="countdown-text">秒</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 近期开奖列表 -->
+      <div class="recent-draws card">
+        <div class="card-header">
+          <h2>近期开奖记录</h2>
+        </div>
+        <div class="draws-list" id="recentDrawsList">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 历史数据 ==================== -->
+    <section class="section" id="sectionHistory">
+      <div class="card">
+        <div class="card-header">
+          <h2>历史开奖数据</h2>
+          <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="搜索期号或日期..." class="search-input">
+            <select id="yearFilter" class="search-select">
+              <option value="">全部年份</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table" id="historyTable">
+            <thead>
+              <tr>
+                <th>期号</th>
+                <th>开奖日期</th>
+                <th>前区号码</th>
+                <th>后区号码</th>
+                <th>销售额</th>
+                <th>奖池</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody">
+              <!-- 动态生成 -->
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="historyPagination">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 统计分析 ==================== -->
+    <section class="section" id="sectionStats">
+      <!-- 统计概览卡片 -->
+      <div class="stats-overview">
+        <div class="stat-card card">
+          <div class="stat-icon hot">🔥</div>
+          <div class="stat-info">
+            <span class="stat-label">最热前区号码</span>
+            <span class="stat-value" id="hottestFront">--</span>
+          </div>
+        </div>
+        <div class="stat-card card">
+          <div class="stat-icon cold">❄️</div>
+          <div class="stat-info">
+            <span class="stat-label">最冷前区号码</span>
+            <span class="stat-value" id="coldestFront">--</span>
+          </div>
+        </div>
+        <div class="stat-card card">
+          <div class="stat-icon hot">🔥</div>
+          <div class="stat-info">
+            <span class="stat-label">最热后区号码</span>
+            <span class="stat-value" id="hottestBack">--</span>
+          </div>
+        </div>
+        <div class="stat-card card">
+          <div class="stat-icon cold">❄️</div>
+          <div class="stat-info">
+            <span class="stat-label">最冷后区号码</span>
+            <span class="stat-value" id="coldestBack">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 子标签 -->
+      <div class="sub-tabs" id="statsTabs">
+        <button class="sub-tab active" data-stat="frequency">频率分析</button>
+        <button class="sub-tab" data-stat="hotcold">冷热号</button>
+        <button class="sub-tab" data-stat="gap">遗漏值</button>
+        <button class="sub-tab" data-stat="oddeven">奇偶分析</button>
+        <button class="sub-tab" data-stat="sum">和值分析</button>
+        <button class="sub-tab" data-stat="trend">号码走势</button>
+      </div>
+
+      <!-- 频率分析 -->
+      <div class="stat-panel active" id="panelFrequency">
+        <div class="card">
+          <div class="card-header"><h3>前区号码出现频率</h3></div>
+          <div class="chart-container">
+            <canvas id="chartFreqFront" width="800" height="350"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>后区号码出现频率</h3></div>
+          <div class="chart-container">
+            <canvas id="chartFreqBack" width="800" height="300"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 冷热号 -->
+      <div class="stat-panel" id="panelHotcold">
+        <div class="card">
+          <div class="card-header">
+            <h3>前区冷热号分布</h3>
+            <span class="sub-note">基于最近 300 期数据</span>
+          </div>
+          <div class="hotcold-grid" id="hotcoldFrontGrid">
+            <!-- 动态生成 -->
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>后区冷热号分布</h3>
+            <span class="sub-note">基于最近 300 期数据</span>
+          </div>
+          <div class="hotcold-grid" id="hotcoldBackGrid">
+            <!-- 动态生成 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 遗漏值 -->
+      <div class="stat-panel" id="panelGap">
+        <div class="card">
+          <div class="card-header"><h3>前区号码遗漏值</h3></div>
+          <div class="chart-container">
+            <canvas id="chartGapFront" width="800" height="350"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>后区号码遗漏值</h3></div>
+          <div class="chart-container">
+            <canvas id="chartGapBack" width="800" height="300"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 奇偶分析 -->
+      <div class="stat-panel" id="panelOddeven">
+        <div class="card">
+          <div class="card-header"><h3>前区奇偶比分布</h3></div>
+          <div class="chart-container chart-pie-container">
+            <canvas id="chartOddEven" width="400" height="400"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>前区大小比分布</h3></div>
+          <div class="chart-container chart-pie-container">
+            <canvas id="chartBigSmall" width="400" height="400"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- 和值分析 -->
+      <div class="stat-panel" id="panelSum">
+        <div class="card">
+          <div class="card-header"><h3>前区和值分布</h3></div>
+          <div class="chart-container">
+            <canvas id="chartSum" width="800" height="350"></canvas>
+          </div>
+          <div class="sum-stats" id="sumStats">
+            <!-- 动态生成 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 号码走势 -->
+      <div class="stat-panel" id="panelTrend">
+        <div class="card">
+          <div class="card-header">
+            <h3>号码走势图</h3>
+            <span class="sub-note">点击号码查看走势</span>
+          </div>
+          <div class="trend-number-selector" id="trendSelector">
+            <!-- 动态生成号码选择器 -->
+          </div>
+          <div class="chart-container">
+            <canvas id="chartTrend" width="800" height="400"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 智能预测 ==================== -->
+    <section class="section" id="sectionPredict">
+      <div class="predict-header card">
+        <div class="card-header">
+          <h2>🔮 智能号码预测</h2>
+          <p class="predict-desc">基于历史数据的多维度统计分析，综合频率、冷热号、遗漏值等指标生成推荐号码</p>
+        </div>
+        <div class="predict-actions">
+          <button class="btn btn-generate" id="btnGenerate" onclick="App.generatePredictions()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            生成预测号码
+          </button>
+        </div>
+      </div>
+
+      <!-- 预测结果 -->
+      <div class="predictions-grid" id="predictionsGrid">
+        <!-- 动态生成 -->
+      </div>
+
+      <!-- 回测结果 -->
+      <div class="backtest-section card" id="backtestSection" style="display: none;">
+        <div class="card-header">
+          <h2>📊 历史回测验证</h2>
+          <button class="btn btn-secondary" id="btnBacktest" onclick="App.runBacktest()">运行回测</button>
+        </div>
+        <div class="backtest-results" id="backtestResults">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+
+      <!-- 免责声明 -->
+      <div class="disclaimer card">
+        <p>⚠️ <strong>免责声明</strong>：彩票号码为随机生成，任何基于历史数据的分析和预测均不能保证中奖。本工具仅供数据分析学习和娱乐参考，请理性购彩，量力而行。</p>
+      </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+      <div class="footer-inner">
+        <p>超级大乐透数据分析工具 · 仅供学习参考</p>
+        <p class="footer-small">数据来源：中国体育彩票 · 所有数据仅供参考，以官方公布为准</p>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 加载遮罩 -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <p>正在加载数据...</p>
+    </div>
+  </div>
+
+  <script src="js/charts.js"></script>
+  <script src="js/predictor.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

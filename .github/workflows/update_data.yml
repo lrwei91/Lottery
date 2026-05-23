@@ -1,0 +1,44 @@
+name: Auto Update Lottery Data
+
+on:
+  schedule:
+    # 每天北京时间 20:35 运行一次 (20:35 UTC+8 = 12:35 UTC)
+    - cron: '35 12 * * *'
+  workflow_dispatch: # 支持手动触发
+
+permissions:
+  contents: write # 授予写入权限以允许工作流向仓库推送数据
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Scraper
+        run: |
+          node scripts/scraper.js
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 检查数据是否发生了变更
+          git status
+          
+          if [ -n "$(git status --porcelain data/lottery_data.json)" ]; then
+            echo "数据发生更新，正在提交并推送..."
+            git add data/lottery_data.json
+            git commit -m "Auto update lottery data: $(date +'%Y-%m-%d %H:%M:%S')"
+            git push
+          else
+            echo "没有检测到数据变化，跳过提交。"
+          fi

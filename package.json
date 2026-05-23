@@ -1,0 +1,10 @@
+{
+  "name": "ticai-super-lotto",
+  "version": "1.0.0",
+  "description": "体彩超级大乐透历史中奖号码展示与预测",
+  "scripts": {
+    "scrape": "node scripts/scraper.js",
+    "dev": "npx -y serve ."
+  },
+  "dependencies": {}
+}
