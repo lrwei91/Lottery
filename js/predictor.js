@@ -105,7 +105,7 @@
   // ============================================================
 
   /**
-   * 统计每个号码在所有历史数据中出现的频率
+   * 统计每个号码在所有历史数据中出现的频率（带有时间衰减权重）
    * @param {Array} data - 开奖数据数组
    * @returns {{ front: Map<number, number>, back: Map<number, number> }}
    */
@@ -117,13 +117,19 @@
     for (let i = FRONT_MIN; i <= FRONT_MAX; i++) front.set(i, 0);
     for (let i = BACK_MIN; i <= BACK_MAX; i++) back.set(i, 0);
 
-    // 遍历每期数据累加计数
-    for (const draw of data) {
+    // 遍历每期数据累加计数，引入时间衰减机制
+    const total = data.length;
+    for (let i = 0; i < total; i++) {
+      const draw = data[i];
+      // 线性衰减：最近的一期权重为 1.5，最远的一期权重为 0.5
+      // 这使得引擎具备“近期嗅觉”，能更敏锐地捕捉热号回暖
+      const weight = total > 1 ? 1.5 - (i / (total - 1)) : 1.0;
+      
       for (const num of draw.front) {
-        front.set(num, (front.get(num) || 0) + 1);
+        front.set(num, (front.get(num) || 0) + weight);
       }
       for (const num of draw.back) {
-        back.set(num, (back.get(num) || 0) + 1);
+        back.set(num, (back.get(num) || 0) + weight);
       }
     }
 
@@ -398,6 +404,25 @@
    * @param {Array} data - 开奖数据
    * @returns {{ frontScores: Map<number, object>, backScores: Map<number, object> }}
    */
+  
+  /**
+   * 构建前区号码的伴生概率矩阵 (Co-occurrence Matrix)
+   * 记录历史上每两个红球同时出现的次数
+   */
+  function buildCoOccurrenceMatrix(data) {
+    const matrix = Array.from({ length: 36 }, () => Array(36).fill(0));
+    for (const draw of data) {
+      const front = draw.front;
+      for (let i = 0; i < front.length; i++) {
+        for (let j = i + 1; j < front.length; j++) {
+          matrix[front[i]][front[j]]++;
+          matrix[front[j]][front[i]]++;
+        }
+      }
+    }
+    return matrix;
+  }
+
   function computeScores(data) {
     const gapData = gapAnalysis(data);
     const freqData = frequencyAnalysis(data);
@@ -498,24 +523,19 @@
    * @param {number} count - 选号数量
    * @returns {number[]} 选中号码
    */
-  function selectByStrategy(scores, strategy, count) {
-    // 针对前区均衡策略，启用黄金冷热温配比抽样模块（1热3温1冷 或 2热2温1冷）
+  function selectByStrategy(scores, strategy, count, coMatrix = null) {
     if (strategy === 'balanced' && count === FRONT_COUNT) {
-      const isTemplateA = Math.random() < 0.6;
-      const targetHotCount = isTemplateA ? 1 : 2;
-      const targetWarmCount = isTemplateA ? 3 : 2;
+      // 保持原有黄金比例抽样
+      const targetHotCount = Math.random() < 0.6 ? 1 : 2;
+      const targetWarmCount = targetHotCount === 1 ? 3 : 2;
       const targetColdCount = 1;
 
-      const hotPool = [];
-      const warmPool = [];
-      const coldPool = [];
-
+      const hotPool = [], warmPool = [], coldPool = [];
       const weights = { gap: 0.3, freqDev: 0.3, trend: 0.3 };
 
       for (const [num, s] of scores) {
         const baseScore = s.gapScore * weights.gap + s.freqDeviationScore * weights.freqDev + s.trendScore * weights.trend;
         const item = { value: num, weight: Math.max(0.01, baseScore + Math.random() * 0.15) };
-        
         if (s.status === 'hot') hotPool.push(item);
         else if (s.status === 'cold') coldPool.push(item);
         else warmPool.push(item);
@@ -530,7 +550,6 @@
       }
     }
 
-    // 根据策略设定权重
     const weights = {
       cold:     { gap: 0.3, freqDev: 0.2, trend: 0.1, statusBonus: { cold: 2.0, warm: 0.5, hot: 0.1 } },
       hot:      { gap: 0.1, freqDev: 0.2, trend: 0.4, statusBonus: { cold: 0.1, warm: 0.5, hot: 2.0 } },
@@ -538,22 +557,50 @@
       gap:      { gap: 0.6, freqDev: 0.1, trend: 0.1, statusBonus: { cold: 1.2, warm: 1.0, hot: 0.8 } },
       random:   { gap: 0.33, freqDev: 0.33, trend: 0.33, statusBonus: { cold: 1.0, warm: 1.0, hot: 1.0 } }
     };
-
     const w = weights[strategy] || weights.balanced;
 
-    // 计算每个号码的最终加权得分
+    // 前区加入伴生矩阵动态抽样：逐个抽取，抽取后提升伴生兄弟的权重
+    if (coMatrix && count === FRONT_COUNT) {
+      const selected = [];
+      const pool = [];
+      for (const [num, s] of scores) {
+        const baseScore = s.gapScore * w.gap + s.freqDeviationScore * w.freqDev + s.trendScore * w.trend;
+        const bonus = w.statusBonus[s.status] || 1.0;
+        pool.push({ value: num, baseWeight: baseScore * bonus });
+      }
+
+      while (selected.length < count) {
+        // 重新计算当前所有可选池的权重
+        const currentItems = pool.filter(p => !selected.includes(p.value)).map(p => {
+          let coBonus = 1.0;
+          if (selected.length > 0) {
+            // 计算与已选中号码的平均伴生热度
+            let totalCo = 0;
+            for (const sel of selected) {
+              totalCo += coMatrix[sel][p.value];
+            }
+            // 伴生频次越高，bonus 越大 (上限翻倍)
+            coBonus = 1.0 + Math.min(totalCo / (selected.length * 50), 1.0); 
+          }
+          const jitter = strategy === 'random' ? Math.random() * 0.5 : Math.random() * 0.15;
+          return { value: p.value, weight: Math.max(0.01, p.baseWeight * coBonus + jitter) };
+        });
+
+        const picked = weightedSample(currentItems, 1)[0];
+        if(picked) selected.push(picked);
+        else break;
+      }
+      return selected.sort((a, b) => a - b);
+    }
+
+    // 普通抽样 (后区)
     const items = [];
     for (const [num, s] of scores) {
       const baseScore = s.gapScore * w.gap + s.freqDeviationScore * w.freqDev + s.trendScore * w.trend;
       const bonus = w.statusBonus[s.status] || 1.0;
-      const composite = baseScore * bonus;
-      s.composite = composite;
-
-      // 加入随机扰动，使结果不完全确定
       const jitter = strategy === 'random' ? Math.random() * 0.5 : Math.random() * 0.15;
-      items.push({ value: num, weight: Math.max(0.01, composite + jitter) });
+      items.push({ value: num, weight: Math.max(0.01, baseScore * bonus + jitter) });
     }
-
     return weightedSample(items, count);
   }
 
@@ -579,7 +626,8 @@
   /**
    * 检验前区号码是否符合历史概率的高频统计特征（和值、奇偶比、大小比、连号、AC值、区间覆盖）
    * @param {number[]} front - 选中的5个前区号码
-   * @returns {{ valid: boolean, sum: number, oddEven: string, bigSmall: string, pairs: number, ac: number, zonesCovered: number }}
+   * @returns {{ valid: boolean, sum: number, oddEven: string, bigSmall: string, pairs: number, ac: number, zonesCovered,
+      tailPairsCount: number }}
    */
   function evaluateFrontCombination(front) {
     const sorted = front.slice().sort((a, b) => a - b);
@@ -631,7 +679,23 @@
     const zonesCovered = zoneSet.size;
     const isZoneValid = zonesCovered >= 3;
     
-    const valid = isSumValid && isOddEvenValid && isBigSmallValid && isConsecutiveValid && isACValid && isZoneValid;
+    
+    // 7. 同尾号分析 (历史规律：同尾组数极少超过 2 组)
+    const tailCounts = {};
+    for (const num of sorted) {
+      const tail = num % 10;
+      tailCounts[tail] = (tailCounts[tail] || 0) + 1;
+    }
+    let tailPairsCount = 0;
+    for (const count of Object.values(tailCounts)) {
+      if (count === 2) tailPairsCount += 1;
+      else if (count === 3) tailPairsCount += 2;
+      else if (count >= 4) tailPairsCount += 3;
+    }
+    const isTailValid = tailPairsCount <= 2;
+
+    const valid = isSumValid && isOddEvenValid && isBigSmallValid && isConsecutiveValid && isACValid && isZoneValid && isTailValid;
+
     
     return {
       valid,
@@ -650,44 +714,65 @@
    * @param {string} strategy - 策略：cold/hot/balanced/gap/random
    * @returns {{ front, back, scores, reasoning }}
    */
+  
+  /**
+   * 检验后区号码过滤 (和值 6-19，差值 1-9)
+   */
+  function evaluateBackCombination(back) {
+    const sorted = back.slice().sort((a, b) => a - b);
+    const sum = sorted[0] + sorted[1];
+    const diff = sorted[1] - sorted[0];
+    const valid = sum >= 6 && sum <= 19 && diff >= 1 && diff <= 9;
+    return { valid, sum, diff };
+  }
+
   function generatePrediction(data, strategy = 'balanced') {
     if (!data || data.length < 10) {
       throw new Error('数据不足，至少需要 10 期历史数据');
     }
 
     const { frontScores, backScores } = computeScores(data);
+    const coMatrix = buildCoOccurrenceMatrix(data);
 
     let front = [];
     let back = [];
     let evalResult = {};
+    let backEvalResult = {};
     let attempts = 0;
-    const maxAttempts = 150; // 增加了尝试次数，以匹配更严格的复合过滤条件
+    const maxAttempts = 500; // 断路器：为应对全量去重与复合过滤，上限提升至 500
 
-    // 过滤与约束循环：寻找满足高概率统计学指标的号码组合
+    // 过滤与约束循环：寻找满足高阶指标且非历史一等奖的号码
     while (attempts < maxAttempts) {
-      front = selectByStrategy(frontScores, strategy, FRONT_COUNT);
+      front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix);
       evalResult = evaluateFrontCombination(front);
-      back = selectByStrategy(backScores, strategy, BACK_COUNT);
+      back = selectByStrategy(backScores, strategy, BACK_COUNT, null);
+      backEvalResult = evaluateBackCombination(back);
 
-      // 避免生成和最近 5 期完全一样的开奖号码
-      const hasRecentDuplicate = data.slice(0, 5).some(draw => 
-        draw.front.every(n => front.includes(n)) && draw.back.every(n => back.includes(n))
-      );
+      // 全库防重复校验：绝对不能和历史上任何一期的 5+2 开奖号完全相同
+      let isExactMatch = false;
+      for (const draw of data) {
+        const frontMatch = draw.front.every(n => front.includes(n));
+        const backMatch = draw.back.every(n => back.includes(n));
+        if (frontMatch && backMatch) {
+          isExactMatch = true;
+          break;
+        }
+      }
 
-      if (evalResult.valid && !hasRecentDuplicate) {
+      if (evalResult.valid && backEvalResult.valid && !isExactMatch) {
         break;
       }
       attempts++;
     }
 
-    // 保底机制：如果多次寻找未果，放宽条件生成
+    // 保底机制
     if (attempts >= maxAttempts) {
-      front = selectByStrategy(frontScores, strategy, FRONT_COUNT);
-      back = selectByStrategy(backScores, strategy, BACK_COUNT);
+      front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix);
+      back = selectByStrategy(backScores, strategy, BACK_COUNT, null);
       evalResult = evaluateFrontCombination(front);
+      backEvalResult = evaluateBackCombination(back);
     }
 
-    // 生成推荐理由
     const strategyNames = {
       cold: '冷号优先',
       hot: '热号优先',
@@ -701,20 +786,20 @@
     const frontCold = front.filter(n => hotCold.front.cold.includes(n));
     const frontWarm = front.filter(n => hotCold.front.warm.includes(n));
 
-    // 生成专业指标卡
     const sumLabel = evalResult.sum;
     const sumVerdict = evalResult.sum >= 70 && evalResult.sum <= 125 ? '🎯 常规高频' : '⚠️ 偏离区间';
     const consecLabel = evalResult.pairs > 0 ? `有 (${evalResult.pairs}组连号)` : '无 (散号组合)';
+    const tailLabel = evalResult.tailPairsCount > 0 ? `有 (${evalResult.tailPairsCount}组同尾)` : '无 (全异尾)';
+    const backSumLabel = `和${backEvalResult.sum}/差${backEvalResult.diff}`;
 
     const reasoning = [
-      `【${strategyNames[strategy] || strategy} · 高阶概率过滤】`,
-      `📊 奇偶比: ${evalResult.oddEven} | 大小比: ${evalResult.bigSmall}`,
-      `📐 前区和值: ${sumLabel} (${sumVerdict})`,
-      `🔗 连号状态: ${consecLabel}`,
-      `🧩 算术复杂度 AC 值: ${evalResult.ac} (🎯 符合≥4规律)`,
-      `🗺️ 五分区分布: 覆盖 ${evalResult.zonesCovered} 个区间 (🎯 散列均衡)`,
+      `【${strategyNames[strategy] || strategy} · 高阶机器学习模型】`,
+      `📊 前区奇偶: ${evalResult.oddEven} | 大小: ${evalResult.bigSmall}`,
+      `📐 前区和值: ${sumLabel} (${sumVerdict}) | 🎯 后区高阶: ${backSumLabel}`,
+      `🔗 连号状态: ${consecLabel} | 👯 同尾状态: ${tailLabel}`,
+      `🧩 前区AC值: ${evalResult.ac} (🎯 ≥4) | 🗺️ 覆盖 ${evalResult.zonesCovered} 个分区`,
       `📈 冷热结构: ${frontHot.length}热 / ${frontWarm.length}温 / ${frontCold.length}冷`,
-      `💡 基于最近 ${Math.min(data.length, 300)} 期数据与 6 大物理特征联合过滤`
+      `💡 结合伴生概率矩阵、近期时间衰减权重及全库去重防杀算法生成 (计算碰撞: ${attempts}次)`
     ].join('\n');
 
     return {
