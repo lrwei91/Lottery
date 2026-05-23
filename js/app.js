@@ -168,20 +168,20 @@
     const isPl3 = state.currentLottery === 'pl3';
 
     if (isPl3) {
-      // 排列三开奖时间：每天 20:30
+      // 排列三开奖时间：每天 21:25
       let next = new Date(now);
-      next.setHours(20, 30, 0, 0);
+      next.setHours(21, 25, 0, 0);
       if (next > now) return next;
-      
+
       next = new Date(now.getTime() + 86400000);
-      next.setHours(20, 30, 0, 0);
+      next.setHours(21, 25, 0, 0);
       return next;
     }
 
-    // 大乐透开奖时间：周一、三、六 20:30
+    // 大乐透开奖时间：周一、三、六 21:25
     const drawDays = [1, 3, 6]; // 周一=1, 周三=3, 周六=6
-    const drawHour = 20;
-    const drawMinute = 30;
+    const drawHour = 21;
+    const drawMinute = 25;
     
     let next = new Date(now);
     
@@ -223,7 +223,7 @@
       document.getElementById('cdSeconds').textContent = padNum(seconds);
       
       document.getElementById('nextDrawDay').textContent = 
-        `${next.getMonth()+1}月${next.getDate()}日 ${dayNames[next.getDay()]} 20:30`;
+        `${next.getMonth()+1}月${next.getDate()}日 ${dayNames[next.getDay()]} 21:25`;
     }
     
     update();

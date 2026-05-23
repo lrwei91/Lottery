@@ -2,8 +2,8 @@ name: Auto Update Lottery Data
 
 on:
   schedule:
-    # 每天北京时间 20:36 运行一次 (20:36 UTC+8 = 12:36 UTC)
-    - cron: '36 12 * * *'
+    # 每天北京时间 21:36 运行一次 (21:36 UTC+8 = 13:36 UTC)，确保在大乐透/排列三 21:25 开奖之后抓取
+    - cron: '36 13 * * *'
   workflow_dispatch: # 支持手动触发
 
 permissions:
@@ -22,10 +22,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Run Scraper
-        run: |
-          node scripts/scraper.js
-          node scripts/scraper_pl3.js
+      - name: Fetch DLT Data
+        run: node scripts/scraper.js
+
+      - name: Fetch PL3 Data
+        run: node scripts/scraper_pl3.js
 
       - name: Commit and Push Changes
         run: |
