@@ -1539,6 +1539,111 @@ body {
   outline-offset: 2px;
 }
 
+/* ========== Prize Rules ========== */
+.rules-table-wrapper {
+  overflow-x: auto;
+  margin-top: var(--space-md);
+}
+
+.rules-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.rules-table th,
+.rules-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  vertical-align: middle;
+}
+
+.rules-table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.rules-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.prize-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid var(--card-border);
+  text-align: center;
+  min-width: 72px;
+}
+
+.prize-badge.gold {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warm);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.prize-badge.silver {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.prize-badge.bronze {
+  background: rgba(180, 83, 9, 0.15);
+  color: #d97706;
+  border-color: rgba(180, 83, 9, 0.3);
+}
+
+.mini-balls-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ball-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.ball-dot.front {
+  background: linear-gradient(135deg, var(--front-start), var(--front-end));
+  box-shadow: var(--shadow-glow-front);
+}
+
+.ball-dot.back {
+  background: linear-gradient(135deg, var(--back-start), var(--back-end));
+  box-shadow: var(--shadow-glow-back);
+}
+
+.ball-dot.plus {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+}
+
+.ball-dot.text-muted {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  width: auto;
+  height: auto;
+}
+
 /* ========== Print ========== */
 @media print {
   .bg-particles,
