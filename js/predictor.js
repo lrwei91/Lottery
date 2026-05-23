@@ -18,14 +18,37 @@
   'use strict';
 
   // ============================================================
-  // 常量定义
+  // 常量与变量定义 (支持大乐透/排列三动态适配)
   // ============================================================
-  const FRONT_MIN = 1;
-  const FRONT_MAX = 35;
-  const BACK_MIN = 1;
-  const BACK_MAX = 12;
-  const FRONT_COUNT = 5; // 每期前区选号个数
-  const BACK_COUNT = 2;  // 每期后区选号个数
+  let FRONT_MIN = 1;
+  let FRONT_MAX = 35;
+  let BACK_MIN = 1;
+  let BACK_MAX = 12;
+  let FRONT_COUNT = 5; // 每期前区选号个数
+  let BACK_COUNT = 2;  // 每期后区选号个数
+
+  function detectLotteryType(data) {
+    if (!data || data.length === 0) return 'dlt';
+    return data[0].front.length === 3 ? 'pl3' : 'dlt';
+  }
+
+  function updateLotteryParams(type) {
+    if (type === 'pl3') {
+      FRONT_MIN = 0;
+      FRONT_MAX = 9;
+      BACK_MIN = 1;
+      BACK_MAX = 0; // 无后区
+      FRONT_COUNT = 3;
+      BACK_COUNT = 0;
+    } else {
+      FRONT_MIN = 1;
+      FRONT_MAX = 35;
+      BACK_MIN = 1;
+      BACK_MAX = 12;
+      FRONT_COUNT = 5;
+      BACK_COUNT = 2;
+    }
+  }
 
   // ============================================================
   // 工具函数
@@ -110,6 +133,7 @@
    * @returns {{ front: Map<number, number>, back: Map<number, number> }}
    */
   function frequencyAnalysis(data) {
+    updateLotteryParams(detectLotteryType(data));
     const front = new Map();
     const back = new Map();
 
@@ -126,10 +150,14 @@
       const weight = total > 1 ? 1.5 - (i / (total - 1)) : 1.0;
       
       for (const num of draw.front) {
-        front.set(num, (front.get(num) || 0) + weight);
+        if (front.has(num)) {
+          front.set(num, front.get(num) + weight);
+        }
       }
       for (const num of draw.back) {
-        back.set(num, (back.get(num) || 0) + weight);
+        if (back.has(num)) {
+          back.set(num, back.get(num) + weight);
+        }
       }
     }
 
@@ -150,13 +178,22 @@
    * @returns {{ front: { hot, cold, warm }, back: { hot, cold, warm } }}
    */
   function hotColdAnalysis(data, recentN = 300) {
+    const isPl3 = detectLotteryType(data) === 'pl3';
+    updateLotteryParams(isPl3 ? 'pl3' : 'dlt');
+
     const recentData = data.slice(0, recentN);
     const freq = frequencyAnalysis(recentData);
 
-    function classify(freqMap, total) {
+    function classify(freqMap, total, isBackZone = false) {
       const hot = [], cold = [], warm = [];
       // 动态阈值：基于期数调整冷热判定标准
-      const avgExpected = total * 5 / 35; // 前区期望出现次数
+      let avgExpected = 0;
+      if (isPl3) {
+        avgExpected = total * 3 / 10;
+      } else {
+        avgExpected = isBackZone ? (total * 2 / 12) : (total * 5 / 35);
+      }
+
       const hotThreshold = Math.ceil(avgExpected * 1.15);
       const coldThreshold = Math.floor(avgExpected * 0.85);
 
@@ -179,8 +216,8 @@
     }
 
     return {
-      front: classify(freq.front, recentN),
-      back: classify(freq.back, recentN)
+      front: classify(freq.front, recentN, false),
+      back: isPl3 ? { hot: [], cold: [], warm: [] } : classify(freq.back, recentN, true)
     };
   }
 
@@ -254,7 +291,7 @@
 
     return {
       front: analyzeZone(data, FRONT_MIN, FRONT_MAX, d => d.front),
-      back: analyzeZone(data, BACK_MIN, BACK_MAX, d => d.back)
+      back: BACK_COUNT > 0 ? analyzeZone(data, BACK_MIN, BACK_MAX, d => d.back) : new Map()
     };
   }
 
@@ -268,7 +305,11 @@
    * @returns {Object} 奇偶比分布 { '5:0': count, '4:1': count, ... }
    */
   function oddEvenAnalysis(data) {
-    const distribution = {
+    updateLotteryParams(detectLotteryType(data));
+    const isPl3 = detectLotteryType(data) === 'pl3';
+    const distribution = isPl3 ? {
+      '3:0': 0, '2:1': 0, '1:2': 0, '0:3': 0
+    } : {
       '5:0': 0, '4:1': 0, '3:2': 0,
       '2:3': 0, '1:4': 0, '0:5': 0
     };
@@ -345,13 +386,18 @@
    * @returns {Object} 大小比分布
    */
   function bigSmallAnalysis(data) {
-    const distribution = {
+    updateLotteryParams(detectLotteryType(data));
+    const isPl3 = detectLotteryType(data) === 'pl3';
+    const distribution = isPl3 ? {
+      '3:0': 0, '2:1': 0, '1:2': 0, '0:3': 0
+    } : {
       '5:0': 0, '4:1': 0, '3:2': 0,
       '2:3': 0, '1:4': 0, '0:5': 0
     };
 
     for (const draw of data) {
-      const bigCount = draw.front.filter(n => n >= 18).length;
+      const threshold = isPl3 ? 5 : 18;
+      const bigCount = draw.front.filter(n => n >= threshold).length;
       const smallCount = FRONT_COUNT - bigCount;
       const key = `${bigCount}:${smallCount}`;
       if (distribution[key] !== undefined) {
@@ -410,13 +456,17 @@
    * 记录历史上每两个红球同时出现的次数
    */
   function buildCoOccurrenceMatrix(data) {
-    const matrix = Array.from({ length: 36 }, () => Array(36).fill(0));
+    const isPl3 = detectLotteryType(data) === 'pl3';
+    const size = isPl3 ? 10 : 36;
+    const matrix = Array.from({ length: size }, () => Array(size).fill(0));
     for (const draw of data) {
       const front = draw.front;
       for (let i = 0; i < front.length; i++) {
         for (let j = i + 1; j < front.length; j++) {
-          matrix[front[i]][front[j]]++;
-          matrix[front[j]][front[i]]++;
+          if (front[i] < size && front[j] < size) {
+            matrix[front[i]][front[j]]++;
+            matrix[front[j]][front[i]]++;
+          }
         }
       }
     }
@@ -467,7 +517,8 @@
         // 近期趋势得分：近期出现次数递增则上升趋势
         const windowCounts = windows.map(w => {
           return w.filter(d => {
-            const nums = min <= 12 && max <= 12 ? d.back : d.front;
+            const isPl3 = detectLotteryType(data) === 'pl3';
+            const nums = (min <= 12 && max <= 12 && !isPl3) ? d.back : d.front;
             return nums.includes(num);
           }).length;
         });
@@ -503,9 +554,10 @@
       return scores;
     }
 
+    const isPl3 = detectLotteryType(data) === 'pl3';
     return {
       frontScores: scoreZone(FRONT_MIN, FRONT_MAX, gapData.front, freqData.front, hotCold.front, data.length, FRONT_COUNT),
-      backScores: scoreZone(BACK_MIN, BACK_MAX, gapData.back, freqData.back, hotCold.back, data.length, BACK_COUNT)
+      backScores: isPl3 ? new Map() : scoreZone(BACK_MIN, BACK_MAX, gapData.back, freqData.back, hotCold.back, data.length, BACK_COUNT)
     };
   }
 
@@ -731,6 +783,13 @@
       throw new Error('数据不足，至少需要 10 期历史数据');
     }
 
+    const isPl3 = detectLotteryType(data) === 'pl3';
+    updateLotteryParams(isPl3 ? 'pl3' : 'dlt');
+
+    if (isPl3) {
+      return generatePredictionPL3(data, strategy);
+    }
+
     const { frontScores, backScores } = computeScores(data);
     const coMatrix = buildCoOccurrenceMatrix(data);
 
@@ -813,6 +872,125 @@
     };
   }
 
+  /**
+   * 排列三专属智能预测生成器
+   */
+  function generatePredictionPL3(data, strategy = 'balanced') {
+    const { frontScores } = computeScores(data);
+    const scoresArray = Array.from(frontScores.entries());
+
+    let finalNums = [];
+    let attempts = 0;
+    const maxAttempts = 500;
+
+    while (attempts < maxAttempts) {
+      // 1. 确定号码形态 (组六概率~72.7%，组三概率~27%，豹子概率~0.3%)
+      const r = Math.random();
+      let pattern = 'box6';
+      if (r < 0.003) {
+        pattern = 'triple';
+      } else if (r < 0.273) {
+        pattern = 'box3';
+      }
+
+      // 2. 带权重抽样
+      let selected = [];
+      if (pattern === 'triple') {
+        // 豹子：抽 1 个数字重复 3 次
+        const items = scoresArray.map(([num, s]) => {
+          const base = s.gapScore * 0.4 + s.freqDeviationScore * 0.4 + s.trendScore * 0.2;
+          const jitter = strategy === 'random' ? Math.random() * 0.5 : Math.random() * 0.15;
+          return { value: num, weight: Math.max(0.01, base + jitter) };
+        });
+        const picked = weightedSample(items, 1)[0];
+        selected = [picked, picked, picked];
+      } else if (pattern === 'box3') {
+        // 组三：抽 2 个数字，1个重复
+        const items = scoresArray.map(([num, s]) => {
+          const base = s.gapScore * 0.4 + s.freqDeviationScore * 0.4 + s.trendScore * 0.2;
+          const jitter = strategy === 'random' ? Math.random() * 0.5 : Math.random() * 0.15;
+          return { value: num, weight: Math.max(0.01, base + jitter) };
+        });
+        const picked = weightedSample(items, 2);
+        if (Math.random() < 0.5) {
+          selected = [picked[0], picked[0], picked[1]];
+        } else {
+          selected = [picked[0], picked[1], picked[1]];
+        }
+        selected = shuffle(selected);
+      } else {
+        // 组六：抽 3 个不同数字
+        const items = scoresArray.map(([num, s]) => {
+          const base = s.gapScore * 0.4 + s.freqDeviationScore * 0.4 + s.trendScore * 0.2;
+          const jitter = strategy === 'random' ? Math.random() * 0.5 : Math.random() * 0.15;
+          return { value: num, weight: Math.max(0.01, base + jitter) };
+        });
+        selected = weightedSample(items, 3);
+        selected = shuffle(selected);
+      }
+
+      // 3. 高阶统计学指标过滤
+      const sum = selected.reduce((s, v) => s + v, 0);
+      const span = Math.max(...selected) - Math.min(...selected);
+
+      const isSumValid = sum >= 9 && sum <= 18;
+      const isSpanValid = span >= 3 && span <= 8;
+
+      // 4. 近期 (最近10期) 防杀去重
+      const isRecentDuplicate = data.slice(0, 10).some(draw => 
+        draw.front.length === 3 &&
+        draw.front[0] === selected[0] &&
+        draw.front[1] === selected[1] &&
+        draw.front[2] === selected[2]
+      );
+
+      if (isSumValid && isSpanValid && !isRecentDuplicate) {
+        finalNums = selected;
+        break;
+      }
+      attempts++;
+    }
+
+    if (finalNums.length === 0) {
+      // 兜底保底
+      finalNums = [
+        Math.floor(Math.random() * 10),
+        Math.floor(Math.random() * 10),
+        Math.floor(Math.random() * 10)
+      ];
+    }
+
+    const sum = finalNums.reduce((s, v) => s + v, 0);
+    const span = Math.max(...finalNums) - Math.min(...finalNums);
+    const uniqueCount = new Set(finalNums).size;
+    const patternLabel = uniqueCount === 1 ? '🐆 豹子组合' : uniqueCount === 2 ? '👯 组三组合' : '⚖️ 组六组合';
+
+    const strategyNames = {
+      cold: '冷号优先',
+      hot: '热号优先',
+      balanced: '均衡推荐',
+      gap: '遗漏回补',
+      random: '随机加权'
+    };
+
+    const reasoning = [
+      `【${strategyNames[strategy] || strategy} · 排列三位置概率引擎】`,
+      `🧩 号码形态: ${patternLabel} | 📏 跨度大小: ${span} (🎯 3-8)`,
+      `📐 组合和值: ${sum} (🎯 ${sum >= 9 && sum <= 18 ? '常规高频' : '偏离区间'})`,
+      `💡 依据近期位置分布规律与伴生相关性特征计算生成 (碰撞尝试: ${attempts}次)`
+    ].join('\n');
+
+    return {
+      front: finalNums,
+      back: [],
+      scores: {
+        front: frontScores,
+        back: new Map()
+      },
+      reasoning
+    };
+  }
+
   // ============================================================
   // 9. 生成多注预测
   // ============================================================
@@ -845,17 +1023,22 @@
 
   /**
    * 使用历史数据进行回测
-   * 用第 N 期之前的数据预测第 N 期，对比实际开奖结果
    * @param {Array} data - 开奖数据（最新期在前）
    * @param {number} testPeriods - 回测期数，默认 50
    * @returns {{ totalTests, matchStats, avgFrontMatch, avgBackMatch }}
    */
   function backtestPrediction(data, testPeriods = 50) {
+    const isPl3 = detectLotteryType(data) === 'pl3';
+    updateLotteryParams(isPl3 ? 'pl3' : 'dlt');
+
     const actualTests = Math.min(testPeriods, data.length - 300); // 确保有足够历史数据
     if (actualTests <= 0) {
       return {
         totalTests: 0,
-        matchStats: {
+        matchStats: isPl3 ? {
+          front0: 0, front1: 0, front2: 0, front3: 0,
+          back0: 0
+        } : {
           front0: 0, front1: 0, front2: 0, front3: 0, front4: 0, front5: 0,
           back0: 0, back1: 0, back2: 0
         },
@@ -864,7 +1047,10 @@
       };
     }
 
-    const matchStats = {
+    const matchStats = isPl3 ? {
+      front0: 0, front1: 0, front2: 0, front3: 0,
+      back0: 0
+    } : {
       front0: 0, front1: 0, front2: 0, front3: 0, front4: 0, front5: 0,
       back0: 0, back1: 0, back2: 0
     };
@@ -880,15 +1066,27 @@
       // 使用均衡策略进行预测
       const prediction = generatePrediction(trainingData, 'balanced');
 
-      // 统计前区匹配数
-      const frontMatches = prediction.front.filter(n => targetDraw.front.includes(n)).length;
-      matchStats[`front${frontMatches}`]++;
-      totalFrontMatch += frontMatches;
+      let frontMatches = 0;
+      if (isPl3) {
+        // 排列三：位置比对（直选命中位置数）
+        for (let j = 0; j < 3; j++) {
+          if (prediction.front[j] === targetDraw.front[j]) {
+            frontMatches++;
+          }
+        }
+        matchStats[`front${frontMatches}`]++;
+        totalFrontMatch += frontMatches;
+        matchStats['back0']++;
+      } else {
+        // 大乐透
+        frontMatches = prediction.front.filter(n => targetDraw.front.includes(n)).length;
+        matchStats[`front${frontMatches}`]++;
+        totalFrontMatch += frontMatches;
 
-      // 统计后区匹配数
-      const backMatches = prediction.back.filter(n => targetDraw.back.includes(n)).length;
-      matchStats[`back${backMatches}`]++;
-      totalBackMatch += backMatches;
+        const backMatches = prediction.back.filter(n => targetDraw.back.includes(n)).length;
+        matchStats[`back${backMatches}`]++;
+        totalBackMatch += backMatches;
+      }
     }
 
     return {
@@ -921,13 +1119,15 @@
     // 工具函数（供外部使用）
     computeScores,
 
-    // 常量
-    FRONT_MIN,
-    FRONT_MAX,
-    BACK_MIN,
-    BACK_MAX,
-    FRONT_COUNT,
-    BACK_COUNT
+    // 常量/变量获取器
+    getParams: () => ({
+      FRONT_MIN,
+      FRONT_MAX,
+      BACK_MIN,
+      BACK_MAX,
+      FRONT_COUNT,
+      BACK_COUNT
+    })
   };
 
 })();

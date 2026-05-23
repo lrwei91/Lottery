@@ -22,14 +22,22 @@
       <div class="header-inner">
         <div class="logo">
           <div class="logo-icon">
-            <div class="logo-ball-red">乐</div>
-            <div class="logo-ball-blue">透</div>
+            <div class="logo-ball-red" id="logoBallRed">乐</div>
+            <div class="logo-ball-blue" id="logoBallBlue">透</div>
           </div>
           <div class="logo-text">
-            <h1>超级大乐透</h1>
-            <span class="logo-subtitle">数据分析与智能预测</span>
+            <h1 id="logoTitle">超级大乐透</h1>
+            <span class="logo-subtitle" id="logoSubtitle">数据分析与智能预测</span>
           </div>
         </div>
+        
+        <!-- 顶级彩种选择器 -->
+        <div class="lottery-selector" id="lotterySelector">
+          <button class="selector-tab active" data-lottery="dlt">超级大乐透</button>
+          <button class="selector-tab" data-lottery="pl3">排列三</button>
+          <div class="selector-slider"></div>
+        </div>
+
         <div class="header-meta">
           <span class="data-badge" id="dataCount">
             <span class="badge-dot"></span>
@@ -147,9 +155,11 @@
       <div class="prize-rules card">
         <div class="card-header">
           <h2>🏆 中奖规则与奖级说明</h2>
-          <span class="sub-note">超级大乐透中奖条件及奖金对照表</span>
+          <span class="sub-note" id="rulesSubNote">超级大乐透中奖条件及奖金对照表</span>
         </div>
-        <div class="rules-table-wrapper">
+        
+        <!-- 大乐透规则 -->
+        <div class="rules-table-wrapper dlt-rules-table">
           <table class="rules-table">
             <thead>
               <tr>
@@ -295,6 +305,58 @@
                   </div>
                 </td>
                 <td>单注固定 <strong>5</strong> 元</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 排列三规则 -->
+        <div class="rules-table-wrapper pl3-rules-table" style="display: none;">
+          <table class="rules-table">
+            <thead>
+              <tr>
+                <th>奖级</th>
+                <th>中奖条件</th>
+                <th>中奖号码示意</th>
+                <th>奖金标准</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="prize-badge gold">直选</span></td>
+                <td><strong>定位全部相同</strong></td>
+                <td>
+                  <div class="mini-balls-row">
+                    <span class="ball-dot front"></span>
+                    <span class="ball-dot front"></span>
+                    <span class="ball-dot front"></span>
+                  </div>
+                </td>
+                <td>单注固定 <strong>1,040</strong> 元</td>
+              </tr>
+              <tr>
+                <td><span class="prize-badge silver">组三</span></td>
+                <td><strong>不定位，中两同号一异号</strong></td>
+                <td>
+                  <div class="mini-balls-row">
+                    <span class="ball-dot front"></span>
+                    <span class="ball-dot front"></span>
+                    <span class="ball-dot front" style="opacity: 0.5;"></span>
+                  </div>
+                </td>
+                <td>单注固定 <strong>346</strong> 元</td>
+              </tr>
+              <tr>
+                <td><span class="prize-badge bronze">组六</span></td>
+                <td><strong>不定位，中三号互不相同</strong></td>
+                <td>
+                  <div class="mini-balls-row">
+                    <span class="ball-dot front" style="filter: saturate(2);"></span>
+                    <span class="ball-dot front" style="filter: saturate(0.5) brightness(1.2);"></span>
+                    <span class="ball-dot front" style="filter: invert(0.2);"></span>
+                  </div>
+                </td>
+                <td>单注固定 <strong>173</strong> 元</td>
               </tr>
             </tbody>
           </table>

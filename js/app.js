@@ -8,6 +8,7 @@
 
   // ==================== 应用状态 ====================
   const state = {
+    currentLottery: 'dlt', // 'dlt' (超级大乐透) 或 'pl3' (排列三)
     data: [],           // 所有开奖数据
     total: 0,           // 数据总量
     updateTime: '',     // 最后更新时间
@@ -47,7 +48,9 @@
   // ==================== 数据加载 ====================
   async function loadData() {
     try {
-      const res = await fetch('data/lottery_data.json');
+      const isPl3 = state.currentLottery === 'pl3';
+      const filepath = isPl3 ? 'data/pl3_data.json' : 'data/lottery_data.json';
+      const res = await fetch(filepath);
       if (!res.ok) throw new Error('数据文件加载失败');
       const json = await res.json();
       
@@ -79,6 +82,9 @@
   }
 
   function initYearFilter() {
+    const select = document.getElementById('yearFilter');
+    select.innerHTML = '<option value="">全部年份</option>'; // 重置选项
+    
     const years = new Set();
     state.data.forEach(d => {
       if (d.date) {
@@ -86,7 +92,6 @@
         years.add(y);
       }
     });
-    const select = document.getElementById('yearFilter');
     const sortedYears = [...years].sort().reverse();
     sortedYears.forEach(y => {
       const opt = document.createElement('option');
@@ -138,6 +143,7 @@
   function renderRecentDraws() {
     const list = document.getElementById('recentDrawsList');
     const recent = state.data.slice(1, 11); // 最近10期（排除最新一期）
+    const isPl3 = state.currentLottery === 'pl3';
     
     list.innerHTML = recent.map(d => `
       <div class="draw-item">
@@ -147,8 +153,10 @@
         </div>
         <div class="draw-item-balls">
           ${d.front.map(n => createBallHTML(n, 'front small')).join('')}
-          <span class="draw-item-plus">+</span>
-          ${d.back.map(n => createBallHTML(n, 'back small')).join('')}
+          ${isPl3 ? '' : `
+            <span class="draw-item-plus">+</span>
+            ${d.back.map(n => createBallHTML(n, 'back small')).join('')}
+          `}
         </div>
       </div>
     `).join('');
@@ -157,6 +165,19 @@
   // ==================== 倒计时 ====================
   function getNextDrawTime() {
     const now = new Date();
+    const isPl3 = state.currentLottery === 'pl3';
+
+    if (isPl3) {
+      // 排列三开奖时间：每天 20:30
+      let next = new Date(now);
+      next.setHours(20, 30, 0, 0);
+      if (next > now) return next;
+      
+      next = new Date(now.getTime() + 86400000);
+      next.setHours(20, 30, 0, 0);
+      return next;
+    }
+
     // 大乐透开奖时间：周一、三、六 20:30
     const drawDays = [1, 3, 6]; // 周一=1, 周三=3, 周六=6
     const drawHour = 20;
@@ -322,58 +343,62 @@
   function renderStatsOverview() {
     if (state.data.length === 0) return;
     
-    const hotCold = Predictor.hotColdAnalysis(state.data, 300);
-    
-    // 获取频率数据以找出最热最冷
+    const isPl3 = state.currentLottery === 'pl3';
     const freq = Predictor.frequencyAnalysis(state.data);
     
-    // 最热前区
+    // 最热前区/主要选区
     let maxFrontFreq = 0, hottestFront = [];
     freq.front.forEach((count, num) => {
       if (count > maxFrontFreq) { maxFrontFreq = count; hottestFront = [num]; }
       else if (count === maxFrontFreq) hottestFront.push(num);
     });
     
-    // 最冷前区
+    // 最冷前区/主要选区
     let minFrontFreq = Infinity, coldestFront = [];
     freq.front.forEach((count, num) => {
       if (count < minFrontFreq) { minFrontFreq = count; coldestFront = [num]; }
       else if (count === minFrontFreq) coldestFront.push(num);
     });
     
-    // 最热后区
-    let maxBackFreq = 0, hottestBack = [];
-    freq.back.forEach((count, num) => {
-      if (count > maxBackFreq) { maxBackFreq = count; hottestBack = [num]; }
-      else if (count === maxBackFreq) hottestBack.push(num);
-    });
-    
-    // 最冷后区
-    let minBackFreq = Infinity, coldestBack = [];
-    freq.back.forEach((count, num) => {
-      if (count < minBackFreq) { minBackFreq = count; coldestBack = [num]; }
-      else if (count === minBackFreq) coldestBack.push(num);
-    });
-    
     document.getElementById('hottestFront').textContent = hottestFront.map(padNum).join(', ');
     document.getElementById('coldestFront').textContent = coldestFront.map(padNum).join(', ');
-    document.getElementById('hottestBack').textContent = hottestBack.map(padNum).join(', ');
-    document.getElementById('coldestBack').textContent = coldestBack.map(padNum).join(', ');
+
+    if (!isPl3) {
+      // 最热后区
+      let maxBackFreq = 0, hottestBack = [];
+      freq.back.forEach((count, num) => {
+        if (count > maxBackFreq) { maxBackFreq = count; hottestBack = [num]; }
+        else if (count === maxBackFreq) hottestBack.push(num);
+      });
+      
+      // 最冷后区
+      let minBackFreq = Infinity, coldestBack = [];
+      freq.back.forEach((count, num) => {
+        if (count < minBackFreq) { minBackFreq = count; coldestBack = [num]; }
+        else if (count === minBackFreq) coldestBack.push(num);
+      });
+      
+      document.getElementById('hottestBack').textContent = hottestBack.map(padNum).join(', ');
+      document.getElementById('coldestBack').textContent = coldestBack.map(padNum).join(', ');
+    }
   }
 
   function renderFrequencyStats() {
     const freq = Predictor.frequencyAnalysis(state.data);
     Charts.drawFrequencyChart('chartFreqFront', freq, 'front');
-    Charts.drawFrequencyChart('chartFreqBack', freq, 'back');
+    if (state.currentLottery !== 'pl3') {
+      Charts.drawFrequencyChart('chartFreqBack', freq, 'back');
+    }
   }
 
   function renderHotColdStats() {
     const hc = Predictor.hotColdAnalysis(state.data, 300);
+    const isPl3 = state.currentLottery === 'pl3';
     
-    function renderGrid(containerId, data, maxNum) {
+    function renderGrid(containerId, data, maxNum, minNum = 1) {
       const container = document.getElementById(containerId);
       let html = '';
-      for (let i = 1; i <= maxNum; i++) {
+      for (let i = minNum; i <= maxNum; i++) {
         let status = 'warm';
         if (data.hot.includes(i)) status = 'hot';
         else if (data.cold.includes(i)) status = 'cold';
@@ -390,14 +415,18 @@
       container.innerHTML = html;
     }
     
-    renderGrid('hotcoldFrontGrid', hc.front, 35);
-    renderGrid('hotcoldBackGrid', hc.back, 12);
+    renderGrid('hotcoldFrontGrid', hc.front, isPl3 ? 9 : 35, isPl3 ? 0 : 1);
+    if (!isPl3) {
+      renderGrid('hotcoldBackGrid', hc.back, 12, 1);
+    }
   }
 
   function renderGapStats() {
     const gap = Predictor.gapAnalysis(state.data);
     Charts.drawGapChart('chartGapFront', gap, 'front');
-    Charts.drawGapChart('chartGapBack', gap, 'back');
+    if (state.currentLottery !== 'pl3') {
+      Charts.drawGapChart('chartGapBack', gap, 'back');
+    }
   }
 
   function renderOddEvenStats() {
@@ -436,10 +465,13 @@
   }
 
   function renderTrendStats() {
-    // 号码选择器
     const selector = document.getElementById('trendSelector');
+    const isPl3 = state.currentLottery === 'pl3';
+    const minNum = isPl3 ? 0 : 1;
+    const maxNum = isPl3 ? 9 : 35;
+    
     let html = '<div class="trend-nums">';
-    for (let i = 1; i <= 35; i++) {
+    for (let i = minNum; i <= maxNum; i++) {
       const isSelected = state.selectedTrendNumbers.includes(i);
       html += `<button class="trend-num-btn ${isSelected ? 'active' : ''}" data-num="${i}">${padNum(i)}</button>`;
     }
@@ -532,6 +564,8 @@
       gap: '📊 遗漏回补',
       random: '🎲 随机加权'
     };
+
+    const isPl3 = state.currentLottery === 'pl3';
     
     grid.innerHTML = predictions.map((p, i) => `
       <div class="prediction-card card" style="animation-delay: ${i * 0.1}s">
@@ -541,21 +575,58 @@
         </div>
         <div class="pred-balls">
           <div class="pred-zone">
-            <span class="zone-tag">前区</span>
+            <span class="zone-tag">${isPl3 ? '开奖号码' : '前区'}</span>
             <div class="ball-row">
               ${p.front.map(n => createBallHTML(n, 'front')).join('')}
             </div>
           </div>
+          ${isPl3 ? '' : `
           <div class="pred-zone">
             <span class="zone-tag">后区</span>
             <div class="ball-row">
               ${p.back.map(n => createBallHTML(n, 'back')).join('')}
             </div>
           </div>
+          `}
         </div>
         <div class="pred-reasoning">${p.reasoning || ''}</div>
       </div>
     `).join('');
+  }
+
+  function copyAllPredictions() {
+    if (!state.predictions || state.predictions.length === 0) return;
+
+    const isPl3 = state.currentLottery === 'pl3';
+    const text = state.predictions.map(p => {
+      const frontStr = p.front.map(padNum).join(' ');
+      if (isPl3) return frontStr;
+      const backStr = p.back.map(padNum).join(' ');
+      return `${frontStr} + ${backStr}`;
+    }).join('\n');
+
+    const doFeedback = () => {
+      const btn = document.getElementById('btnCopyAll');
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> 复制成功！`;
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.color = 'var(--accent)';
+      
+      setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }, 2000);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(doFeedback).catch(err => {
+        console.warn('Navigator clipboard failed, trying fallback:', err);
+        fallbackCopy(text, doFeedback);
+      });
+    } else {
+      fallbackCopy(text, doFeedback);
+    }
   }
 
   // ==================== 号码比对模块 ====================
@@ -613,6 +684,7 @@
     const latestDraw = state.data[0];
     const frontTarget = latestDraw.front;
     const backTarget = latestDraw.back;
+    const isPl3 = state.currentLottery === 'pl3';
 
     const lines = inputVal.split('\n');
     let html = '<h4>核对结果对比（对比最新第 ' + latestDraw.issue + ' 期）</h4>';
@@ -622,78 +694,120 @@
       const trimmed = line.trim();
       if (!trimmed) return;
 
-      // 提取行中所有的数字
       const nums = trimmed.match(/\d+/g);
-      if (!nums || nums.length < 7) {
+
+      if (isPl3) {
+        if (!nums || nums.length < 3) {
+          html += `
+            <div class="checker-item" style="border-color: var(--hot); margin-bottom: 8px;">
+              <span style="color: var(--hot); font-size: 0.8rem;">❌ 第 ${index + 1} 行格式有误，请确保包含 3 位排列三号码（例如：4 4 3）</span>
+            </div>
+          `;
+          return;
+        }
+
+        const digits = nums.slice(0, 3).map(Number);
+        const isRangeValid = digits.every(n => n >= 0 && n <= 9);
+
+        if (!isRangeValid) {
+          html += `
+            <div class="checker-item" style="border-color: var(--hot); margin-bottom: 8px;">
+              <span style="color: var(--hot); font-size: 0.8rem;">❌ 第 ${index + 1} 行号码范围超出限制 (每位数字0-9)</span>
+            </div>
+          `;
+          return;
+        }
+
+        hasValidLines = true;
+        const checkResult = checkPL3Winning(digits, frontTarget);
+        const prizeName = checkResult.prize;
+
         html += `
-          <div class="checker-item" style="border-color: var(--hot); margin-bottom: 8px;">
-            <span style="color: var(--hot); font-size: 0.8rem;">❌ 第 ${index + 1} 行格式有误，请确保包含 5个前区 + 2个后区号码</span>
+          <div class="checker-item ${prizeName ? 'win' : ''}" style="margin-bottom: 8px;">
+            <div class="checker-item-balls">
+              ${digits.map((n, j) => {
+                const isMatch = (prizeName === '直选' && n === frontTarget[j]) || (prizeName && frontTarget.includes(n));
+                return `<span class="checker-ball front ${isMatch ? 'match' : ''}">${n}</span>`;
+              }).join('')}
+            </div>
+            <div class="checker-item-verdict">
+              <span class="match-count">${prizeName ? '匹配成功' : '未中奖'}</span>
+              <span class="prize-result-badge ${prizeName ? 'win' : 'lose'}">
+                ${prizeName ? '恭喜中 ' + prizeName : '未中奖'}
+              </span>
+            </div>
           </div>
         `;
-        return;
-      }
+      } else {
+        if (!nums || nums.length < 7) {
+          html += `
+            <div class="checker-item" style="border-color: var(--hot); margin-bottom: 8px;">
+              <span style="color: var(--hot); font-size: 0.8rem;">❌ 第 ${index + 1} 行格式有误，请确保包含 5个前区 + 2个后区号码</span>
+            </div>
+          `;
+          return;
+        }
 
-      const front = nums.slice(0, 5).map(Number).sort((a, b) => a - b);
-      const back = nums.slice(5, 7).map(Number).sort((a, b) => a - b);
+        const front = nums.slice(0, 5).map(Number).sort((a, b) => a - b);
+        const back = nums.slice(5, 7).map(Number).sort((a, b) => a - b);
 
-      // 验证范围
-      const isFrontValid = front.every(n => n >= 1 && n <= 35);
-      const isBackValid = back.every(n => n >= 1 && n <= 12);
+        // 验证范围
+        const isFrontValid = front.every(n => n >= 1 && n <= 35);
+        const isBackValid = back.every(n => n >= 1 && n <= 12);
 
-      if (!isFrontValid || !isBackValid) {
+        if (!isFrontValid || !isBackValid) {
+          html += `
+            <div class="checker-item" style="border-color: var(--hot); margin-bottom: 8px;">
+              <span style="color: var(--hot); font-size: 0.8rem;">❌ 第 ${index + 1} 行号码范围超出限制 (前区1-35，后区1-12)</span>
+            </div>
+          `;
+          return;
+        }
+
+        const frontSet = new Set(front);
+        const backSet = new Set(back);
+        if (frontSet.size !== 5 || backSet.size !== 2) {
+          html += `
+            <div class="checker-item" style="border-color: var(--hot); margin-bottom: 8px;">
+              <span style="color: var(--hot); font-size: 0.8rem;">❌ 第 ${index + 1} 行包含重复号码，前区5个和后区2个号码均不能重复</span>
+            </div>
+          `;
+          return;
+        }
+
+        hasValidLines = true;
+
+        const matchedFront = front.filter(n => frontTarget.includes(n));
+        const matchedBack = back.filter(n => backTarget.includes(n));
+        const fCount = matchedFront.length;
+        const bCount = matchedBack.length;
+
+        const prizeName = getPrizeTierName(fCount, bCount);
+
         html += `
-          <div class="checker-item" style="border-color: var(--hot); margin-bottom: 8px;">
-            <span style="color: var(--hot); font-size: 0.8rem;">❌ 第 ${index + 1} 行号码范围超出限制 (前区1-35，后区1-12)</span>
+          <div class="checker-item ${prizeName ? 'win' : ''}" style="margin-bottom: 8px;">
+            <div class="checker-item-balls">
+              ${front.map(n => {
+                const isMatch = frontTarget.includes(n);
+                return `<span class="checker-ball front ${isMatch ? 'match' : ''}">${padNum(n)}</span>`;
+              }).join('')}
+              
+              <span class="checker-ball plus">+</span>
+              
+              ${back.map(n => {
+                const isMatch = backTarget.includes(n);
+                return `<span class="checker-ball back ${isMatch ? 'match' : ''}">${padNum(n)}</span>`;
+              }).join('')}
+            </div>
+            <div class="checker-item-verdict">
+              <span class="match-count">中 ${fCount} + ${bCount}</span>
+              <span class="prize-result-badge ${prizeName ? 'win' : 'lose'}">
+                ${prizeName ? '恭喜中 ' + prizeName : '未中奖'}
+              </span>
+            </div>
           </div>
         `;
-        return;
       }
-
-      // 检查前区和后区内是否有重复数字
-      const frontSet = new Set(front);
-      const backSet = new Set(back);
-      if (frontSet.size !== 5 || backSet.size !== 2) {
-        html += `
-          <div class="checker-item" style="border-color: var(--hot); margin-bottom: 8px;">
-            <span style="color: var(--hot); font-size: 0.8rem;">❌ 第 ${index + 1} 行包含重复号码，前区5个和后区2个号码均不能重复</span>
-          </div>
-        `;
-        return;
-      }
-
-      hasValidLines = true;
-
-      // 比对号码
-      const matchedFront = front.filter(n => frontTarget.includes(n));
-      const matchedBack = back.filter(n => backTarget.includes(n));
-      const fCount = matchedFront.length;
-      const bCount = matchedBack.length;
-
-      const prizeName = getPrizeTierName(fCount, bCount);
-
-      html += `
-        <div class="checker-item ${prizeName ? 'win' : ''}" style="margin-bottom: 8px;">
-          <div class="checker-item-balls">
-            ${front.map(n => {
-              const isMatch = frontTarget.includes(n);
-              return `<span class="checker-ball front ${isMatch ? 'match' : ''}">${padNum(n)}</span>`;
-            }).join('')}
-            
-            <span class="checker-ball plus">+</span>
-            
-            ${back.map(n => {
-              const isMatch = backTarget.includes(n);
-              return `<span class="checker-ball back ${isMatch ? 'match' : ''}">${padNum(n)}</span>`;
-            }).join('')}
-          </div>
-          <div class="checker-item-verdict">
-            <span class="match-count">中 ${fCount} + ${bCount}</span>
-            <span class="prize-result-badge ${prizeName ? 'win' : 'lose'}">
-              ${prizeName ? '恭喜中 ' + prizeName : '未中奖'}
-            </span>
-          </div>
-        </div>
-      `;
     });
 
     resultsContainer.innerHTML = html;
@@ -712,56 +826,95 @@
 
   function renderBacktestResults(results) {
     const container = document.getElementById('backtestResults');
+    const isPl3 = state.currentLottery === 'pl3';
     
-    container.innerHTML = `
-      <div class="backtest-summary">
-        <p>在最近 <strong>${results.totalTests}</strong> 期中进行回测验证：</p>
-        <div class="backtest-grid">
-          <div class="backtest-item">
-            <span class="bt-label">平均前区命中</span>
-            <span class="bt-value">${results.avgFrontMatch.toFixed(2)} / 5</span>
+    if (isPl3) {
+      container.innerHTML = `
+        <div class="backtest-summary">
+          <p>在最近 <strong>${results.totalTests}</strong> 期中进行位置命中回测验证：</p>
+          <div class="backtest-grid">
+            <div class="backtest-item">
+              <span class="bt-label">平均直选位置命中</span>
+              <span class="bt-value">${results.avgFrontMatch.toFixed(2)} / 3</span>
+            </div>
           </div>
-          <div class="backtest-item">
-            <span class="bt-label">平均后区命中</span>
-            <span class="bt-value">${results.avgBackMatch.toFixed(2)} / 2</span>
-          </div>
-        </div>
-        <div class="backtest-detail">
-          <h4>前区命中分布</h4>
-          <div class="backtest-bars">
-            ${Object.entries(results.matchStats)
-              .filter(([k]) => k.startsWith('front'))
-              .map(([k, v]) => {
-                const n = k.replace('front', '');
-                const pct = ((v / results.totalTests) * 100).toFixed(1);
-                return `<div class="bt-bar-row">
-                  <span class="bt-bar-label">命中 ${n} 个</span>
-                  <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%"></div></div>
-                  <span class="bt-bar-value">${v} 次 (${pct}%)</span>
-                </div>`;
-              }).join('')}
-          </div>
-          <h4>后区命中分布</h4>
-          <div class="backtest-bars">
-            ${Object.entries(results.matchStats)
-              .filter(([k]) => k.startsWith('back'))
-              .map(([k, v]) => {
-                const n = k.replace('back', '');
-                const pct = ((v / results.totalTests) * 100).toFixed(1);
-                return `<div class="bt-bar-row">
-                  <span class="bt-bar-label">命中 ${n} 个</span>
-                  <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%"></div></div>
-                  <span class="bt-bar-value">${v} 次 (${pct}%)</span>
-                </div>`;
-              }).join('')}
+          <div class="backtest-detail">
+            <h4>直选命中位置数分布</h4>
+            <div class="backtest-bars">
+              ${Object.entries(results.matchStats)
+                .filter(([k]) => k.startsWith('front'))
+                .map(([k, v]) => {
+                  const n = k.replace('front', '');
+                  const pct = ((v / results.totalTests) * 100).toFixed(1);
+                  return `<div class="bt-bar-row">
+                    <span class="bt-bar-label">精准命中 ${n} 位</span>
+                    <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%"></div></div>
+                    <span class="bt-bar-value">${v} 次 (${pct}%)</span>
+                  </div>`;
+                }).join('')}
+            </div>
           </div>
         </div>
-      </div>
-    `;
+      `;
+    } else {
+      container.innerHTML = `
+        <div class="backtest-summary">
+          <p>在最近 <strong>${results.totalTests}</strong> 期中进行回测验证：</p>
+          <div class="backtest-grid">
+            <div class="backtest-item">
+              <span class="bt-label">平均前区命中</span>
+              <span class="bt-value">${results.avgFrontMatch.toFixed(2)} / 5</span>
+            </div>
+            <div class="backtest-item">
+              <span class="bt-label">平均后区命中</span>
+              <span class="bt-value">${results.avgBackMatch.toFixed(2)} / 2</span>
+            </div>
+          </div>
+          <div class="backtest-detail">
+            <h4>前区命中分布</h4>
+            <div class="backtest-bars">
+              ${Object.entries(results.matchStats)
+                .filter(([k]) => k.startsWith('front'))
+                .map(([k, v]) => {
+                  const n = k.replace('front', '');
+                  const pct = ((v / results.totalTests) * 100).toFixed(1);
+                  return `<div class="bt-bar-row">
+                    <span class="bt-bar-label">命中 ${n} 个</span>
+                    <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%"></div></div>
+                    <span class="bt-bar-value">${v} 次 (${pct}%)</span>
+                  </div>`;
+                }).join('')}
+            </div>
+            <h4>后区命中分布</h4>
+            <div class="backtest-bars">
+              ${Object.entries(results.matchStats)
+                .filter(([k]) => k.startsWith('back'))
+                .map(([k, v]) => {
+                  const n = k.replace('back', '');
+                  const pct = ((v / results.totalTests) * 100).toFixed(1);
+                  return `<div class="bt-bar-row">
+                    <span class="bt-bar-label">命中 ${n} 个</span>
+                    <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%"></div></div>
+                    <span class="bt-bar-value">${v} 次 (${pct}%)</span>
+                  </div>`;
+                }).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+    }
   }
 
   // ==================== 事件绑定 ====================
   function bindEvents() {
+    // 顶级彩种切换
+    document.getElementById('lotterySelector').addEventListener('click', (e) => {
+      const tab = e.target.closest('.selector-tab');
+      if (!tab) return;
+      const lottery = tab.dataset.lottery;
+      switchLottery(lottery);
+    });
+
     // 导航标签切换
     document.getElementById('navTabs').addEventListener('click', (e) => {
       const tab = e.target.closest('.nav-tab');
@@ -883,13 +1036,103 @@
   }
 
   // ==================== 初始化 ====================
+  // ==================== 彩种智能切换 ====================
+  async function switchLottery(type) {
+    if (state.currentLottery === type) return;
+
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.style.display = 'flex';
+    overlay.classList.remove('fade-out');
+
+    state.currentLottery = type;
+
+    // 切换 active tabs
+    document.querySelectorAll('.selector-tab').forEach(t => {
+      if (t.dataset.lottery === type) t.classList.add('active');
+      else t.classList.remove('active');
+    });
+
+    const appEl = document.getElementById('app');
+    if (type === 'pl3') {
+      appEl.classList.remove('theme-dlt');
+      appEl.classList.add('theme-pl3');
+
+      document.getElementById('logoBallRed').textContent = '排';
+      document.getElementById('logoBallBlue').textContent = '三';
+      document.getElementById('logoTitle').textContent = '排列三';
+      document.getElementById('logoSubtitle').textContent = '位置概率分析与智能预测';
+      document.getElementById('rulesSubNote').textContent = '排列三直选、组三、组六中奖条件及奖金对照表';
+
+      document.querySelector('.stats-overview .stat-card:nth-child(1) .stat-label').textContent = '最热中奖号码';
+      document.querySelector('.stats-overview .stat-card:nth-child(2) .stat-label').textContent = '最冷中奖号码';
+
+      state.selectedTrendNumbers = [1, 3, 5];
+    } else {
+      appEl.classList.remove('theme-pl3');
+      appEl.classList.add('theme-dlt');
+
+      document.getElementById('logoBallRed').textContent = '乐';
+      document.getElementById('logoBallBlue').textContent = '透';
+      document.getElementById('logoTitle').textContent = '超级大乐透';
+      document.getElementById('logoSubtitle').textContent = '数据分析与智能预测';
+      document.getElementById('rulesSubNote').textContent = '超级大乐透中奖条件及奖金对照表';
+
+      document.querySelector('.stats-overview .stat-card:nth-child(1) .stat-label').textContent = '最热前区号码';
+      document.querySelector('.stats-overview .stat-card:nth-child(2) .stat-label').textContent = '最冷前区号码';
+
+      state.selectedTrendNumbers = [1, 5, 10];
+    }
+
+    state.searchKeyword = '';
+    state.yearFilter = '';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('yearFilter').value = '';
+
+    document.getElementById('historyBody').innerHTML = '';
+    document.getElementById('predictionsGrid').innerHTML = '';
+    document.getElementById('btnCopyAll').style.display = 'none';
+    document.getElementById('backtestSection').style.display = 'none';
+
+    const loaded = await loadData();
+
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.style.display = 'none', 500);
+
+    if (loaded) {
+      renderHome();
+      switchSection(state.currentSection);
+    }
+  }
+
+  // ==================== 排列三中奖比对算法 ====================
+  function checkPL3Winning(input, target) {
+    if (input[0] === target[0] && input[1] === target[1] && input[2] === target[2]) {
+      return { prize: '直选', fCount: 3, bCount: 0 };
+    }
+
+    const sInput = [...input].sort((a, b) => a - b);
+    const sTarget = [...target].sort((a, b) => a - b);
+
+    if (sInput[0] === sTarget[0] && sInput[1] === sTarget[1] && sInput[2] === sTarget[2]) {
+      const targetSet = new Set(target);
+      if (targetSet.size === 2) {
+        return { prize: '组三', fCount: 2, bCount: 1 };
+      } else if (targetSet.size === 3) {
+        return { prize: '组六', fCount: 3, bCount: 0 };
+      }
+    }
+
+    return { prize: null, fCount: 0, bCount: 0 };
+  }
+
+  // ==================== 初始化 ====================
   async function init() {
+    document.getElementById('app').classList.add('theme-dlt');
     initParticles();
     bindEvents();
     
     const loaded = await loadData();
     
-    // 隐藏加载遮罩
     const overlay = document.getElementById('loadingOverlay');
     overlay.classList.add('fade-out');
     setTimeout(() => overlay.style.display = 'none', 500);
@@ -907,10 +1150,10 @@
     hideWinningChecker,
     checkCustomNumbers,
     runBacktest,
-    switchSection
+    switchSection,
+    switchLottery
   };
 
-  // 启动
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

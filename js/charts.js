@@ -119,9 +119,11 @@
     const { ctx, w, h } = setup;
 
     const freqMap = zone === 'front' ? freqData.front : freqData.back;
-    const maxNum = zone === 'front' ? 35 : 12;
-    const minNum = 1;
-    const count = maxNum - minNum + 1;
+    const keys = Array.from(freqMap.keys()).map(Number).sort((a, b) => a - b);
+    if (keys.length === 0) return;
+    const minNum = keys[0];
+    const maxNum = keys[keys.length - 1];
+    const count = keys.length;
 
     // 获取频率值
     const values = [];
@@ -248,9 +250,11 @@
     const { ctx, w, h } = setup;
 
     const gapMap = zone === 'front' ? gapData.front : gapData.back;
-    const maxNum = zone === 'front' ? 35 : 12;
-    const minNum = 1;
-    const count = maxNum - minNum + 1;
+    const keys = Array.from(gapMap.keys()).map(Number).sort((a, b) => a - b);
+    if (keys.length === 0) return;
+    const minNum = keys[0];
+    const maxNum = keys[keys.length - 1];
+    const count = keys.length;
 
     // 获取数据
     const items = [];
