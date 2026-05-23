@@ -50,8 +50,8 @@ function parseDrawResult(item) {
     date: item.lotteryDrawTime ? item.lotteryDrawTime.split(' ')[0] : '',
     front: numbers.slice(0, 5),
     back: numbers.slice(5, 7),
-    sales: item.totalSaleAmount ? parseInt(item.totalSaleAmount) : null,
-    pool: item.poolBalanceAfterdraw ? parseInt(item.poolBalanceAfterdraw) : null
+    sales: item.totalSaleAmount ? parseInt(item.totalSaleAmount.replace(/,/g, '')) : null,
+    pool: item.poolBalanceAfterdraw ? parseInt(item.poolBalanceAfterdraw.replace(/,/g, '')) : null
   };
 }
 
@@ -89,7 +89,7 @@ async function scrapeAll() {
     
     // Fetch remaining pages
     for (pageNo = 2; pageNo <= totalPages; pageNo++) {
-      await sleep(1500); // Rate limiting
+      await sleep(300); // Rate limiting
       console.log(`📄 正在获取第 ${pageNo}/${totalPages} 页...`);
       
       const page = await fetchPage(pageNo);
