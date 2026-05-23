@@ -458,8 +458,38 @@
     
     renderPredictions(predictions);
     
-    // 显示回测区域
+    // 显示复制按钮与回测区域
+    document.getElementById('btnCopyAll').style.display = 'inline-flex';
     document.getElementById('backtestSection').style.display = 'block';
+  }
+
+  function copyAllPredictions() {
+    if (!state.predictions || state.predictions.length === 0) return;
+
+    // 格式化文本：每组号码一行。例如：09 10 20 33 35 + 04 11
+    const text = state.predictions.map(p => {
+      const frontStr = p.front.map(padNum).join(' ');
+      const backStr = p.back.map(padNum).join(' ');
+      return `${frontStr} + ${backStr}`;
+    }).join('\n');
+
+    navigator.clipboard.writeText(text).then(() => {
+      // 成功后的微交互反馈
+      const btn = document.getElementById('btnCopyAll');
+      const originalHTML = btn.innerHTML;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> 复制成功！`;
+      btn.style.borderColor = 'var(--accent)';
+      btn.style.color = 'var(--accent)';
+      
+      setTimeout(() => {
+        btn.innerHTML = originalHTML;
+        btn.style.borderColor = '';
+        btn.style.color = '';
+      }, 2000);
+    }).catch(err => {
+      console.error('复制失败:', err);
+      alert('复制失败，请手动选择复制');
+    });
   }
 
   function renderPredictions(predictions) {
@@ -700,6 +730,7 @@
   // 暴露全局接口
   window.App = {
     generatePredictions,
+    copyAllPredictions,
     runBacktest,
     switchSection
   };
