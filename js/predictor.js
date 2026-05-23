@@ -520,6 +520,56 @@
   }
 
   /**
+   * 检验前区号码是否符合历史概率的高频统计特征（和值、奇偶比、大小比、连号）
+   * @param {number[]} front - 选中的5个前区号码
+   * @returns {{ valid: boolean, sum: number, oddEven: string, bigSmall: string, pairs: number }}
+   */
+  function evaluateFrontCombination(front) {
+    const sorted = front.slice().sort((a, b) => a - b);
+    
+    // 1. 计算和值 (历史高频和值区间通常在 70-125 之间，占比超 80%)
+    const sum = sorted.reduce((a, b) => a + b, 0);
+    const isSumValid = sum >= 70 && sum <= 125;
+    
+    // 2. 奇偶比 (排除极端的 5:0 和 0:5)
+    const oddCount = sorted.filter(n => n % 2 === 1).length;
+    const evenCount = FRONT_COUNT - oddCount;
+    const isOddEvenValid = oddCount >= 1 && oddCount <= 4;
+    
+    // 3. 大小比 (1-17为小，18-35为大，排除极端的 5:0 和 0:5)
+    const bigCount = sorted.filter(n => n >= 18).length;
+    const smallCount = FRONT_COUNT - bigCount;
+    const isBigSmallValid = bigCount >= 1 && bigCount <= 4;
+    
+    // 4. 连号分析 (只允许单组或两组 2 连号，不允许 3 连号及以上)
+    let maxConsecutive = 1;
+    let currentConsecutive = 1;
+    let pairs = 0; // 连号组数
+    
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i] - sorted[i - 1] === 1) {
+        currentConsecutive++;
+        pairs++;
+      } else {
+        maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+        currentConsecutive = 1;
+      }
+    }
+    maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+    const isConsecutiveValid = maxConsecutive <= 2;
+    
+    const valid = isSumValid && isOddEvenValid && isBigSmallValid && isConsecutiveValid;
+    
+    return {
+      valid,
+      sum,
+      oddEven: `${oddCount}:${evenCount}`,
+      bigSmall: `${bigCount}:${smallCount}`,
+      pairs
+    };
+  }
+
+  /**
    * 生成单注预测号码
    * @param {Array} data - 开奖数据
    * @param {string} strategy - 策略：cold/hot/balanced/gap/random
@@ -532,8 +582,35 @@
 
     const { frontScores, backScores } = computeScores(data);
 
-    const front = selectByStrategy(frontScores, strategy, FRONT_COUNT);
-    const back = selectByStrategy(backScores, strategy, BACK_COUNT);
+    let front = [];
+    let back = [];
+    let evalResult = {};
+    let attempts = 0;
+    const maxAttempts = 100;
+
+    // 过滤与约束循环：寻找满足高概率统计学指标的号码组合
+    while (attempts < maxAttempts) {
+      front = selectByStrategy(frontScores, strategy, FRONT_COUNT);
+      evalResult = evaluateFrontCombination(front);
+      back = selectByStrategy(backScores, strategy, BACK_COUNT);
+
+      // 避免生成和最近 5 期完全一样的开奖号码
+      const hasRecentDuplicate = data.slice(0, 5).some(draw => 
+        draw.front.every(n => front.includes(n)) && draw.back.every(n => back.includes(n))
+      );
+
+      if (evalResult.valid && !hasRecentDuplicate) {
+        break;
+      }
+      attempts++;
+    }
+
+    // 保底机制：如果多次寻找未果，放宽条件生成
+    if (attempts >= maxAttempts) {
+      front = selectByStrategy(frontScores, strategy, FRONT_COUNT);
+      back = selectByStrategy(backScores, strategy, BACK_COUNT);
+      evalResult = evaluateFrontCombination(front);
+    }
 
     // 生成推荐理由
     const strategyNames = {
@@ -549,15 +626,19 @@
     const frontCold = front.filter(n => hotCold.front.cold.includes(n));
     const frontWarm = front.filter(n => hotCold.front.warm.includes(n));
 
+    // 生成专业指标卡
+    const sumLabel = evalResult.sum;
+    const sumVerdict = evalResult.sum >= 70 && evalResult.sum <= 125 ? '🎯 常规高频' : '⚠️ 偏离区间';
+    const consecLabel = evalResult.pairs > 0 ? `有 (${evalResult.pairs}组连号)` : '无 (散号组合)';
+
     const reasoning = [
-      `【${strategyNames[strategy] || strategy}】`,
-      `前区选号: ${front.join(', ')}`,
-      frontHot.length > 0 ? `  热号: ${frontHot.join(', ')}` : '',
-      frontCold.length > 0 ? `  冷号: ${frontCold.join(', ')}` : '',
-      frontWarm.length > 0 ? `  温号: ${frontWarm.join(', ')}` : '',
-      `后区选号: ${back.join(', ')}`,
-      `基于最近 ${Math.min(data.length, 300)} 期数据分析`
-    ].filter(Boolean).join('\n');
+      `【${strategyNames[strategy] || strategy} · 专业过滤】`,
+      `📊 奇偶比: ${evalResult.oddEven} | 大小比: ${evalResult.bigSmall}`,
+      `📐 前区和值: ${sumLabel} (${sumVerdict})`,
+      `🔗 连号状态: ${consecLabel}`,
+      `📈 冷热结构: ${frontHot.length}热 / ${frontWarm.length}温 / ${frontCold.length}冷`,
+      `💡 基于最近 ${Math.min(data.length, 300)} 期数据与概率约束过滤`
+    ].join('\n');
 
     return {
       front,
