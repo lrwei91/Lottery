@@ -137,7 +137,7 @@
 
   function renderRecentDraws() {
     const list = document.getElementById('recentDrawsList');
-    const recent = state.data.slice(1, 21); // 最近20期（排除最新一期）
+    const recent = state.data.slice(1, 11); // 最近10期（排除最新一期）
     
     list.innerHTML = recent.map(d => `
       <div class="draw-item">
