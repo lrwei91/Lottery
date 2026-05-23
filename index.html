@@ -82,21 +82,23 @@
             <!-- 动态生成球 -->
           </div>
         </div>
-        <div class="draw-extra">
-          <div class="extra-item">
-            <span class="extra-label">销售额</span>
-            <span class="extra-value" id="latestSales">--</span>
+        <div class="draw-meta-bar">
+          <div class="draw-extra">
+            <div class="extra-item">
+              <span class="extra-label">销售额</span>
+              <span class="extra-value" id="latestSales">--</span>
+            </div>
+            <div class="extra-item">
+              <span class="extra-label">奖池滚存</span>
+              <span class="extra-value" id="latestPool">--</span>
+            </div>
           </div>
-          <div class="extra-item">
-            <span class="extra-label">奖池滚存</span>
-            <span class="extra-value" id="latestPool">--</span>
+          <div class="draw-actions">
+            <button class="btn btn-secondary" id="btnCheckWinning" onclick="App.showWinningChecker()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              核对中奖号码
+            </button>
           </div>
-        </div>
-        <div class="draw-actions" style="margin-top: var(--space-md); display: flex; justify-content: center; border-top: 1px solid var(--card-border); padding-top: var(--space-md);">
-          <button class="btn btn-secondary" id="btnCheckWinning" onclick="App.showWinningChecker()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            核对中奖号码
-          </button>
         </div>
       </div>
 
