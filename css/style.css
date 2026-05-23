@@ -1455,7 +1455,29 @@ body {
   }
 
   .draw-result {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: var(--space-sm) var(--space-md);
     padding: var(--space-md) 0;
+    justify-content: start;
+  }
+
+  .draw-result .zone-label {
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: var(--text-muted);
+    min-width: 32px;
+  }
+
+  .draw-result .zone-divider {
+    display: none;
+  }
+
+  .draw-result .ball-row {
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 6px;
   }
 
   .draw-meta-bar {
@@ -1537,6 +1559,40 @@ body {
     flex-direction: column;
     align-items: flex-start;
     gap: var(--space-sm);
+  }
+
+  /* ========== Rules Table Mobile Overrides ========== */
+  .rules-table th,
+  .rules-table td {
+    padding: 8px 6px;
+    font-size: 0.75rem;
+  }
+
+  .prize-badge {
+    min-width: 52px;
+    padding: 2px 4px;
+    font-size: 0.68rem;
+  }
+
+  .mini-balls-row {
+    gap: 2px;
+    flex-wrap: wrap; /* 允许在小屏下折行 */
+    max-width: 140px;
+  }
+
+  .ball-dot {
+    width: 8px;
+    height: 8px;
+  }
+
+  .ball-dot.plus {
+    font-size: 0.65rem;
+  }
+
+  .ball-dot.text-muted {
+    font-size: 0.68rem;
+    white-space: normal; /* 允许文本小屏下折行 */
+    line-height: 1.3;
   }
 }
 
