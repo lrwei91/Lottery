@@ -528,6 +528,136 @@
     `).join('');
   }
 
+  // ==================== 号码比对模块 ====================
+  function showWinningChecker() {
+    const modal = document.getElementById('winningCheckerModal');
+    if (!modal) return;
+    
+    // 清空上次的数据与结果
+    document.getElementById('customNumbersInput').value = '';
+    const resultsContainer = document.getElementById('checkerResults');
+    resultsContainer.innerHTML = '';
+    resultsContainer.style.display = 'none';
+    
+    modal.style.display = 'flex';
+  }
+
+  function hideWinningChecker() {
+    const modal = document.getElementById('winningCheckerModal');
+    if (modal) {
+      modal.style.display = 'none';
+    }
+  }
+
+  function getPrizeTierName(fCount, bCount) {
+    if (fCount === 5 && bCount === 2) return '一等奖';
+    if (fCount === 5 && bCount === 1) return '二等奖';
+    if (fCount === 5 && bCount === 0) return '三等奖';
+    if (fCount === 4 && bCount === 2) return '四等奖';
+    if (fCount === 4 && bCount === 1) return '五等奖';
+    if (fCount === 3 && bCount === 2) return '六等奖';
+    if (fCount === 4 && bCount === 0) return '七等奖';
+    if (fCount === 3 && bCount === 1) return '八等奖';
+    if (fCount === 2 && bCount === 2) return '八等奖';
+    if (fCount === 3 && bCount === 0) return '九等奖';
+    if (fCount === 2 && bCount === 1) return '九等奖';
+    if (fCount === 1 && bCount === 2) return '九等奖';
+    if (fCount === 0 && bCount === 2) return '九等奖';
+    return null;
+  }
+
+  function checkCustomNumbers() {
+    const inputVal = document.getElementById('customNumbersInput').value.trim();
+    const resultsContainer = document.getElementById('checkerResults');
+    
+    if (!inputVal) {
+      alert('请输入要比对的号码');
+      return;
+    }
+
+    if (state.data.length === 0) {
+      alert('开奖数据尚未加载成功，请稍后再试');
+      return;
+    }
+
+    const latestDraw = state.data[0];
+    const frontTarget = latestDraw.front;
+    const backTarget = latestDraw.back;
+
+    const lines = inputVal.split('\n');
+    let html = '<h4>核对结果对比（对比最新第 ' + latestDraw.issue + ' 期）</h4>';
+    let hasValidLines = false;
+
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+
+      // 提取行中所有的数字
+      const nums = trimmed.match(/\d+/g);
+      if (!nums || nums.length < 7) {
+        html += `
+          <div class="checker-item" style="border-color: var(--hot); margin-bottom: 8px;">
+            <span style="color: var(--hot); font-size: 0.8rem;">❌ 第 ${index + 1} 行格式有误，请确保包含 5个前区 + 2个后区号码</span>
+          </div>
+        `;
+        return;
+      }
+
+      const front = nums.slice(0, 5).map(Number).sort((a, b) => a - b);
+      const back = nums.slice(5, 7).map(Number).sort((a, b) => a - b);
+
+      // 验证范围
+      const isFrontValid = front.every(n => n >= 1 && n <= 35);
+      const isBackValid = back.every(n => n >= 1 && n <= 12);
+
+      if (!isFrontValid || !isBackValid) {
+        html += `
+          <div class="checker-item" style="border-color: var(--hot); margin-bottom: 8px;">
+            <span style="color: var(--hot); font-size: 0.8rem;">❌ 第 ${index + 1} 行号码范围超出限制 (前区1-35，后区1-12)</span>
+          </div>
+        `;
+        return;
+      }
+
+      hasValidLines = true;
+
+      // 比对号码
+      const matchedFront = front.filter(n => frontTarget.includes(n));
+      const matchedBack = back.filter(n => backTarget.includes(n));
+      const fCount = matchedFront.length;
+      const bCount = matchedBack.length;
+
+      const prizeName = getPrizeTierName(fCount, bCount);
+
+      html += `
+        <div class="checker-item ${prizeName ? 'win' : ''}" style="margin-bottom: 8px;">
+          <div class="checker-item-balls">
+            ${front.map(n => {
+              const isMatch = frontTarget.includes(n);
+              return `<span class="checker-ball front ${isMatch ? 'match' : ''}">${padNum(n)}</span>`;
+            }).join('')}
+            
+            <span class="checker-ball plus">+</span>
+            
+            ${back.map(n => {
+              const isMatch = backTarget.includes(n);
+              return `<span class="checker-ball back ${isMatch ? 'match' : ''}">${padNum(n)}</span>`;
+            }).join('')}
+          </div>
+          <div class="checker-item-verdict">
+            <span class="match-count">中 ${fCount} + ${bCount}</span>
+            <span class="prize-result-badge ${prizeName ? 'win' : 'lose'}">
+              ${prizeName ? '恭喜中 ' + prizeName : '未中奖'}
+            </span>
+          </div>
+        </div>
+      `;
+    });
+
+    resultsContainer.innerHTML = html;
+    resultsContainer.style.display = 'flex';
+  }
+
   function runBacktest() {
     if (state.data.length < 100) {
       alert('数据量不足，需要至少 100 期数据进行回测');
@@ -731,6 +861,9 @@
   window.App = {
     generatePredictions,
     copyAllPredictions,
+    showWinningChecker,
+    hideWinningChecker,
+    checkCustomNumbers,
     runBacktest,
     switchSection
   };

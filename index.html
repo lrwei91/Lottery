@@ -92,6 +92,12 @@
             <span class="extra-value" id="latestPool">--</span>
           </div>
         </div>
+        <div class="draw-actions" style="margin-top: var(--space-md); display: flex; justify-content: center; border-top: 1px solid var(--card-border); padding-top: var(--space-md);">
+          <button class="btn btn-secondary" id="btnCheckWinning" onclick="App.showWinningChecker()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            核对中奖号码
+          </button>
+        </div>
       </div>
 
       <!-- 开奖倒计时 -->
@@ -519,6 +525,32 @@
         <p class="footer-small">数据来源：中国体育彩票 · 所有数据仅供参考，以官方公布为准</p>
       </div>
     </footer>
+  </div>
+
+  <!-- 号码核对模态框 -->
+  <div class="modal-overlay" id="winningCheckerModal" style="display: none;">
+    <div class="modal-card card">
+      <div class="modal-header">
+        <h3>🔍 奖项智能核对</h3>
+        <button class="modal-close" onclick="App.hideWinningChecker()">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">请输入您的号码组合，支持核对多组（每组一行）。可以直接粘贴“一键复制”的内容：</p>
+        <textarea id="customNumbersInput" placeholder="输入格式示例：
+09 10 20 33 35 + 04 11
+02 06 14 22 24 + 08 11" class="modal-textarea"></textarea>
+        
+        <div class="modal-actions">
+          <button class="btn btn-generate" onclick="App.checkCustomNumbers()">开始核对</button>
+          <button class="btn btn-secondary" onclick="App.hideWinningChecker()">取消</button>
+        </div>
+        
+        <!-- 核对结果区域 -->
+        <div class="checker-results" id="checkerResults" style="display: none;">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- 加载遮罩 -->
