@@ -2,8 +2,8 @@ name: Auto Update Lottery Data
 
 on:
   schedule:
-    # 每天北京时间 20:35 运行一次 (20:35 UTC+8 = 12:35 UTC)
-    - cron: '35 12 * * *'
+    # 每天北京时间 20:36 运行一次 (20:36 UTC+8 = 12:36 UTC)
+    - cron: '36 12 * * *'
   workflow_dispatch: # 支持手动触发
 
 permissions:
@@ -25,6 +25,7 @@ jobs:
       - name: Run Scraper
         run: |
           node scripts/scraper.js
+          node scripts/scraper_pl3.js
 
       - name: Commit and Push Changes
         run: |
@@ -34,11 +35,12 @@ jobs:
           # 检查数据是否发生了变更
           git status
           
-          if [ -n "$(git status --porcelain data/lottery_data.json)" ]; then
+          if [ -n "$(git status --porcelain data/)" ]; then
             echo "数据发生更新，正在提交并推送..."
-            git add data/lottery_data.json
+            git add data/
             git commit -m "Auto update lottery data: $(date +'%Y-%m-%d %H:%M:%S')"
             git push
           else
             echo "没有检测到数据变化，跳过提交。"
           fi
+
