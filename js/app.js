@@ -473,7 +473,7 @@
       return `${frontStr} + ${backStr}`;
     }).join('\n');
 
-    navigator.clipboard.writeText(text).then(() => {
+    const doFeedback = () => {
       // 成功后的微交互反馈
       const btn = document.getElementById('btnCopyAll');
       const originalHTML = btn.innerHTML;
@@ -486,10 +486,40 @@
         btn.style.borderColor = '';
         btn.style.color = '';
       }, 2000);
-    }).catch(err => {
-      console.error('复制失败:', err);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(doFeedback).catch(err => {
+        console.warn('Navigator clipboard failed, trying fallback:', err);
+        fallbackCopy(text, doFeedback);
+      });
+    } else {
+      fallbackCopy(text, doFeedback);
+    }
+  }
+
+  function fallbackCopy(text, callback) {
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.top = "0";
+      textArea.style.left = "0";
+      textArea.style.position = "fixed";
+      textArea.style.opacity = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      if (successful) {
+        callback();
+      } else {
+        throw new Error('execCommand copy unsuccessful');
+      }
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
       alert('复制失败，请手动选择复制');
-    });
+    }
   }
 
   function renderPredictions(predictions) {
@@ -614,6 +644,18 @@
         html += `
           <div class="checker-item" style="border-color: var(--hot); margin-bottom: 8px;">
             <span style="color: var(--hot); font-size: 0.8rem;">❌ 第 ${index + 1} 行号码范围超出限制 (前区1-35，后区1-12)</span>
+          </div>
+        `;
+        return;
+      }
+
+      // 检查前区和后区内是否有重复数字
+      const frontSet = new Set(front);
+      const backSet = new Set(back);
+      if (frontSet.size !== 5 || backSet.size !== 2) {
+        html += `
+          <div class="checker-item" style="border-color: var(--hot); margin-bottom: 8px;">
+            <span style="color: var(--hot); font-size: 0.8rem;">❌ 第 ${index + 1} 行包含重复号码，前区5个和后区2个号码均不能重复</span>
           </div>
         `;
         return;
