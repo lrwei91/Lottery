@@ -50,7 +50,7 @@
     try {
       const isPl3 = state.currentLottery === 'pl3';
       const filepath = isPl3 ? 'data/pl3_data.json' : 'data/lottery_data.json';
-      const res = await fetch(filepath);
+      const res = await fetch(filepath + '?t=' + Date.now(), { cache: 'no-cache' });
       if (!res.ok) throw new Error('数据文件加载失败');
       const json = await res.json();
       
