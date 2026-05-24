@@ -1,7 +1,19 @@
 {
-  "updateTime": "2026-05-23T13:43:04.402Z",
-  "total": 7608,
+  "updateTime": "2026-05-24T13:36:28.375Z",
+  "total": 7609,
   "data": [
+    {
+      "issue": "26134",
+      "date": "2026-05-24",
+      "front": [
+        5,
+        1,
+        5
+      ],
+      "back": [],
+      "sales": null,
+      "pool": null
+    },
     {
       "issue": "26133",
       "date": "2026-05-23",
