@@ -1,7 +1,7 @@
 {
   "updateTime": "2026-05-25T15:07:40.571Z",
   "total": 7610,
-  "source": "体彩官方副源",
+  "source": "\u4f53\u5f69\u5b98\u65b9\u526f\u6e90",
   "data": [
     {
       "issue": "26135",
@@ -24,7 +24,7 @@
         5
       ],
       "back": [],
-      "sales": null,
+      "sales": 38656728,
       "pool": null
     },
     {
@@ -36,7 +36,7 @@
         3
       ],
       "back": [],
-      "sales": null,
+      "sales": 38289672,
       "pool": null
     },
     {
