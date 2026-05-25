@@ -4,6 +4,8 @@
   "description": "体彩超级大乐透历史中奖号码展示与预测",
   "scripts": {
     "scrape": "node scripts/scraper.js",
+    "scrape:pl3": "node scripts/scraper_pl3.js",
+    "scrape:all": "node scripts/scraper.js && node scripts/scraper_pl3.js",
     "dev": "npx -y serve ."
   },
   "dependencies": {}

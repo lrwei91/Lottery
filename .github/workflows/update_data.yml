@@ -9,6 +9,8 @@ permissions:
 jobs:
   update-data:
     runs-on: ubuntu-latest
+    env:
+      JISU_API_KEY: ${{ secrets.JISU_API_KEY }}
 
     steps:
       - name: Checkout Code
@@ -41,4 +43,3 @@ jobs:
           else
             echo "没有检测到数据变化，跳过提交。"
           fi
-

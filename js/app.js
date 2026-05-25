@@ -495,41 +495,6 @@
     document.getElementById('backtestSection').style.display = 'block';
   }
 
-  function copyAllPredictions() {
-    if (!state.predictions || state.predictions.length === 0) return;
-
-    // 格式化文本：每组号码一行。例如：09 10 20 33 35 + 04 11
-    const text = state.predictions.map(p => {
-      const frontStr = p.front.map(padNum).join(' ');
-      const backStr = p.back.map(padNum).join(' ');
-      return `${frontStr} + ${backStr}`;
-    }).join('\n');
-
-    const doFeedback = () => {
-      // 成功后的微交互反馈
-      const btn = document.getElementById('btnCopyAll');
-      const originalHTML = btn.innerHTML;
-      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> 复制成功！`;
-      btn.style.borderColor = 'var(--accent)';
-      btn.style.color = 'var(--accent)';
-      
-      setTimeout(() => {
-        btn.innerHTML = originalHTML;
-        btn.style.borderColor = '';
-        btn.style.color = '';
-      }, 2000);
-    };
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(doFeedback).catch(err => {
-        console.warn('Navigator clipboard failed, trying fallback:', err);
-        fallbackCopy(text, doFeedback);
-      });
-    } else {
-      fallbackCopy(text, doFeedback);
-    }
-  }
-
   function fallbackCopy(text, callback) {
     try {
       const textArea = document.createElement("textarea");
@@ -814,19 +779,195 @@
     resultsContainer.style.display = 'flex';
   }
 
-  function runBacktest() {
+  async function runBacktest() {
     if (state.data.length < 100) {
       alert('数据量不足，需要至少 100 期数据进行回测');
       return;
     }
-    
-    const results = Predictor.backtestPrediction(state.data, 50);
-    renderBacktestResults(results);
+
+    const btn = document.getElementById('btnBacktest');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '多窗口回测中...';
+    document.getElementById('backtestResults').innerHTML = `
+      <div class="backtest-summary">
+        <p>正在进行 500/1000 期 × 5 seeds 滚动回测，请稍候...</p>
+      </div>
+    `;
+
+    await new Promise(resolve => setTimeout(resolve, 30));
+
+    try {
+      const results = Predictor.backtestSummaryReportAsync
+        ? await Predictor.backtestSummaryReportAsync(state.data, {
+            chunkSize: 10,
+            onProgress(progress) {
+              document.getElementById('backtestResults').innerHTML = `
+                <div class="backtest-summary">
+                  <p>正在进行 500/1000 期 × 5 seeds 滚动回测，已完成 ${progress.completed} / ${progress.total} 期 (${progress.percent}%)...</p>
+                </div>
+              `;
+            }
+          })
+        : Predictor.backtestSummaryReport(state.data);
+      renderBacktestResults(results);
+    } catch (error) {
+      console.error('回测失败:', error);
+      document.getElementById('backtestResults').innerHTML = `
+        <div class="backtest-summary">
+          <p>回测运行失败，请稍后重试。</p>
+        </div>
+      `;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+
+  function renderBacktestComparison(results, isPl3) {
+    if (!results.strategyStats && !results.baselineStats) return '';
+
+    const strategyLabels = {
+      cold: '冷号优先',
+      hot: '热号优先',
+      balanced: '均衡推荐',
+      gap: '遗漏回补',
+      random: '随机加权'
+    };
+    const baselineLabels = {
+      random: '纯随机基线',
+      constrainedRandom: '约束随机基线'
+    };
+    const denom = isPl3 ? 3 : 5;
+
+    function row(label, stat, type) {
+      if (!stat) return '';
+      const frontPct = Math.min(100, (stat.avgFrontMatch / denom) * 100).toFixed(1);
+      const value = isPl3
+        ? `${stat.avgFrontMatch.toFixed(3)} / 3`
+        : `${stat.avgFrontMatch.toFixed(3)} / 5 · ${stat.avgBackMatch.toFixed(3)} / 2`;
+      return `<div class="bt-bar-row ${type}">
+        <span class="bt-bar-label">${label}</span>
+        <div class="progress-bar"><div class="progress-fill" style="width: ${frontPct}%"></div></div>
+        <span class="bt-bar-value">${value}</span>
+      </div>`;
+    }
+
+    const strategyRows = Object.entries(results.strategyStats || {})
+      .map(([name, stat]) => row(strategyLabels[name] || name, stat, 'strategy'))
+      .join('');
+    const baselineRows = Object.entries(results.baselineStats || {})
+      .map(([name, stat]) => row(baselineLabels[name] || name, stat, 'baseline'))
+      .join('');
+
+    return `
+      <div class="backtest-detail">
+        <h4>策略与基线对比 <span class="bt-seed">seed ${results.seed || '-'}</span></h4>
+        <div class="backtest-bars">
+          ${strategyRows}
+          ${baselineRows}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderBacktestAggregateReport(report, isPl3) {
+    if (!report.windowReports || report.windowReports.length === 0) {
+      return `
+        <div class="backtest-summary">
+          <p>当前数据量不足，无法生成多窗口回测报告。</p>
+        </div>
+      `;
+    }
+
+    const strategyLabels = {
+      cold: '冷号优先',
+      hot: '热号优先',
+      balanced: '均衡推荐',
+      gap: '遗漏回补',
+      random: '随机加权'
+    };
+    const baselineLabels = {
+      random: '纯随机基线',
+      constrainedRandom: '约束随机基线'
+    };
+    const strategyOrder = ['cold', 'hot', 'balanced', 'gap', 'random'];
+    const baselineOrder = ['random', 'constrainedRandom'];
+    const denom = isPl3 ? 3 : 5;
+
+    function fmt(value) {
+      return Number(value || 0).toFixed(3);
+    }
+
+    function row(label, stat, type) {
+      if (!stat) return '';
+      const frontPct = Math.min(100, (stat.avgFrontMatch / denom) * 100).toFixed(1);
+      const range = isPl3
+        ? `范围 ${fmt(stat.frontMin)}-${fmt(stat.frontMax)}`
+        : `前区范围 ${fmt(stat.frontMin)}-${fmt(stat.frontMax)}，后区范围 ${fmt(stat.backMin)}-${fmt(stat.backMax)}`;
+      const value = isPl3
+        ? `${fmt(stat.avgFrontMatch)} ± ${fmt(stat.frontStd)} / 3`
+        : `前 ${fmt(stat.avgFrontMatch)} ± ${fmt(stat.frontStd)} / 5 · 后 ${fmt(stat.avgBackMatch)} ± ${fmt(stat.backStd)} / 2`;
+
+      return `<div class="bt-bar-row ${type}">
+        <span class="bt-bar-label">${label}</span>
+        <div class="progress-bar"><div class="progress-fill" style="width: ${frontPct}%"></div></div>
+        <span class="bt-bar-value" title="${range}">${value}</span>
+      </div>`;
+    }
+
+    const windowsText = report.windows.join(' / ');
+    const seedsText = report.seeds.join(', ');
+    const windowHtml = report.windowReports.map(windowReport => {
+      const strategyStats = windowReport.summary.strategyStats || {};
+      const baselineStats = windowReport.summary.baselineStats || {};
+      const strategyRows = strategyOrder
+        .map(name => row(strategyLabels[name] || name, strategyStats[name], 'strategy'))
+        .join('');
+      const baselineRows = baselineOrder
+        .map(name => row(baselineLabels[name] || name, baselineStats[name], 'baseline'))
+        .join('');
+
+      return `
+        <div class="backtest-detail">
+          <h4>${windowReport.window} 期窗口 <span class="bt-seed">${windowReport.seedCount} seeds</span></h4>
+          <div class="backtest-bars">
+            ${strategyRows}
+            ${baselineRows}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="backtest-summary">
+        <p>多 seed、多窗口汇总：窗口 <strong>${windowsText}</strong> 期，<strong>${report.seedCount}</strong> 个 seeds。</p>
+        <div class="backtest-grid">
+          <div class="backtest-item">
+            <span class="bt-label">回测窗口</span>
+            <span class="bt-value">${windowsText}</span>
+          </div>
+          <div class="backtest-item">
+            <span class="bt-label">随机种子</span>
+            <span class="bt-value">${report.seedCount}</span>
+          </div>
+        </div>
+        <p class="bt-seed-list">seeds: ${seedsText}</p>
+        ${windowHtml}
+      </div>
+    `;
   }
 
   function renderBacktestResults(results) {
     const container = document.getElementById('backtestResults');
     const isPl3 = state.currentLottery === 'pl3';
+
+    if (results && results.reportType === 'multiSeedWindow') {
+      container.innerHTML = renderBacktestAggregateReport(results, isPl3);
+      return;
+    }
+
+    const comparisonHtml = renderBacktestComparison(results, isPl3);
     
     if (isPl3) {
       container.innerHTML = `
@@ -838,6 +979,7 @@
               <span class="bt-value">${results.avgFrontMatch.toFixed(2)} / 3</span>
             </div>
           </div>
+          ${comparisonHtml}
           <div class="backtest-detail">
             <h4>直选命中位置数分布</h4>
             <div class="backtest-bars">
@@ -870,6 +1012,7 @@
               <span class="bt-value">${results.avgBackMatch.toFixed(2)} / 2</span>
             </div>
           </div>
+          ${comparisonHtml}
           <div class="backtest-detail">
             <h4>前区命中分布</h4>
             <div class="backtest-bars">

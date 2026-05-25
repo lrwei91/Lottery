@@ -48,6 +48,9 @@
       </div>
     </header>
 
+    <!-- 数据延迟提示 -->
+    <div class="data-lag-tip">数据可能存在数分钟延迟，请以中国体育彩票官方公布为准</div>
+
     <!-- 标签导航 -->
     <nav class="nav-tabs" id="navTabs">
       <button class="nav-tab active" data-section="home">
@@ -571,7 +574,7 @@
       <div class="backtest-section card" id="backtestSection" style="display: none;">
         <div class="card-header">
           <h2>📊 历史回测验证</h2>
-          <button class="btn btn-secondary" id="btnBacktest" onclick="App.runBacktest()">运行回测</button>
+          <button class="btn btn-secondary" id="btnBacktest" onclick="App.runBacktest()">运行 500/1000 期回测</button>
         </div>
         <div class="backtest-results" id="backtestResults">
           <!-- 动态生成 -->
