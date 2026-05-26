@@ -125,7 +125,7 @@
     const maxNum = keys[keys.length - 1];
     const count = keys.length;
 
-    // 获取频率值
+    // 获取频率值；频率分析使用时间衰减权重，图表展示统一取整，便于阅读。
     const values = [];
     for (let i = minNum; i <= maxNum; i++) {
       values.push(freqMap.get(i) || 0);
@@ -180,6 +180,7 @@
     // 绘制柱子
     for (let i = 0; i < count; i++) {
       const val = values[i];
+      const displayVal = Math.round(val);
       const x = padding.left + gap + i * (barW + gap);
       const barH = (val / maxVal) * plotH;
       const y = padding.top + plotH - barH;
@@ -225,7 +226,7 @@
         ctx.fillStyle = '#fff';
         ctx.font = '9px Inter, sans-serif';
         ctx.textBaseline = 'bottom';
-        ctx.fillText(val.toString(), x + barW / 2, y - 3);
+        ctx.fillText(displayVal.toString(), x + barW / 2, y - 3);
       }
     }
 

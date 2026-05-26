@@ -420,10 +420,45 @@
 
   function renderFrequencyStats() {
     const freq = Predictor.frequencyAnalysis(state.data);
+    renderFrequencySummary('freqFrontSummary', freq.front);
     Charts.drawFrequencyChart('chartFreqFront', freq, 'front');
     if (state.currentLottery !== 'pl3') {
+      renderFrequencySummary('freqBackSummary', freq.back);
       Charts.drawFrequencyChart('chartFreqBack', freq, 'back');
     }
+  }
+
+  function renderFrequencySummary(containerId, freqMap) {
+    const container = document.getElementById(containerId);
+    if (!container || !freqMap || freqMap.size === 0) return;
+
+    const entries = Array.from(freqMap.entries())
+      .map(([num, count]) => ({ num: Number(num), count: Number(count) || 0 }));
+    const sortedHigh = entries.slice().sort((a, b) => b.count - a.count || a.num - b.num);
+    const sortedLow = entries.slice().sort((a, b) => a.count - b.count || a.num - b.num);
+    const avg = entries.reduce((sum, item) => sum + item.count, 0) / entries.length;
+
+    function nums(items) {
+      return items.slice(0, 3).map(item => padNum(item.num)).join(' ');
+    }
+
+    container.innerHTML = `
+      <div class="frequency-chip hot">
+        <span>高频</span>
+        <strong>${nums(sortedHigh)}</strong>
+        <em>${Math.round(sortedHigh[0].count)}</em>
+      </div>
+      <div class="frequency-chip cold">
+        <span>低频</span>
+        <strong>${nums(sortedLow)}</strong>
+        <em>${Math.round(sortedLow[0].count)}</em>
+      </div>
+      <div class="frequency-chip avg">
+        <span>平均</span>
+        <strong>${Math.round(avg)}</strong>
+        <em>次</em>
+      </div>
+    `;
   }
 
   function renderHotColdStats() {
@@ -666,7 +701,7 @@
           <div class="history-record-head">
             <div>
               <h3>${record.type === 'pl3' ? '排列三' : '大乐透'} · ${formatRecordTime(record.createdAt)}</h3>
-              <p>基于第 ${record.baseIssue || '--'} 期生成，目标第 ${record.targetIssue} 期</p>
+              <p>使用截至第 ${record.baseIssue || '--'} 期的历史数据，预测第 ${record.targetIssue} 期</p>
             </div>
             <span class="history-status ${statusClass}">${statusText}</span>
           </div>

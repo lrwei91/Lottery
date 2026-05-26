@@ -889,6 +889,55 @@ body {
   display: block;
 }
 
+.frequency-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-sm);
+  margin: calc(-1 * var(--space-sm)) 0 var(--space-md);
+}
+
+.frequency-chip {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 42px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.035);
+  padding: 8px 10px;
+  font-size: 0.78rem;
+}
+
+.frequency-chip span {
+  color: var(--text-muted);
+}
+
+.frequency-chip strong {
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.frequency-chip em {
+  color: var(--text-secondary);
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.frequency-chip.hot {
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.frequency-chip.cold {
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.frequency-chip.avg {
+  border-color: rgba(0, 245, 212, 0.22);
+}
+
 /* ========== Chart Container ========== */
 .chart-container {
   position: relative;
@@ -1820,6 +1869,10 @@ body {
     min-width: 100%;
     text-align: left;
     white-space: normal;
+  }
+
+  .frequency-summary {
+    grid-template-columns: 1fr;
   }
 }
 
