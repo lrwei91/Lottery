@@ -40,6 +40,13 @@
   const DEFAULT_BACKTEST_PERIODS = 500;
   const DEFAULT_BACKTEST_WINDOWS = [500, 1000];
   const DEFAULT_BACKTEST_SEEDS = [20260525, 20260526, 20260527, 20260528, 20260529];
+  const BOLLINGER_CONFIG = {
+    analysisPeriods: 50,
+    hotNumberRatio: 0.7,
+    frontSumTolerance: 15,
+    backSumTolerance: 4,
+    stdMultiplier: 0.3
+  };
 
   function detectLotteryType(data) {
     if (!data || data.length === 0) return 'dlt';
@@ -121,6 +128,14 @@
       state = Math.imul(state ^ label.charCodeAt(i), 2654435761) >>> 0;
     }
     return state || 1;
+  }
+
+  function gaussianRandom(rng = Math.random) {
+    let u = 0;
+    let v = 0;
+    while (u === 0) u = rng();
+    while (v === 0) v = rng();
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
   }
 
   function getStrategyWeights(strategy) {
@@ -771,9 +786,129 @@
       context.exactDrawSet = buildExactDrawSet(data);
       context.frontConstraints = computeFrontConstraints(data);
       context.backConstraints = computeBackConstraints(data);
+      context.bollingerAnalysis = analyzeBollingerTrend(data);
     }
 
     return context;
+  }
+
+  function countNumbers(draws, getter, min, max) {
+    const counts = new Map();
+    for (let num = min; num <= max; num++) counts.set(num, 0);
+
+    for (const draw of draws) {
+      for (const num of getter(draw)) {
+        if (counts.has(num)) counts.set(num, counts.get(num) + 1);
+      }
+    }
+
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0] - b[0]);
+  }
+
+  function analyzeBollingerTrend(data, config = BOLLINGER_CONFIG) {
+    const recent = data.slice(0, Math.min(config.analysisPeriods, data.length));
+    const frontSums = recent.map(draw => draw.front.reduce((sum, num) => sum + num, 0));
+    const backSums = recent.map(draw => (draw.back || []).reduce((sum, num) => sum + num, 0));
+    const middles = frontSums.map((sum, idx) => (sum + backSums[idx]) / 2);
+
+    const avg = values => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
+    const frontAvg = avg(frontSums);
+    const backAvg = avg(backSums);
+    const lastFiveFront = frontSums.slice(0, Math.min(5, frontSums.length));
+    const lastFiveBack = backSums.slice(0, Math.min(5, backSums.length));
+    const latestFrontSum = lastFiveFront[0] || 0;
+    const latestBackSum = lastFiveBack[0] || 0;
+
+    return {
+      frontAvg,
+      frontStd: stdDev(frontSums),
+      backAvg,
+      backStd: stdDev(backSums),
+      middleAvg: avg(middles),
+      frontTrend: latestFrontSum > avg(lastFiveFront) ? '上升' : '下降',
+      backTrend: latestBackSum > avg(lastFiveBack) ? '上升' : '下降',
+      hotFront: countNumbers(recent, draw => draw.front, 1, 35).slice(0, 10).map(([num]) => num),
+      hotBack: countNumbers(recent, draw => draw.back || [], 1, 12).slice(0, 5).map(([num]) => num),
+      latestFrontSum,
+      latestBackSum,
+      totalPeriods: data.length,
+      analyzedPeriods: recent.length
+    };
+  }
+
+  function targetBollingerSum(avg, std, trend, min, max, config, rng) {
+    const direction = trend === '上升' ? 1 : -1;
+    const base = avg + direction * std * config.stdMultiplier;
+    const spread = Math.max(1, std * 0.5);
+    return Math.max(min, Math.min(max, base + gaussianRandom(rng) * spread));
+  }
+
+  function generateBollingerZoneNumbers(min, max, count, targetSum, hotNumbers, tolerance, config, rng) {
+    let selected = [];
+    const hotPool = hotNumbers.filter(num => num >= min && num <= max);
+    const maxAttempts = 1000;
+
+    for (let attempts = 0; attempts < maxAttempts; attempts++) {
+      const useHot = hotPool.length > 0 && rng() < config.hotNumberRatio;
+      const candidate = useHot
+        ? hotPool[Math.floor(rng() * hotPool.length)]
+        : Math.floor(rng() * (max - min + 1)) + min;
+
+      if (!selected.includes(candidate)) {
+        selected.push(candidate);
+      }
+
+      if (selected.length === count) {
+        if (Math.abs(selected.reduce((sum, num) => sum + num, 0) - targetSum) <= tolerance) {
+          return selected.sort((a, b) => a - b);
+        }
+        selected = [];
+      }
+    }
+
+    const items = range(min, max).map(num => ({
+      value: num,
+      weight: hotPool.includes(num) ? config.hotNumberRatio : (1 - config.hotNumberRatio)
+    }));
+    return weightedSample(items, count, rng);
+  }
+
+  function generateBollingerPrediction(data, context, rng) {
+    const config = BOLLINGER_CONFIG;
+    const analysis = context.bollingerAnalysis || analyzeBollingerTrend(data, config);
+    const targetFrontSum = targetBollingerSum(analysis.frontAvg, analysis.frontStd, analysis.frontTrend, 50, 140, config, rng);
+    const targetBackSum = targetBollingerSum(analysis.backAvg, analysis.backStd, analysis.backTrend, 5, 20, config, rng);
+
+    const front = generateBollingerZoneNumbers(
+      1,
+      35,
+      5,
+      targetFrontSum,
+      analysis.hotFront,
+      config.frontSumTolerance,
+      config,
+      rng
+    );
+    const back = generateBollingerZoneNumbers(
+      1,
+      12,
+      2,
+      targetBackSum,
+      analysis.hotBack,
+      config.backSumTolerance,
+      config,
+      rng
+    );
+
+    return {
+      front,
+      back,
+      analysis,
+      targets: {
+        frontSum: Math.round(targetFrontSum * 100) / 100,
+        backSum: Math.round(targetBackSum * 100) / 100
+      }
+    };
   }
 
   /**
@@ -1106,14 +1241,21 @@
     let back = [];
     let evalResult = {};
     let backEvalResult = {};
+    let bollingerResult = null;
     let attempts = 0;
     const maxAttempts = 500; // 断路器：为应对全量去重与复合过滤，上限提升至 500
 
     // 过滤与约束循环：寻找满足高阶指标且非历史一等奖的号码
     while (attempts < maxAttempts) {
-      front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng);
+      if (strategy === 'random') {
+        bollingerResult = generateBollingerPrediction(data, context, rng);
+        front = bollingerResult.front;
+        back = bollingerResult.back;
+      } else {
+        front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng);
+        back = selectByStrategy(backScores, strategy, BACK_COUNT, null, rng);
+      }
       evalResult = evaluateFrontCombination(front, frontConstraints);
-      back = selectByStrategy(backScores, strategy, BACK_COUNT, null, rng);
       backEvalResult = evaluateBackCombination(back, backConstraints);
 
       // 全库防重复校验：绝对不能和历史上任何一期的 5+2 开奖号完全相同
@@ -1127,8 +1269,14 @@
 
     // 保底机制
     if (attempts >= maxAttempts) {
-      front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng);
-      back = selectByStrategy(backScores, strategy, BACK_COUNT, null, rng);
+      if (strategy === 'random') {
+        bollingerResult = generateBollingerPrediction(data, context, rng);
+        front = bollingerResult.front;
+        back = bollingerResult.back;
+      } else {
+        front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng);
+        back = selectByStrategy(backScores, strategy, BACK_COUNT, null, rng);
+      }
       evalResult = evaluateFrontCombination(front, frontConstraints);
       backEvalResult = evaluateBackCombination(back, backConstraints);
     }
@@ -1138,7 +1286,7 @@
       hot: '热号优先',
       balanced: '均衡策略',
       gap: '遗漏追号',
-      random: '加权随机'
+      random: '布林线策略'
     };
 
     const hotCold = context.hotCold || hotColdAnalysis(data);
@@ -1151,15 +1299,24 @@
     const consecLabel = evalResult.pairs > 0 ? `有 (${evalResult.pairs}组连号)` : '无 (散号组合)';
     const tailLabel = evalResult.tailPairsCount > 0 ? `有 (${evalResult.tailPairsCount}组同尾)` : '无 (全异尾)';
     const backSumLabel = `和${backEvalResult.sum}(${backEvalResult.sumMin}-${backEvalResult.sumMax})/差${backEvalResult.diff}(${backEvalResult.diffMin}-${backEvalResult.diffMax})`;
+    const bollingerLines = [];
+    if (strategy === 'random' && bollingerResult) {
+      const analysis = bollingerResult.analysis;
+      bollingerLines.push(
+        `📉 布林趋势: 前区${analysis.frontTrend} / 后区${analysis.backTrend} | 目标和值: 前区${bollingerResult.targets.frontSum}, 后区${bollingerResult.targets.backSum}`,
+        `🔥 近${analysis.analyzedPeriods}期热号池: 前区${analysis.hotFront.join(' ')} | 后区${analysis.hotBack.join(' ')}`
+      );
+    }
 
     const reasoning = [
       `【${strategyNames[strategy] || strategy} · 统计约束模型】`,
+      ...bollingerLines,
       `📊 前区奇偶: ${evalResult.oddEven} | 大小: ${evalResult.bigSmall}`,
       `📐 前区和值: ${sumLabel} (${evalResult.sumMin}-${evalResult.sumMax} · ${sumVerdict}) | 🎯 后区高阶: ${backSumLabel}`,
       `🔗 连号状态: ${consecLabel} | 👯 同尾状态: ${tailLabel}`,
       `🧩 前区AC值: ${evalResult.ac} (🎯 ≥${evalResult.minAC}) | 🗺️ 覆盖 ${evalResult.zonesCovered} 个分区 (🎯 ≥${evalResult.minZonesCovered})`,
       `📈 冷热结构: ${frontHot.length}热 / ${frontWarm.length}温 / ${frontCold.length}冷`,
-      `💡 结合${strategy === 'balanced' ? '冷热分层抽样' : '伴生概率矩阵'}、近期时间衰减权重及全库去重生成 (计算碰撞: ${attempts}次)`
+      `💡 结合${strategy === 'random' ? '布林线和值约束与70%热号抽样' : strategy === 'balanced' ? '冷热分层抽样' : '伴生概率矩阵'}、近期时间衰减权重及全库去重生成 (计算碰撞: ${attempts}次)`
     ].join('\n');
 
     return {
@@ -1246,7 +1403,7 @@
       hot: '热号优先',
       balanced: '均衡推荐',
       gap: '遗漏回补',
-      random: '随机加权'
+      random: '布林线策略'
     };
 
     const reasoning = [

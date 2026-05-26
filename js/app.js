@@ -527,7 +527,7 @@
       hot: '🔥 热号优先',
       balanced: '⚖️ 均衡推荐',
       gap: '📊 遗漏回补',
-      random: '🎲 随机加权'
+      random: '📉 布林线策略'
     };
 
     const isPl3 = state.currentLottery === 'pl3';
@@ -832,7 +832,7 @@
       hot: '热号优先',
       balanced: '均衡推荐',
       gap: '遗漏回补',
-      random: '随机加权'
+      random: '布林线策略'
     };
     const baselineLabels = {
       random: '纯随机基线',
@@ -885,7 +885,7 @@
       hot: '热号优先',
       balanced: '均衡推荐',
       gap: '遗漏回补',
-      random: '随机加权'
+      random: '布林线策略'
     };
     const baselineLabels = {
       random: '纯随机基线',
