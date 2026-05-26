@@ -90,6 +90,22 @@ function saveRecords(outputFile, records, sourceName) {
   fs.writeFileSync(outputFile, JSON.stringify(output, null, 2), 'utf8');
 }
 
+function validateRecord(record, expectedFrontCount, expectedBackCount) {
+  if (!record || !record.issue) {
+    throw new Error('记录缺少期号');
+  }
+  if (!Array.isArray(record.front) || record.front.length !== expectedFrontCount) {
+    throw new Error(`第 ${record.issue} 期前区数量异常: ${JSON.stringify(record.front)}`);
+  }
+  if (!Array.isArray(record.back) || record.back.length !== expectedBackCount) {
+    throw new Error(`第 ${record.issue} 期后区数量异常: ${JSON.stringify(record.back)}`);
+  }
+  if ([...record.front, ...record.back].some(num => !Number.isFinite(num))) {
+    throw new Error(`第 ${record.issue} 期号码包含非数字: ${JSON.stringify(record)}`);
+  }
+  return record;
+}
+
 function mergeRecords(newRecords, localRecords) {
   const uniqueMap = new Map();
   [...newRecords, ...localRecords].forEach(item => {
@@ -99,7 +115,7 @@ function mergeRecords(newRecords, localRecords) {
 }
 
 function createOfficialSource(config) {
-  const { name, officialGameNo, officialPageSize, parseOfficialItem } = config;
+  const { name, officialGameNo, officialPageSize, parseOfficialItem, expectedFrontCount, expectedBackCount } = config;
 
   return {
     name,
@@ -154,7 +170,7 @@ function createOfficialSource(config) {
 
         let pageNewCount = 0;
         for (const item of pageData.value.list) {
-          const parsed = parseOfficialItem(item);
+          const parsed = validateRecord(parseOfficialItem(item), expectedFrontCount, expectedBackCount);
           const issueNum = parseInt(parsed.issue, 10);
           if (issueNum > latestLocalIssue) {
             records.push(parsed);
@@ -177,7 +193,7 @@ function createOfficialSource(config) {
 }
 
 function createJisuSource(config) {
-  const { name, jisuCaipiaoId, parseJisuItem } = config;
+  const { name, jisuCaipiaoId, parseJisuItem, expectedFrontCount, expectedBackCount } = config;
   const appKey = process.env.JISU_API_KEY || process.env.JISU_APPKEY || '';
   const pageSize = 20;
 
@@ -241,7 +257,7 @@ function createJisuSource(config) {
 
         let batchNewCount = 0;
         for (const item of batchList) {
-          const parsed = parseJisuItem(item);
+          const parsed = validateRecord(parseJisuItem(item), expectedFrontCount, expectedBackCount);
           const issueNum = parseInt(parsed.issue, 10);
           if (issueNum > latestLocalIssue) {
             records.push(parsed);
@@ -301,6 +317,10 @@ async function runDualSourceScrape(config) {
       }
 
       const finalSortedRecords = mergeRecords(records, localRecords);
+      if (process.env.DRY_RUN === '1') {
+        console.log(`\n🧪 DRY_RUN=1：已验证可追补 ${records.length} 期，未写入 ${outputFile}。`);
+        return;
+      }
       saveRecords(outputFile, finalSortedRecords, source.name);
 
       console.log(`\n🎉 数据追补成功！本次共自动同步了 ${records.length} 期新数据。`);
@@ -324,5 +344,6 @@ async function runDualSourceScrape(config) {
 module.exports = {
   createJisuSource,
   createOfficialSource,
-  runDualSourceScrape
+  runDualSourceScrape,
+  validateRecord
 };

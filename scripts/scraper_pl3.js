@@ -43,12 +43,16 @@ runDualSourceScrape({
   primarySource: createJisuSource({
     name: 'JisuAPI 主源',
     jisuCaipiaoId: 16,
-    parseJisuItem
+    parseJisuItem,
+    expectedFrontCount: 3,
+    expectedBackCount: 0
   }),
   secondarySource: createOfficialSource({
     name: '体彩官方副源',
     officialGameNo: '35',
     officialPageSize: 100,
-    parseOfficialItem
+    parseOfficialItem,
+    expectedFrontCount: 3,
+    expectedBackCount: 0
   })
 });

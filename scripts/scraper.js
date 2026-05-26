@@ -27,7 +27,10 @@ function parseOfficialItem(item) {
 
 function parseJisuItem(item) {
   const front = String(item.number || '').trim().split(/\s+/).filter(Boolean).map(Number);
-  const back = String(item.refernumber || '').trim().split(/\s+/).filter(Boolean).map(Number);
+  let back = String(item.refernumber || '').trim().split(/\s+/).filter(Boolean).map(Number);
+  if (back.length === 0 && front.length >= 7) {
+    back = front.slice(5, 7);
+  }
   return {
     issue: item.issueno,
     date: item.opendate || '',
@@ -44,12 +47,16 @@ runDualSourceScrape({
   primarySource: createJisuSource({
     name: 'JisuAPI 主源',
     jisuCaipiaoId: 14,
-    parseJisuItem
+    parseJisuItem,
+    expectedFrontCount: 5,
+    expectedBackCount: 2
   }),
   secondarySource: createOfficialSource({
     name: '体彩官方副源',
     officialGameNo: '85',
     officialPageSize: 100,
-    parseOfficialItem
+    parseOfficialItem,
+    expectedFrontCount: 5,
+    expectedBackCount: 2
   })
 });

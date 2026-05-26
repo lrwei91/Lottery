@@ -66,6 +66,7 @@ Lottery/
    npm run scrape:all
    ```
    如需优先走第三方主源，请先配置 `JISU_API_KEY`。
+   验证抓取但不写入数据文件时，可使用 `DRY_RUN=1 npm run scrape:all`。
 
 ---
 
