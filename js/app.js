@@ -19,8 +19,11 @@
     yearFilter: '',
     filteredData: [],
     selectedTrendNumbers: [1, 5, 10],
-    predictions: []
+    predictions: [],
+    predictionRecords: []
   };
+
+  const PREDICTION_HISTORY_LIMIT = 20;
 
   // ==================== 工具函数 ====================
   function formatMoney(num) {
@@ -32,6 +35,38 @@
 
   function padNum(n) {
     return n < 10 ? '0' + n : '' + n;
+  }
+
+  function getPredictionStorageKey(type = state.currentLottery) {
+    return `ticai_prediction_records_v1_${type}`;
+  }
+
+  function loadPredictionRecords() {
+    try {
+      const raw = localStorage.getItem(getPredictionStorageKey());
+      const parsed = raw ? JSON.parse(raw) : [];
+      state.predictionRecords = Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.warn('预测记录读取失败:', error);
+      state.predictionRecords = [];
+    }
+  }
+
+  function persistPredictionRecords() {
+    try {
+      localStorage.setItem(
+        getPredictionStorageKey(),
+        JSON.stringify(state.predictionRecords.slice(0, PREDICTION_HISTORY_LIMIT))
+      );
+    } catch (error) {
+      console.warn('预测记录保存失败:', error);
+    }
+  }
+
+  function inferNextIssue(issue) {
+    const raw = String(issue || '');
+    if (!/^\d+$/.test(raw)) return '下一期';
+    return String(Number(raw) + 1).padStart(raw.length, '0');
   }
 
   function createBall(num, zone) {
@@ -487,12 +522,167 @@
     
     const predictions = Predictor.generateMultiplePredictions(state.data, 5);
     state.predictions = predictions;
+    savePredictionRecord(predictions);
     
     renderPredictions(predictions);
+    renderPredictionHistory();
     
     // 显示复制按钮与回测区域
     document.getElementById('btnCopyAll').style.display = 'inline-flex';
     document.getElementById('backtestSection').style.display = 'block';
+  }
+
+  function savePredictionRecord(predictions) {
+    const latestDraw = state.data[0] || {};
+    const record = {
+      id: `${state.currentLottery}-${Date.now()}`,
+      type: state.currentLottery,
+      createdAt: new Date().toISOString(),
+      baseIssue: latestDraw.issue || '',
+      targetIssue: inferNextIssue(latestDraw.issue),
+      predictions: predictions.map(prediction => ({
+        strategy: prediction.strategy,
+        front: prediction.front,
+        back: prediction.back || [],
+        reasoning: prediction.reasoning || ''
+      }))
+    };
+
+    state.predictionRecords = [record, ...state.predictionRecords].slice(0, PREDICTION_HISTORY_LIMIT);
+    persistPredictionRecords();
+  }
+
+  function formatRecordTime(iso) {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return '--';
+    return date.toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  function evaluatePrediction(prediction, draw, isPl3) {
+    if (!draw) return null;
+
+    if (isPl3) {
+      const result = checkPL3Winning(prediction.front, draw.front);
+      return {
+        frontMatches: result.fCount,
+        backMatches: 0,
+        prize: result.prize,
+        matchedFront: prediction.front.filter((n, index) => {
+          if (result.prize === '直选') return n === draw.front[index];
+          return result.prize && draw.front.includes(n);
+        }),
+        matchedBack: []
+      };
+    }
+
+    const matchedFront = prediction.front.filter(n => draw.front.includes(n));
+    const matchedBack = prediction.back.filter(n => draw.back.includes(n));
+    const prize = getPrizeTierName(matchedFront.length, matchedBack.length);
+    return {
+      frontMatches: matchedFront.length,
+      backMatches: matchedBack.length,
+      prize,
+      matchedFront,
+      matchedBack
+    };
+  }
+
+  function resolveReviewDraw(record) {
+    if (!state.data.length) return null;
+    const exact = state.data.find(draw => String(draw.issue) === String(record.targetIssue));
+    if (exact) return exact;
+    const latest = state.data[0];
+    if (record.baseIssue && String(latest.issue) !== String(record.baseIssue)) {
+      return latest;
+    }
+    return null;
+  }
+
+  function renderMiniBalls(numbers, zone, matched = []) {
+    return numbers.map(num => {
+      const isMatch = matched.includes(num);
+      return `<span class="history-ball ${zone} ${isMatch ? 'match' : ''}">${padNum(num)}</span>`;
+    }).join('');
+  }
+
+  function renderPredictionHistory() {
+    const section = document.getElementById('predictionHistorySection');
+    const list = document.getElementById('predictionHistoryList');
+    if (!section || !list) return;
+
+    if (!state.predictionRecords.length) {
+      section.style.display = 'none';
+      list.innerHTML = '';
+      return;
+    }
+
+    const isPl3 = state.currentLottery === 'pl3';
+    const strategyLabels = {
+      cold: '冷号优先',
+      hot: '热号优先',
+      balanced: '均衡推荐',
+      gap: '遗漏回补',
+      random: '布林线策略'
+    };
+
+    section.style.display = 'block';
+    list.innerHTML = state.predictionRecords.map(record => {
+      const reviewDraw = resolveReviewDraw(record);
+      const statusText = reviewDraw
+        ? `已按第 ${reviewDraw.issue} 期复盘`
+        : `等待第 ${record.targetIssue} 期开奖`;
+      const statusClass = reviewDraw ? 'reviewed' : 'pending';
+
+      const tickets = record.predictions.map((prediction, index) => {
+        const evaluation = evaluatePrediction(prediction, reviewDraw, isPl3);
+        const resultText = !evaluation
+          ? '待开奖'
+          : isPl3
+            ? (evaluation.prize ? `命中 ${evaluation.prize}` : `位置命中 ${evaluation.frontMatches}/3`)
+            : `${evaluation.frontMatches}+${evaluation.backMatches}${evaluation.prize ? ' · ' + evaluation.prize : ''}`;
+
+        return `
+          <div class="prediction-history-ticket">
+            <div class="history-ticket-meta">
+              <span>${index + 1}. ${strategyLabels[prediction.strategy] || prediction.strategy}</span>
+              <strong class="${evaluation && evaluation.prize ? 'win' : ''}">${resultText}</strong>
+            </div>
+            <div class="history-ticket-balls">
+              ${renderMiniBalls(prediction.front, 'front', evaluation ? evaluation.matchedFront : [])}
+              ${isPl3 ? '' : '<span class="history-plus">+</span>'}
+              ${isPl3 ? '' : renderMiniBalls(prediction.back, 'back', evaluation ? evaluation.matchedBack : [])}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <article class="prediction-history-item">
+          <div class="history-record-head">
+            <div>
+              <h3>${record.type === 'pl3' ? '排列三' : '大乐透'} · ${formatRecordTime(record.createdAt)}</h3>
+              <p>基于第 ${record.baseIssue || '--'} 期生成，目标第 ${record.targetIssue} 期</p>
+            </div>
+            <span class="history-status ${statusClass}">${statusText}</span>
+          </div>
+          <div class="prediction-history-tickets">
+            ${tickets}
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  function clearPredictionHistory() {
+    if (!state.predictionRecords.length) return;
+    state.predictionRecords = [];
+    persistPredictionRecords();
+    renderPredictionHistory();
   }
 
   function fallbackCopy(text, callback) {
@@ -1237,6 +1427,8 @@
     document.getElementById('backtestSection').style.display = 'none';
 
     const loaded = await loadData();
+    loadPredictionRecords();
+    renderPredictionHistory();
 
     overlay.classList.add('fade-out');
     setTimeout(() => overlay.style.display = 'none', 500);
@@ -1275,6 +1467,8 @@
     bindEvents();
     
     const loaded = await loadData();
+    loadPredictionRecords();
+    renderPredictionHistory();
     
     const overlay = document.getElementById('loadingOverlay');
     overlay.classList.add('fade-out');
@@ -1289,6 +1483,7 @@
   window.App = {
     generatePredictions,
     copyAllPredictions,
+    clearPredictionHistory,
     showWinningChecker,
     hideWinningChecker,
     checkCustomNumbers,

@@ -568,6 +568,22 @@
         <!-- 动态生成 -->
       </div>
 
+      <!-- 预测记录 -->
+      <div class="prediction-history card" id="predictionHistorySection" style="display: none;">
+        <div class="card-header">
+          <div>
+            <h2>🧾 预测记录与复盘</h2>
+            <p class="predict-desc">自动保存最近生成记录，开奖数据更新后按最新开奖号回填命中情况</p>
+          </div>
+          <button class="btn btn-secondary" id="btnClearPredictionHistory" onclick="App.clearPredictionHistory()">
+            清空记录
+          </button>
+        </div>
+        <div class="prediction-history-list" id="predictionHistoryList">
+          <!-- 动态生成 -->
+        </div>
+      </div>
+
       <!-- 回测结果 -->
       <div class="backtest-section card" id="backtestSection" style="display: none;">
         <div class="card-header">

@@ -1153,6 +1153,127 @@ body {
   height: 8px;
 }
 
+.prediction-history {
+  margin-bottom: var(--space-lg);
+}
+
+.prediction-history-list {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.prediction-history-item {
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.035);
+  padding: var(--space-md);
+}
+
+.history-record-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.history-record-head h3 {
+  font-size: 0.95rem;
+  margin-bottom: 2px;
+}
+
+.history-record-head p {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.history-status {
+  flex: 0 0 auto;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+}
+
+.history-status.reviewed {
+  border-color: rgba(16, 185, 129, 0.35);
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.prediction-history-tickets {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-sm);
+}
+
+.prediction-history-ticket {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  background: rgba(10, 14, 26, 0.36);
+  padding: var(--space-sm);
+}
+
+.history-ticket-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+}
+
+.history-ticket-meta strong {
+  color: var(--text-primary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.history-ticket-meta strong.win {
+  color: var(--success);
+}
+
+.history-ticket-balls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: nowrap;
+}
+
+.history-ball {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-full);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-ball);
+}
+
+.history-ball.front {
+  background: linear-gradient(135deg, var(--front-start), var(--front-end));
+}
+
+.history-ball.back {
+  background: linear-gradient(135deg, var(--back-start), var(--back-end));
+}
+
+.history-ball.match {
+  outline: 2px solid var(--success);
+  outline-offset: 2px;
+}
+
+.history-plus {
+  color: var(--text-muted);
+  font-weight: 700;
+  margin: 0 2px;
+}
+
 /* ========== Buttons ========== */
 .btn {
   display: inline-flex;
@@ -1580,6 +1701,15 @@ body {
     grid-template-columns: 1fr;
   }
 
+  .history-record-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-status {
+    width: fit-content;
+  }
+
   .search-bar {
     flex-direction: column;
     width: 100%;
@@ -1742,6 +1872,16 @@ body {
 
   .pred-zone {
     gap: var(--space-xs);
+  }
+
+  .prediction-history-tickets {
+    grid-template-columns: 1fr;
+  }
+
+  .history-ball {
+    width: 24px;
+    height: 24px;
+    font-size: 0.68rem;
   }
 }
 
