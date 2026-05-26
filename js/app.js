@@ -703,7 +703,12 @@
               <h3>${record.type === 'pl3' ? '排列三' : '大乐透'} · ${formatRecordTime(record.createdAt)}</h3>
               <p>使用截至第 ${record.baseIssue || '--'} 期的历史数据，预测第 ${record.targetIssue} 期</p>
             </div>
-            <span class="history-status ${statusClass}">${statusText}</span>
+            <div class="history-record-actions">
+              <span class="history-status ${statusClass}">${statusText}</span>
+              <button class="history-copy-btn" data-copy-record-id="${record.id}" onclick="App.copyPredictionRecord('${record.id}')">
+                复制本轮
+              </button>
+            </div>
           </div>
           <div class="prediction-history-tickets">
             ${tickets}
@@ -718,6 +723,15 @@
     state.predictionRecords = [];
     persistPredictionRecords();
     renderPredictionHistory();
+  }
+
+  function formatPredictionLines(predictions, isPl3) {
+    return predictions.map(p => {
+      const frontStr = p.front.map(padNum).join(' ');
+      if (isPl3) return frontStr;
+      const backStr = (p.back || []).map(padNum).join(' ');
+      return `${frontStr} + ${backStr}`;
+    }).join('\n');
   }
 
   function fallbackCopy(text, callback) {
@@ -788,12 +802,7 @@
     if (!state.predictions || state.predictions.length === 0) return;
 
     const isPl3 = state.currentLottery === 'pl3';
-    const text = state.predictions.map(p => {
-      const frontStr = p.front.map(padNum).join(' ');
-      if (isPl3) return frontStr;
-      const backStr = p.back.map(padNum).join(' ');
-      return `${frontStr} + ${backStr}`;
-    }).join('\n');
+    const text = formatPredictionLines(state.predictions, isPl3);
 
     const doFeedback = () => {
       const btn = document.getElementById('btnCopyAll');
@@ -807,6 +816,35 @@
         btn.style.borderColor = '';
         btn.style.color = '';
       }, 2000);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(doFeedback).catch(err => {
+        console.warn('Navigator clipboard failed, trying fallback:', err);
+        fallbackCopy(text, doFeedback);
+      });
+    } else {
+      fallbackCopy(text, doFeedback);
+    }
+  }
+
+  function copyPredictionRecord(recordId) {
+    const record = state.predictionRecords.find(item => item.id === recordId);
+    if (!record) return;
+
+    const text = formatPredictionLines(record.predictions, record.type === 'pl3');
+    const btn = document.querySelector(`[data-copy-record-id="${recordId}"]`);
+
+    const doFeedback = () => {
+      if (!btn) return;
+      const originalText = btn.textContent;
+      btn.textContent = '已复制';
+      btn.classList.add('copied');
+
+      setTimeout(() => {
+        btn.textContent = originalText;
+        btn.classList.remove('copied');
+      }, 1600);
     };
 
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -1518,6 +1556,7 @@
   window.App = {
     generatePredictions,
     copyAllPredictions,
+    copyPredictionRecord,
     clearPredictionHistory,
     showWinningChecker,
     hideWinningChecker,

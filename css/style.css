@@ -1251,6 +1251,35 @@ body {
   background: rgba(16, 185, 129, 0.08);
 }
 
+.history-record-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-sm);
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.history-copy-btn {
+  min-height: 28px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+  padding: 4px 9px;
+  transition: all var(--transition-fast);
+}
+
+.history-copy-btn:hover,
+.history-copy-btn.copied {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
 .prediction-history-tickets {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -1757,6 +1786,10 @@ body {
 
   .history-status {
     width: fit-content;
+  }
+
+  .history-record-actions {
+    justify-content: flex-start;
   }
 
   .search-bar {
