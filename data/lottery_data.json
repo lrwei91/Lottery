@@ -1,8 +1,25 @@
 {
-  "updateTime": "2026-05-25T15:07:38.102Z",
-  "total": 2875,
-  "source": "\u4f53\u5f69\u5b98\u65b9\u526f\u6e90",
+  "updateTime": "2026-05-27T13:48:41.359Z",
+  "total": 2876,
+  "source": "JisuAPI 主源",
   "data": [
+    {
+      "issue": "26058",
+      "date": "2026-05-27",
+      "front": [
+        7,
+        12,
+        13,
+        18,
+        34
+      ],
+      "back": [
+        1,
+        5
+      ],
+      "sales": null,
+      "pool": 0
+    },
     {
       "issue": "26057",
       "date": "2026-05-25",
