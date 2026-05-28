@@ -868,7 +868,7 @@
       latestFrontSum,
       latestBackSum,
       totalPeriods: end,
-      analyzedPeriods: recent.length
+      analyzedPeriods: end
     };
   }
 
