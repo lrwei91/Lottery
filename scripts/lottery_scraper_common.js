@@ -100,7 +100,7 @@ function validateRecord(record, expectedFrontCount, expectedBackCount) {
   if (expectedBackCount > 0 && (!Array.isArray(record.back) || record.back.length !== expectedBackCount)) {
     throw new Error(`第 ${record.issue} 期后区数量异常: ${JSON.stringify(record.back)}`);
   }
-  if ([...record.front, ...record.back].some(num => !Number.isFinite(num))) {
+  if ([...record.front, ...(record.back || [])].some(num => !Number.isFinite(num))) {
     throw new Error(`第 ${record.issue} 期号码包含非数字: ${JSON.stringify(record)}`);
   }
   return record;
@@ -108,7 +108,8 @@ function validateRecord(record, expectedFrontCount, expectedBackCount) {
 
 function mergeRecords(newRecords, localRecords) {
   const uniqueMap = new Map();
-  [...newRecords, ...localRecords].forEach(item => {
+  // localRecords first, then newRecords override (new data wins)
+  [...localRecords, ...newRecords].forEach(item => {
     uniqueMap.set(item.issue, item);
   });
   return [...uniqueMap.values()].sort((a, b) => parseInt(b.issue, 10) - parseInt(a.issue, 10));
@@ -119,7 +120,7 @@ function createOfficialSource(config) {
 
   return {
     name,
-    async fetchNewRecords(latestLocalIssue) {
+    async fetchNewRecords(latestLocalIssue, forceRefresh = false) {
       async function fetchPage(pageNo) {
         const url = `${OFFICIAL_API_BASE}?gameNo=${officialGameNo}&provinceId=0&pageSize=${officialPageSize}&isVerify=1&pageNo=${pageNo}`;
         const json = await requestJson(url, {
@@ -151,7 +152,7 @@ function createOfficialSource(config) {
       const totalPages = Math.ceil(totalCount / officialPageSize);
       console.log(`📊 官方副源状态: 共有 ${totalCount} 期记录，最新一期为第 ${latestIssue} 期。`);
 
-      if (latestLocalIssue > 0 && latestIssue === latestLocalIssue) {
+      if (latestLocalIssue > 0 && latestIssue === latestLocalIssue && !forceRefresh) {
         return { latestIssue, records: [] };
       }
 
@@ -173,6 +174,10 @@ function createOfficialSource(config) {
           const parsed = validateRecord(parseOfficialItem(item), expectedFrontCount, expectedBackCount);
           const issueNum = parseInt(parsed.issue, 10);
           if (issueNum > latestLocalIssue) {
+            records.push(parsed);
+            pageNewCount++;
+          } else if (forceRefresh && issueNum >= latestLocalIssue - 5 && issueNum <= latestLocalIssue) {
+            // forceRefresh: 返回最近 5 条以补全缺失的 sales/pool
             records.push(parsed);
             pageNewCount++;
           } else {
@@ -200,7 +205,7 @@ function createJisuSource(config) {
   return {
     name,
     enabled: Boolean(appKey),
-    async fetchNewRecords(latestLocalIssue) {
+    async fetchNewRecords(latestLocalIssue, forceRefresh = false) {
       if (!appKey) {
         throw new Error('未配置 JISU_API_KEY/JISU_APPKEY');
       }
@@ -232,7 +237,7 @@ function createJisuSource(config) {
       const latestIssue = parseInt(list[0].issueno, 10) || 0;
       console.log(`📊 Jisu 主源状态: 最新一期为第 ${latestIssue} 期。`);
 
-      if (latestLocalIssue > 0 && latestIssue === latestLocalIssue) {
+      if (latestLocalIssue > 0 && latestIssue === latestLocalIssue && !forceRefresh) {
         return { latestIssue, records: [] };
       }
 
@@ -262,6 +267,10 @@ function createJisuSource(config) {
           if (issueNum > latestLocalIssue) {
             records.push(parsed);
             batchNewCount++;
+          } else if (forceRefresh && issueNum >= latestLocalIssue - 5 && issueNum <= latestLocalIssue) {
+            // forceRefresh: 返回最近 5 条以补全缺失的 sales/pool
+            records.push(parsed);
+            batchNewCount++;
           } else {
             isGapClosed = true;
           }
@@ -282,6 +291,13 @@ function createJisuSource(config) {
   };
 }
 
+function recordNeedsRefresh(record) {
+  // 如果最新一期缺少 sales 数据，需要强制刷新
+  // 注意：不检查 pool，因为排列三等彩种本身没有奖池滚存（pool=0 是正常的）
+  if (!record) return false;
+  return (record.sales === null || record.sales === 0);
+}
+
 async function runDualSourceScrape(config) {
   const { lotteryName, outputFile, primarySource, secondarySource } = config;
 
@@ -294,6 +310,20 @@ async function runDualSourceScrape(config) {
     console.log('ℹ️ 未检测到本地历史数据库文件，将执行首次全量数据重构。');
   }
 
+  // 检查最新 3 条记录是否需要刷新（sales/pool 缺失）
+  const refreshWindow = Math.min(3, localRecords.length);
+  let needsRefresh = false;
+  let refreshIssues = [];
+  for (let i = 0; i < refreshWindow; i++) {
+    if (recordNeedsRefresh(localRecords[i])) {
+      needsRefresh = true;
+      refreshIssues.push(localRecords[i].issue);
+    }
+  }
+  if (needsRefresh) {
+    console.log(`⚠️ 检测到最近记录缺少销售额/奖池数据 [${refreshIssues.join(', ')}]，将强制刷新...`);
+  }
+
   const sources = [primarySource, secondarySource].filter(Boolean);
   let finalError = null;
 
@@ -304,14 +334,14 @@ async function runDualSourceScrape(config) {
     }
 
     try {
-      const { latestIssue, records } = await source.fetchNewRecords(latestLocalIssue);
+      const { latestIssue, records } = await source.fetchNewRecords(latestLocalIssue, needsRefresh);
 
-      if (latestLocalIssue > 0 && latestIssue === latestLocalIssue && records.length === 0) {
+      if (latestLocalIssue > 0 && latestIssue === latestLocalIssue && records.length === 0 && !needsRefresh) {
         console.log(`\n🎉 【数据状态: 最新】本地第 ${latestLocalIssue} 期已与 ${source.name} 同步，无需更新。`);
         return;
       }
 
-      if (records.length === 0) {
+      if (records.length === 0 && !needsRefresh) {
         console.log('\nℹ️ 未发现任何需要更新的号码差值。');
         return;
       }
