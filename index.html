@@ -8,15 +8,12 @@
   <title>大乐透 & 排列三 · 数据分析与智能预测</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='11' cy='16' r='9' fill='%23ff2e63'/><circle cx='21' cy='16' r='9' fill='%233a7bd5' fill-opacity='0.9'/><text x='11' y='19.5' font-family='system-ui, sans-serif' font-size='9' font-weight='bold' fill='white' text-anchor='middle'>%E4%B9%90</text><text x='21' y='19.5' font-family='system-ui, sans-serif' font-size='9' font-weight='bold' fill='white' text-anchor='middle'>%E9%80%8F</text></svg>">
 </head>
 <body>
   <div class="app" id="app">
-    <!-- 背景装饰粒子 -->
-    <div class="bg-particles" id="bgParticles"></div>
-
     <!-- 头部导航 -->
     <header class="header">
       <div class="header-inner">
@@ -80,14 +77,14 @@
           </div>
         </div>
         <div class="draw-result">
-          <div class="zone-label">前区</div>
+          <div class="zone-label front-zone" id="latestFrontLabel">前区</div>
           <div class="ball-row" id="latestFront">
             <!-- 动态生成球 -->
           </div>
           <div class="zone-divider">
             <span>+</span>
           </div>
-          <div class="zone-label">后区</div>
+          <div class="zone-label back-zone" id="latestBackLabel">后区</div>
           <div class="ball-row" id="latestBack">
             <!-- 动态生成球 -->
           </div>
@@ -155,7 +152,7 @@
       <!-- 中奖规则说明 -->
       <div class="prize-rules card">
         <div class="card-header">
-          <h2>🏆 中奖规则与奖级说明</h2>
+          <h2>中奖规则与奖级说明</h2>
           <span class="sub-note" id="rulesSubNote">超级大乐透中奖条件及奖金对照表</span>
         </div>
         
@@ -342,7 +339,7 @@
                   <div class="mini-balls-row">
                     <span class="ball-dot front"></span>
                     <span class="ball-dot front"></span>
-                    <span class="ball-dot front" style="opacity: 0.5;"></span>
+                    <span class="ball-dot front muted"></span>
                   </div>
                 </td>
                 <td>单注固定 <strong>346</strong> 元</td>
@@ -352,9 +349,9 @@
                 <td><strong>不定位，中三号互不相同</strong></td>
                 <td>
                   <div class="mini-balls-row">
-                    <span class="ball-dot front" style="filter: saturate(2);"></span>
-                    <span class="ball-dot front" style="filter: saturate(0.5) brightness(1.2);"></span>
-                    <span class="ball-dot front" style="filter: invert(0.2);"></span>
+                    <span class="ball-dot front variant-a"></span>
+                    <span class="ball-dot front variant-b"></span>
+                    <span class="ball-dot front variant-c"></span>
                   </div>
                 </td>
                 <td>单注固定 <strong>173</strong> 元</td>
@@ -383,8 +380,8 @@
               <tr>
                 <th>期号</th>
                 <th>开奖日期</th>
-                <th>前区号码</th>
-                <th>后区号码</th>
+                <th id="historyFrontHeader">前区号码</th>
+                <th id="historyBackHeader">后区号码</th>
                 <th>销售额</th>
                 <th>奖池</th>
               </tr>
@@ -405,28 +402,28 @@
       <!-- 统计概览卡片 -->
       <div class="stats-overview">
         <div class="stat-card card">
-          <div class="stat-icon hot">🔥</div>
+          <div class="stat-icon hot" aria-hidden="true">热</div>
           <div class="stat-info">
             <span class="stat-label">最热前区号码</span>
             <span class="stat-value" id="hottestFront">--</span>
           </div>
         </div>
         <div class="stat-card card">
-          <div class="stat-icon cold">❄️</div>
+          <div class="stat-icon cold" aria-hidden="true">冷</div>
           <div class="stat-info">
             <span class="stat-label">最冷前区号码</span>
             <span class="stat-value" id="coldestFront">--</span>
           </div>
         </div>
         <div class="stat-card card">
-          <div class="stat-icon hot">🔥</div>
+          <div class="stat-icon hot" aria-hidden="true">热</div>
           <div class="stat-info">
             <span class="stat-label">最热后区号码</span>
             <span class="stat-value" id="hottestBack">--</span>
           </div>
         </div>
         <div class="stat-card card">
-          <div class="stat-icon cold">❄️</div>
+          <div class="stat-icon cold" aria-hidden="true">冷</div>
           <div class="stat-info">
             <span class="stat-label">最冷后区号码</span>
             <span class="stat-value" id="coldestBack">--</span>
@@ -550,7 +547,7 @@
     <section class="section" id="sectionPredict">
       <div class="predict-header card">
         <div class="card-header">
-          <h2>🔮 智能号码预测</h2>
+          <h2>智能号码预测</h2>
           <p class="predict-desc">基于历史数据的多维度统计分析，综合频率、冷热号、遗漏值等指标生成推荐号码</p>
         </div>
         <div class="predict-actions">
@@ -574,7 +571,7 @@
       <div class="prediction-history card" id="predictionHistorySection" style="display: none;">
         <div class="card-header">
           <div>
-            <h2>🧾 预测记录与复盘</h2>
+            <h2>预测记录与复盘</h2>
             <p class="predict-desc">自动保存最近生成记录，开奖数据更新后按最新开奖号回填命中情况</p>
           </div>
           <button class="btn btn-secondary" id="btnClearPredictionHistory" onclick="App.clearPredictionHistory()">
@@ -589,7 +586,7 @@
       <!-- 回测结果 -->
       <div class="backtest-section card" id="backtestSection" style="display: none;">
         <div class="card-header">
-          <h2>📊 历史回测验证</h2>
+          <h2>历史回测验证</h2>
           <button class="btn btn-secondary" id="btnBacktest" onclick="App.runBacktest()">运行 500/1000 期回测</button>
         </div>
         <div class="backtest-results" id="backtestResults">
@@ -599,7 +596,7 @@
 
       <!-- 免责声明 -->
       <div class="disclaimer card">
-        <p>⚠️ <strong>免责声明</strong>：彩票号码为随机生成，任何基于历史数据的分析和预测均不能保证中奖。本工具仅供数据分析学习和娱乐参考，请理性购彩，量力而行。</p>
+        <p><strong>免责声明</strong>：彩票号码为随机生成，任何基于历史数据的分析和预测均不能保证中奖。本工具仅供数据分析学习和娱乐参考，请理性购彩，量力而行。</p>
       </div>
     </section>
 
@@ -616,8 +613,8 @@
   <div class="modal-overlay" id="winningCheckerModal" style="display: none;">
     <div class="modal-card card">
       <div class="modal-header">
-        <h3>🔍 奖项智能核对</h3>
-        <button class="modal-close" onclick="App.hideWinningChecker()">×</button>
+        <h3>奖项智能核对</h3>
+        <button class="modal-close" onclick="App.hideWinningChecker()" aria-label="关闭核对窗口">×</button>
       </div>
       <div class="modal-body">
         <p class="modal-desc">请输入您的号码组合，支持核对多组（每组一行）。可以直接粘贴“一键复制”的内容：</p>

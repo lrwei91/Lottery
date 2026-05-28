@@ -688,12 +688,14 @@
     };
   }
 
-  function computePL3PositionScores(data) {
+  function computePL3PositionScores(data, dataEnd) {
+    const end = dataEnd != null ? dataEnd : data.length;
+    const scopedData = data.slice(0, end);
     const windowSize = 10;
     const windows = [
-      data.slice(0, windowSize),
-      data.slice(windowSize, windowSize * 2),
-      data.slice(windowSize * 2, windowSize * 3)
+      scopedData.slice(0, windowSize),
+      scopedData.slice(windowSize, windowSize * 2),
+      scopedData.slice(windowSize * 2, windowSize * 3)
     ];
 
     return [0, 1, 2].map(pos => {
@@ -713,9 +715,9 @@
         lastSeen.set(num, -1);
       }
 
-      const total = data.length;
+      const total = scopedData.length;
       for (let i = 0; i < total; i++) {
-        const draw = data[i];
+        const draw = scopedData[i];
         const num = draw.front[pos];
         const weight = total > 1 ? 1.5 - (i / (total - 1)) : 1.0;
         freq.set(num, (freq.get(num) || 0) + weight);
@@ -736,11 +738,11 @@
 
       for (let num = 0; num <= 9; num++) {
         if (currentGap.get(num) === -1) {
-          currentGap.set(num, data.length);
+          currentGap.set(num, scopedData.length);
         }
         const last = lastSeen.get(num);
-        if (last !== -1 && last < data.length - 1) {
-          const tailGap = data.length - 1 - last;
+        if (last !== -1 && last < scopedData.length - 1) {
+          const tailGap = scopedData.length - 1 - last;
           maxGaps.set(num, Math.max(maxGaps.get(num), tailGap));
           gapTotals.set(num, gapTotals.get(num) + tailGap);
           gapCounts.set(num, gapCounts.get(num) + 1);
@@ -753,7 +755,7 @@
       const gaps = Array.from(currentGap.values());
       const gapMin = Math.min(...gaps);
       const gapMax = Math.max(...gaps);
-      const expectedFreq = data.length / 10;
+      const expectedFreq = scopedData.length / 10;
       const freqValues = Array.from(freq.entries()).map(([num, count]) => ({ num, count }));
       const sortedFreq = freqValues.slice().sort((a, b) => a.count - b.count);
       const coldSet = new Set(sortedFreq.slice(0, 3).map(item => item.num));
@@ -809,7 +811,7 @@
     };
 
     if (type === 'pl3') {
-      context.positionScores = computePL3PositionScores(data);
+      context.positionScores = computePL3PositionScores(data, dataEnd);
       const effectiveEnd = dataEnd != null ? dataEnd : data.length;
       context.recentKeys = new Set(data.slice(0, Math.min(10, effectiveEnd)).map(draw => draw.front.join(',')));
       context.pl3Constraints = computePL3Constraints(data, dataEnd);
@@ -1338,7 +1340,7 @@
     const frontWarm = front.filter(n => hotCold.front.warm.includes(n));
 
     const sumLabel = evalResult.sum;
-    const sumVerdict = evalResult.valid ? '🎯 训练区间' : '⚠️ 偏离区间';
+    const sumVerdict = evalResult.valid ? '训练区间' : '偏离区间';
     const consecLabel = evalResult.pairs > 0 ? `有 (${evalResult.pairs}组连号)` : '无 (散号组合)';
     const tailLabel = evalResult.tailPairsCount > 0 ? `有 (${evalResult.tailPairsCount}组同尾)` : '无 (全异尾)';
     const backSumLabel = `和${backEvalResult.sum}(${backEvalResult.sumMin}-${backEvalResult.sumMax})/差${backEvalResult.diff}(${backEvalResult.diffMin}-${backEvalResult.diffMax})`;
@@ -1346,20 +1348,20 @@
     if (strategy === 'random' && bollingerResult) {
       const analysis = bollingerResult.analysis;
       bollingerLines.push(
-        `📉 布林趋势: 前区${analysis.frontTrend} / 后区${analysis.backTrend} | 目标和值: 前区${bollingerResult.targets.frontSum}, 后区${bollingerResult.targets.backSum}`,
-        `🔥 近${analysis.analyzedPeriods}期热号池: 前区${analysis.hotFront.join(' ')} | 后区${analysis.hotBack.join(' ')}`
+        `布林趋势: 前区${analysis.frontTrend} / 后区${analysis.backTrend} | 目标和值: 前区${bollingerResult.targets.frontSum}, 后区${bollingerResult.targets.backSum}`,
+        `近${analysis.analyzedPeriods}期热号池: 前区${analysis.hotFront.join(' ')} | 后区${analysis.hotBack.join(' ')}`
       );
     }
 
     const reasoning = [
       `【${strategyNames[strategy] || strategy} · 统计约束模型】`,
       ...bollingerLines,
-      `📊 前区奇偶: ${evalResult.oddEven} | 大小: ${evalResult.bigSmall}`,
-      `📐 前区和值: ${sumLabel} (${evalResult.sumMin}-${evalResult.sumMax} · ${sumVerdict}) | 🎯 后区高阶: ${backSumLabel}`,
-      `🔗 连号状态: ${consecLabel} | 👯 同尾状态: ${tailLabel}`,
-      `🧩 前区AC值: ${evalResult.ac} (🎯 ≥${evalResult.minAC}) | 🗺️ 覆盖 ${evalResult.zonesCovered} 个分区 (🎯 ≥${evalResult.minZonesCovered})`,
-      `📈 冷热结构: ${frontHot.length}热 / ${frontWarm.length}温 / ${frontCold.length}冷`,
-      `💡 结合${strategy === 'random' ? '布林线和值约束与70%热号抽样' : strategy === 'balanced' ? '冷热分层抽样' : '伴生概率矩阵'}、近期时间衰减权重及全库去重生成 (计算碰撞: ${attempts}次)`
+      `前区奇偶: ${evalResult.oddEven} | 大小: ${evalResult.bigSmall}`,
+      `前区和值: ${sumLabel} (${evalResult.sumMin}-${evalResult.sumMax} · ${sumVerdict}) | 后区高阶: ${backSumLabel}`,
+      `连号状态: ${consecLabel} | 同尾状态: ${tailLabel}`,
+      `前区AC值: ${evalResult.ac} (>=${evalResult.minAC}) | 覆盖 ${evalResult.zonesCovered} 个分区 (>=${evalResult.minZonesCovered})`,
+      `冷热结构: ${frontHot.length}热 / ${frontWarm.length}温 / ${frontCold.length}冷`,
+      `结合${strategy === 'random' ? '布林线和值约束与70%热号抽样' : strategy === 'balanced' ? '冷热分层抽样' : '伴生概率矩阵'}、近期时间衰减权重及全库去重生成 (计算碰撞: ${attempts}次)`
     ].join('\n');
 
     return {
@@ -1442,7 +1444,7 @@
     }
 
     const uniqueCount = new Set(finalNums).size;
-    const patternLabel = uniqueCount === 1 ? '🐆 豹子组合' : uniqueCount === 2 ? '👯 组三组合' : '⚖️ 组六组合';
+    const patternLabel = uniqueCount === 1 ? '豹子组合' : uniqueCount === 2 ? '组三组合' : '组六组合';
 
     const strategyNames = {
       cold: '冷号优先',
@@ -1454,9 +1456,9 @@
 
     const reasoning = [
       `【${strategyNames[strategy] || strategy} · 排列三位置概率引擎】`,
-      `🧩 号码形态: ${patternLabel} | 📏 跨度大小: ${evalResult.span} (🎯 ${evalResult.spanMin}-${evalResult.spanMax})`,
-      `📐 组合和值: ${evalResult.sum} (🎯 ${evalResult.sumMin}-${evalResult.sumMax})`,
-      `💡 依据百/十/个位位置频率、遗漏与近期趋势生成 (碰撞尝试: ${attempts}次)`
+      `号码形态: ${patternLabel} | 跨度大小: ${evalResult.span} (${evalResult.spanMin}-${evalResult.spanMax})`,
+      `组合和值: ${evalResult.sum} (${evalResult.sumMin}-${evalResult.sumMax})`,
+      `依据百/十/个位位置频率、遗漏与近期趋势生成 (碰撞尝试: ${attempts}次)`
     ].join('\n');
 
     return {
