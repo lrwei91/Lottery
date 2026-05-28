@@ -39,7 +39,12 @@
 
   const DEFAULT_BACKTEST_PERIODS = 500;
   const DEFAULT_BACKTEST_WINDOWS = [500, 1000];
-  const DEFAULT_BACKTEST_SEEDS = [20260525, 20260526, 20260527, 20260528, 20260529];
+  function getDefaultBacktestSeeds() {
+    const base = new Date();
+    const fmt = d => parseInt(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`);
+    return [fmt(base), fmt(new Date(base - 86400000)), fmt(new Date(base - 172800000)), fmt(new Date(base - 259200000)), fmt(new Date(base - 345600000))];
+  }
+  const DEFAULT_BACKTEST_SEEDS_FN = getDefaultBacktestSeeds;
   const BOLLINGER_CONFIG = {
     analysisPeriods: 50,
     hotNumberRatio: 0.7,
@@ -152,8 +157,13 @@
     return type === 'pl3' ? front.join(',') : drawKey(front, back || []);
   }
 
-  function buildExactDrawSet(data) {
-    return new Set(data.map(draw => drawKey(draw.front, draw.back || [])));
+  function buildExactDrawSet(data, dataEnd) {
+    const end = dataEnd != null ? dataEnd : data.length;
+    const set = new Set();
+    for (let i = 0; i < end; i++) {
+      set.add(drawKey(data[i].front, data[i].back || []));
+    }
+    return set;
   }
 
   function percentile(values, q) {
@@ -207,15 +217,29 @@
   }
 
   // ============================================================
-  // 1. 频率分析
+  // 1. 频率分析 (带缓存)
   // ============================================================
+
+  const _freqCache = { sig: null, dataEnd: null, result: null };
+
+  function _dataSignature(data, dataEnd) {
+    const len = dataEnd != null ? dataEnd : data.length;
+    return `${data.length}:${len}`;
+  }
 
   /**
    * 统计每个号码在所有历史数据中出现的频率（带有时间衰减权重）
    * @param {Array} data - 开奖数据数组
+   * @param {number} [dataEnd] - 只使用 data[0..dataEnd) 范围
    * @returns {{ front: Map<number, number>, back: Map<number, number> }}
    */
-  function frequencyAnalysis(data) {
+  function frequencyAnalysis(data, dataEnd) {
+    const end = dataEnd != null ? dataEnd : data.length;
+    const sig = _dataSignature(data, dataEnd);
+    if (_freqCache.sig === sig && _freqCache.dataEnd === end) {
+      return _freqCache.result;
+    }
+
     updateLotteryParams(detectLotteryType(data));
     const front = new Map();
     const back = new Map();
@@ -225,7 +249,7 @@
     for (let i = BACK_MIN; i <= BACK_MAX; i++) back.set(i, 0);
 
     // 遍历每期数据累加计数，引入时间衰减机制
-    const total = data.length;
+    const total = end;
     for (let i = 0; i < total; i++) {
       const draw = data[i];
       // 线性衰减：最近的一期权重为 1.5，最远的一期权重为 0.5
@@ -244,7 +268,11 @@
       }
     }
 
-    return { front, back };
+    const result = { front, back };
+    _freqCache.sig = sig;
+    _freqCache.dataEnd = end;
+    _freqCache.result = result;
+    return result;
   }
 
   // ============================================================
@@ -260,12 +288,12 @@
    * @param {number} recentN - 分析最近的期数，默认 300
    * @returns {{ front: { hot, cold, warm }, back: { hot, cold, warm } }}
    */
-  function hotColdAnalysis(data, recentN = 300) {
+  function hotColdAnalysis(data, recentN = 300, dataEnd) {
     const isPl3 = detectLotteryType(data) === 'pl3';
     updateLotteryParams(isPl3 ? 'pl3' : 'dlt');
 
-    const recentData = data.slice(0, recentN);
-    const freq = frequencyAnalysis(recentData);
+    const end = dataEnd != null ? Math.min(dataEnd, recentN) : Math.min(data.length, recentN);
+    const freq = frequencyAnalysis(data, end);
 
     function classify(freqMap, total, isBackZone = false) {
       const hot = [], cold = [], warm = [];
@@ -299,8 +327,8 @@
     }
 
     return {
-      front: classify(freq.front, recentN, false),
-      back: isPl3 ? { hot: [], cold: [], warm: [] } : classify(freq.back, recentN, true)
+      front: classify(freq.front, end, false),
+      back: isPl3 ? { hot: [], cold: [], warm: [] } : classify(freq.back, end, true)
     };
   }
 
@@ -316,21 +344,22 @@
    * @param {Array} data - 开奖数据（最新期在前）
    * @returns {{ front: Map, back: Map }}
    */
-  function gapAnalysis(data) {
+  function gapAnalysis(data, dataEnd) {
     updateLotteryParams(detectLotteryType(data));
 
-    function analyzeZone(data, min, max, getNumbers) {
+    const end = dataEnd != null ? dataEnd : data.length;
+
+    function analyzeZone(getNumbers, min, max) {
       const result = new Map();
 
       for (let num = min; num <= max; num++) {
-        let currentGap = -1;   // -1 表示尚未找到第一次出现
+        let currentGap = -1;
         let maxGap = 0;
         let totalGap = 0;
         let gapCount = 0;
         let lastSeenIdx = -1;
 
-        // 从最新期向历史遍历
-        for (let i = 0; i < data.length; i++) {
+        for (let i = 0; i < end; i++) {
           const numbers = getNumbers(data[i]);
           if (numbers.includes(num)) {
             if (currentGap === -1) {
@@ -350,12 +379,12 @@
 
         // 如果从未出现过
         if (currentGap === -1) {
-          currentGap = data.length;
+          currentGap = end;
         }
 
         // 末尾遗漏也纳入统计
-        if (lastSeenIdx !== -1 && lastSeenIdx < data.length - 1) {
-          const tailGap = data.length - 1 - lastSeenIdx;
+        if (lastSeenIdx !== -1 && lastSeenIdx < end - 1) {
+          const tailGap = end - 1 - lastSeenIdx;
           maxGap = Math.max(maxGap, tailGap);
           totalGap += tailGap;
           gapCount++;
@@ -375,8 +404,8 @@
     }
 
     return {
-      front: analyzeZone(data, FRONT_MIN, FRONT_MAX, d => d.front),
-      back: BACK_COUNT > 0 ? analyzeZone(data, BACK_MIN, BACK_MAX, d => d.back) : new Map()
+      front: analyzeZone(d => d.front, FRONT_MIN, FRONT_MAX),
+      back: BACK_COUNT > 0 ? analyzeZone(d => d.back, BACK_MIN, BACK_MAX) : new Map()
     };
   }
 
@@ -534,14 +563,15 @@
    * 构建前区号码的伴生概率矩阵 (Co-occurrence Matrix)
    * 使用 lift 归一化，避免把号码自身高频误当成强关联。
    */
-  function buildCoOccurrenceMatrix(data) {
+  function buildCoOccurrenceMatrix(data, dataEnd) {
     const isPl3 = detectLotteryType(data) === 'pl3';
     const size = isPl3 ? 10 : 36;
     const matrix = Array.from({ length: size }, () => Array(size).fill(0));
     const appearances = Array(size).fill(0);
+    const end = dataEnd != null ? dataEnd : data.length;
 
-    for (const draw of data) {
-      const front = draw.front;
+    for (let i = 0; i < end; i++) {
+      const front = data[i].front;
       for (const num of front) {
         if (num < size) {
           appearances[num]++;
@@ -563,7 +593,7 @@
           matrix[i][j] = 1;
           continue;
         }
-        const expected = data.length > 0 ? (appearances[i] * appearances[j]) / data.length : 0;
+        const expected = end > 0 ? (appearances[i] * appearances[j]) / end : 0;
         matrix[i][j] = expected > 0 ? matrix[i][j] / expected : 1;
       }
     }
@@ -571,12 +601,12 @@
     return matrix;
   }
 
-  function computeScores(data) {
+  function computeScores(data, dataEnd) {
     updateLotteryParams(detectLotteryType(data));
 
-    const gapData = gapAnalysis(data);
-    const freqData = frequencyAnalysis(data);
-    const hotCold = hotColdAnalysis(data);
+    const gapData = gapAnalysis(data, dataEnd);
+    const freqData = frequencyAnalysis(data, dataEnd);
+    const hotCold = hotColdAnalysis(data, 300, dataEnd);
     const isPl3 = detectLotteryType(data) === 'pl3';
 
     function scoreZone(min, max, gapMap, freqMap, hotColdInfo, totalDraws, pickCount) {
@@ -650,9 +680,10 @@
       return scores;
     }
 
+    const effectiveEnd = dataEnd != null ? dataEnd : data.length;
     return {
-      frontScores: scoreZone(FRONT_MIN, FRONT_MAX, gapData.front, freqData.front, hotCold.front, data.length, FRONT_COUNT),
-      backScores: isPl3 ? new Map() : scoreZone(BACK_MIN, BACK_MAX, gapData.back, freqData.back, hotCold.back, data.length, BACK_COUNT),
+      frontScores: scoreZone(FRONT_MIN, FRONT_MAX, gapData.front, freqData.front, hotCold.front, effectiveEnd, FRONT_COUNT),
+      backScores: isPl3 ? new Map() : scoreZone(BACK_MIN, BACK_MAX, gapData.back, freqData.back, hotCold.back, effectiveEnd, BACK_COUNT),
       hotCold
     };
   }
@@ -765,11 +796,11 @@
     });
   }
 
-  function createPredictionContext(data) {
+  function createPredictionContext(data, dataEnd) {
     const type = detectLotteryType(data);
     updateLotteryParams(type);
 
-    const scoreBundle = computeScores(data);
+    const scoreBundle = computeScores(data, dataEnd);
     const context = {
       type,
       frontScores: scoreBundle.frontScores,
@@ -779,14 +810,15 @@
 
     if (type === 'pl3') {
       context.positionScores = computePL3PositionScores(data);
-      context.recentKeys = new Set(data.slice(0, 10).map(draw => draw.front.join(',')));
-      context.pl3Constraints = computePL3Constraints(data);
+      const effectiveEnd = dataEnd != null ? dataEnd : data.length;
+      context.recentKeys = new Set(data.slice(0, Math.min(10, effectiveEnd)).map(draw => draw.front.join(',')));
+      context.pl3Constraints = computePL3Constraints(data, dataEnd);
     } else {
-      context.coMatrix = buildCoOccurrenceMatrix(data);
-      context.exactDrawSet = buildExactDrawSet(data);
-      context.frontConstraints = computeFrontConstraints(data);
-      context.backConstraints = computeBackConstraints(data);
-      context.bollingerAnalysis = analyzeBollingerTrend(data);
+      context.coMatrix = buildCoOccurrenceMatrix(data, dataEnd);
+      context.exactDrawSet = buildExactDrawSet(data, dataEnd);
+      context.frontConstraints = computeFrontConstraints(data, dataEnd);
+      context.backConstraints = computeBackConstraints(data, dataEnd);
+      context.bollingerAnalysis = analyzeBollingerTrend(data, BOLLINGER_CONFIG, dataEnd);
     }
 
     return context;
@@ -805,10 +837,14 @@
     return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0] - b[0]);
   }
 
-  function analyzeBollingerTrend(data, config = BOLLINGER_CONFIG) {
-    const recent = data.slice(0, Math.min(config.analysisPeriods, data.length));
-    const frontSums = recent.map(draw => draw.front.reduce((sum, num) => sum + num, 0));
-    const backSums = recent.map(draw => (draw.back || []).reduce((sum, num) => sum + num, 0));
+  function analyzeBollingerTrend(data, config = BOLLINGER_CONFIG, dataEnd) {
+    const end = dataEnd != null ? Math.min(config.analysisPeriods, dataEnd) : Math.min(config.analysisPeriods, data.length);
+    const frontSums = [];
+    const backSums = [];
+    for (let i = 0; i < end; i++) {
+      frontSums.push(data[i].front.reduce((sum, num) => sum + num, 0));
+      backSums.push((data[i].back || []).reduce((sum, num) => sum + num, 0));
+    }
     const middles = frontSums.map((sum, idx) => (sum + backSums[idx]) / 2);
 
     const avg = values => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
@@ -827,11 +863,11 @@
       middleAvg: avg(middles),
       frontTrend: latestFrontSum > avg(lastFiveFront) ? '上升' : '下降',
       backTrend: latestBackSum > avg(lastFiveBack) ? '上升' : '下降',
-      hotFront: countNumbers(recent, draw => draw.front, 1, 35).slice(0, 10).map(([num]) => num),
-      hotBack: countNumbers(recent, draw => draw.back || [], 1, 12).slice(0, 5).map(([num]) => num),
+      hotFront: countNumbers(data.slice(0, end), draw => draw.front, 1, 35).slice(0, 10).map(([num]) => num),
+      hotBack: countNumbers(data.slice(0, end), draw => draw.back || [], 1, 12).slice(0, 5).map(([num]) => num),
       latestFrontSum,
       latestBackSum,
-      totalPeriods: data.length,
+      totalPeriods: end,
       analyzedPeriods: recent.length
     };
   }
@@ -1086,10 +1122,14 @@
     };
   }
 
-  function computeFrontConstraints(data) {
+  function computeFrontConstraints(data, dataEnd) {
     if (!data || data.length === 0) return defaultFrontConstraints();
 
-    const shapes = data.map(draw => analyzeFrontShape(draw.front));
+    const end = dataEnd != null ? dataEnd : data.length;
+    const shapes = [];
+    for (let i = 0; i < end; i++) {
+      shapes.push(analyzeFrontShape(data[i].front));
+    }
     const constraints = {
       sumMin: roundPercentile(shapes.map(shape => shape.sum), 0.1),
       sumMax: roundPercentile(shapes.map(shape => shape.sum), 0.9),
@@ -1117,18 +1157,20 @@
     };
   }
 
-  function computeBackConstraints(data) {
+  function computeBackConstraints(data, dataEnd) {
     if (!data || data.length === 0) return defaultBackConstraints();
-    const backs = data.map(draw => draw.back || []).filter(back => back.length >= 2);
-    if (backs.length === 0) return defaultBackConstraints();
-
+    const end = dataEnd != null ? dataEnd : data.length;
     const sums = [];
     const diffs = [];
-    for (const back of backs) {
+    for (let i = 0; i < end; i++) {
+      const back = data[i].back || [];
+      if (back.length < 2) continue;
       const sorted = back.slice().sort((a, b) => a - b);
       sums.push(sorted[0] + sorted[1]);
       diffs.push(sorted[1] - sorted[0]);
     }
+
+    if (sums.length === 0) return defaultBackConstraints();
 
     return {
       sumMin: roundPercentile(sums, 0.1),
@@ -1147,13 +1189,14 @@
     };
   }
 
-  function computePL3Constraints(data) {
+  function computePL3Constraints(data, dataEnd) {
     if (!data || data.length === 0) return defaultPL3Constraints();
 
+    const end = dataEnd != null ? dataEnd : data.length;
     const sums = [];
     const spans = [];
-    for (const draw of data) {
-      const nums = draw.front || [];
+    for (let i = 0; i < end; i++) {
+      const nums = data[i].front || [];
       if (nums.length < 3) continue;
       sums.push(nums.reduce((s, v) => s + v, 0));
       spans.push(Math.max(...nums) - Math.min(...nums));
@@ -1229,7 +1272,7 @@
     const isPl3 = detectLotteryType(data) === 'pl3';
     updateLotteryParams(isPl3 ? 'pl3' : 'dlt');
     const rng = options.rng || Math.random;
-    const context = options.context || createPredictionContext(data);
+    const context = options.context || createPredictionContext(data, options.dataEnd);
 
     if (isPl3) {
       return generatePredictionPL3(data, strategy, { ...options, rng, context });
@@ -1351,13 +1394,16 @@
       valid: sum >= constraints.sumMin && sum <= constraints.sumMax && span >= constraints.spanMin && span <= constraints.spanMax,
       sum,
       span,
-      ...constraints
+      sumMin: constraints.sumMin,
+      sumMax: constraints.sumMax,
+      spanMin: constraints.spanMin,
+      spanMax: constraints.spanMax
     };
   }
 
   function generatePredictionPL3(data, strategy = 'balanced', options = {}) {
     const rng = options.rng || Math.random;
-    const context = options.context || createPredictionContext(data);
+    const context = options.context || createPredictionContext(data, options.dataEnd);
     const positionScores = context.positionScores || computePL3PositionScores(data);
     const pl3Constraints = context.pl3Constraints || defaultPL3Constraints();
 
@@ -1678,12 +1724,13 @@
     });
   }
 
-  function recordBacktestPeriod(runStates, strategies, targetDraw, trainingData, context, isPl3) {
+  function recordBacktestPeriod(runStates, strategies, targetDraw, fullData, dataEnd, context, isPl3) {
     for (const runState of runStates) {
       for (const strategy of strategies) {
-        const prediction = generatePrediction(trainingData, strategy, {
+        const prediction = generatePrediction(fullData, strategy, {
           rng: runState.strategyRngs[strategy] || runState.rng,
-          context
+          context,
+          dataEnd
         });
         recordMatch(runState.strategyAccumulators[strategy], prediction, targetDraw, isPl3);
       }
@@ -1709,7 +1756,7 @@
     updateLotteryParams(type);
 
     const windows = resolveBacktestWindows(data, options.windows || DEFAULT_BACKTEST_WINDOWS);
-    const seeds = normalizeSeedList(options.seeds || DEFAULT_BACKTEST_SEEDS);
+    const seeds = normalizeSeedList(options.seeds || DEFAULT_BACKTEST_SEEDS_FN());
     const strategies = options.strategies || DEFAULT_STRATEGIES;
 
     return { type, isPl3, windows, seeds, strategies };
@@ -1857,11 +1904,9 @@
     }
 
     for (let i = 0; i < actualTests; i++) {
-      // 第 i 期为目标期，用 i+1 往后的数据作为训练数据
       const targetDraw = data[i];
-      const trainingData = data.slice(i + 1);
-      const context = createPredictionContext(trainingData);
-      recordBacktestPeriod([runState], strategies, targetDraw, trainingData, context, isPl3);
+      const context = createPredictionContext(data, i + 1);
+      recordBacktestPeriod([runState], strategies, targetDraw, data, i + 1, context, isPl3);
     }
 
     return finalizeBacktestRun(runState, strategies, isPl3);
@@ -1882,9 +1927,8 @@
 
     for (let i = 0; i < maxWindow; i++) {
       const targetDraw = data[i];
-      const trainingData = data.slice(i + 1);
-      const context = createPredictionContext(trainingData);
-      recordBacktestPeriod(runStates, strategies, targetDraw, trainingData, context, isPl3);
+      const context = createPredictionContext(data, i + 1);
+      recordBacktestPeriod(runStates, strategies, targetDraw, data, i + 1, context, isPl3);
 
       const completedWindow = i + 1;
       if (checkpoints.has(completedWindow)) {
@@ -1915,9 +1959,8 @@
 
     for (let i = 0; i < maxWindow; i++) {
       const targetDraw = data[i];
-      const trainingData = data.slice(i + 1);
-      const context = createPredictionContext(trainingData);
-      recordBacktestPeriod(runStates, strategies, targetDraw, trainingData, context, isPl3);
+      const context = createPredictionContext(data, i + 1);
+      recordBacktestPeriod(runStates, strategies, targetDraw, data, i + 1, context, isPl3);
 
       const completedWindow = i + 1;
       if (checkpoints.has(completedWindow)) {

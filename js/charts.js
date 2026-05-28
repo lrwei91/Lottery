@@ -104,6 +104,26 @@
   }
 
   // ============================================================
+  // Resize Observer - 自动重绘图表
+  // ============================================================
+  const _chartCallbacks = new Map();
+
+  function _trackChart(canvasId, fn, args) {
+    _chartCallbacks.set(canvasId, { fn, args });
+    const canvas = document.getElementById(canvasId);
+    if (canvas && canvas.parentElement && !canvas.parentElement._resizeObserved) {
+      canvas.parentElement._resizeObserved = true;
+      if (typeof ResizeObserver !== 'undefined') {
+        const ro = new ResizeObserver(() => {
+          const entry = _chartCallbacks.get(canvasId);
+          if (entry) entry.fn(...entry.args);
+        });
+        ro.observe(canvas.parentElement);
+      }
+    }
+  }
+
+  // ============================================================
   // 1. 频率柱状图
   // ============================================================
 
@@ -114,6 +134,7 @@
    * @param {string} zone - 'front' 或 'back'
    */
   function drawFrequencyChart(canvasId, freqData, zone = 'front') {
+    _trackChart(canvasId, drawFrequencyChart, [canvasId, freqData, zone]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;
     const { ctx, w, h } = setup;
@@ -246,6 +267,7 @@
    * 绘制当前遗漏值横向柱状图
    */
   function drawGapChart(canvasId, gapData, zone = 'front') {
+    _trackChart(canvasId, drawGapChart, [canvasId, gapData, zone]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;
     const { ctx, w, h } = setup;
@@ -347,6 +369,7 @@
    * @param {number[]} selectedNumbers - 选中要查看的号码
    */
   function drawTrendChart(canvasId, data, selectedNumbers = []) {
+    _trackChart(canvasId, drawTrendChart, [canvasId, data, selectedNumbers]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;
     const { ctx, w, h } = setup;
@@ -439,6 +462,7 @@
    * 绘制和值分布直方图
    */
   function drawSumDistribution(canvasId, sumData) {
+    _trackChart(canvasId, drawSumDistribution, [canvasId, sumData]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;
     const { ctx, w, h } = setup;
@@ -557,6 +581,7 @@
    * 绘制号码热力图
    */
   function drawHeatmap(canvasId, data, zone = 'front') {
+    _trackChart(canvasId, drawHeatmap, [canvasId, data, zone]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;
     const { ctx, w, h } = setup;
@@ -619,6 +644,7 @@
    * @param {string} title - 图表标题
    */
   function drawPieChart(canvasId, ratioData, title) {
+    _trackChart(canvasId, drawPieChart, [canvasId, ratioData, title]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;
     const { ctx, w, h } = setup;

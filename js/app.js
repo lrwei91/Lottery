@@ -20,12 +20,71 @@
     filteredData: [],
     selectedTrendNumbers: [1, 5, 10],
     predictions: [],
-    predictionRecords: []
+    predictionRecords: [],
+    countdownTimerId: null
   };
 
   const PREDICTION_HISTORY_LIMIT = 20;
 
+  const STRATEGY_LABELS = {
+    cold: '冷号优先',
+    hot: '热号优先',
+    balanced: '均衡推荐',
+    gap: '遗漏回补',
+    random: '布林线策略'
+  };
+
+  const STRATEGY_LABELS_EMOJI = {
+    cold: '❄️ 冷号优先',
+    hot: '🔥 热号优先',
+    balanced: '⚖️ 均衡推荐',
+    gap: '📊 遗漏回补',
+    random: '📉 布林线策略'
+  };
+
   // ==================== 工具函数 ====================
+  function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function debounce(fn, delay) {
+    let timer = null;
+    return function(...args) {
+      clearTimeout(timer);
+      timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+
+  function copyToClipboard(text, onSuccess) {
+    const doCallback = () => { if (onSuccess) onSuccess(); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(doCallback).catch(err => {
+        console.warn('Navigator clipboard failed, trying fallback:', err);
+        fallbackCopy(text, doCallback);
+      });
+    } else {
+      fallbackCopy(text, doCallback);
+    }
+  }
+
+  function showToast(message, duration = 2000) {
+    let toast = document.getElementById('appToast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'appToast';
+      toast.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:9999;padding:8px 20px;background:var(--bg-tertiary);color:var(--accent);border:1px solid var(--accent);border-radius:var(--radius-md);font-size:0.85rem;opacity:0;transition:opacity 0.3s;pointer-events:none;';
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.style.opacity = '1';
+    clearTimeout(toast._hideTimer);
+    toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, duration);
+  }
   function formatMoney(num) {
     if (!num) return '--';
     if (num >= 100000000) return (num / 100000000).toFixed(2) + ' 亿元';
@@ -235,6 +294,9 @@
   }
 
   function startCountdown() {
+    if (state.countdownTimerId !== null) {
+      clearInterval(state.countdownTimerId);
+    }
     const dayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
     
     function update() {
@@ -262,7 +324,7 @@
     }
     
     update();
-    setInterval(update, 1000);
+    state.countdownTimerId = setInterval(update, 1000);
   }
 
   // ==================== 历史数据 ====================
@@ -299,8 +361,8 @@
     const tbody = document.getElementById('historyBody');
     tbody.innerHTML = pageData.map(d => `
       <tr>
-        <td><span class="issue-num">${d.issue}</span></td>
-        <td>${d.date || '--'}</td>
+        <td><span class="issue-num">${escapeHtml(d.issue)}</span></td>
+        <td>${escapeHtml(d.date) || '--'}</td>
         <td>
           <div class="ball-row table-balls">
             ${d.front.map(n => createBallHTML(n, 'front mini')).join('')}
@@ -327,35 +389,37 @@
     }
     
     let html = '';
-    
+
     // 上一页
-    html += `<button class="page-btn ${currentPage === 1 ? 'disabled' : ''}" 
+    html += `<button class="page-btn ${currentPage === 1 ? 'disabled' : ''}"
               data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
-    
-    // 页码
-    const maxVisible = 7;
+
+    // 首页
+    if (currentPage > 3) {
+      html += `<button class="page-btn" data-page="1">1</button>`;
+      if (currentPage > 4) html += `<span class="page-ellipsis">...</span>`;
+    }
+
+    // 页码范围
+    const maxVisible = 5;
     let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
     let endPage = Math.min(totalPages, startPage + maxVisible - 1);
     if (endPage - startPage < maxVisible - 1) {
       startPage = Math.max(1, endPage - maxVisible + 1);
     }
-    
-    if (startPage > 1) {
-      html += `<button class="page-btn" data-page="1">1</button>`;
-      if (startPage > 2) html += `<span class="page-ellipsis">...</span>`;
-    }
-    
+
     for (let i = startPage; i <= endPage; i++) {
       html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
     }
-    
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) html += `<span class="page-ellipsis">...</span>`;
+
+    // 末页
+    if (currentPage < totalPages - 2) {
+      if (currentPage < totalPages - 3) html += `<span class="page-ellipsis">...</span>`;
       html += `<button class="page-btn" data-page="${totalPages}">${totalPages}</button>`;
     }
-    
+
     // 下一页
-    html += `<button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}" 
+    html += `<button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}"
               data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
     
     container.innerHTML = html;
@@ -657,20 +721,13 @@
     }
 
     const isPl3 = state.currentLottery === 'pl3';
-    const strategyLabels = {
-      cold: '冷号优先',
-      hot: '热号优先',
-      balanced: '均衡推荐',
-      gap: '遗漏回补',
-      random: '布林线策略'
-    };
 
     section.style.display = 'block';
     list.innerHTML = state.predictionRecords.map(record => {
       const reviewDraw = resolveReviewDraw(record);
       const statusText = reviewDraw
-        ? `已按第 ${reviewDraw.issue} 期复盘`
-        : `等待第 ${record.targetIssue} 期开奖`;
+        ? `已按第 ${escapeHtml(reviewDraw.issue)} 期复盘`
+        : `等待第 ${escapeHtml(record.targetIssue)} 期开奖`;
       const statusClass = reviewDraw ? 'reviewed' : 'pending';
 
       const tickets = record.predictions.map((prediction, index) => {
@@ -684,8 +741,8 @@
         return `
           <div class="prediction-history-ticket">
             <div class="history-ticket-meta">
-              <span>${index + 1}. ${strategyLabels[prediction.strategy] || prediction.strategy}</span>
-              <strong class="${evaluation && evaluation.prize ? 'win' : ''}">${resultText}</strong>
+              <span>${index + 1}. ${escapeHtml(STRATEGY_LABELS[prediction.strategy] || prediction.strategy)}</span>
+              <strong class="${evaluation && evaluation.prize ? 'win' : ''}">${escapeHtml(resultText)}</strong>
             </div>
             <div class="history-ticket-balls">
               ${renderMiniBalls(prediction.front, 'front', evaluation ? evaluation.matchedFront : [])}
@@ -700,12 +757,12 @@
         <article class="prediction-history-item">
           <div class="history-record-head">
             <div>
-              <h3>${record.type === 'pl3' ? '排列三' : '大乐透'} · ${formatRecordTime(record.createdAt)}</h3>
-              <p>使用截至第 ${record.baseIssue || '--'} 期的历史数据，预测第 ${record.targetIssue} 期</p>
+              <h3>${escapeHtml(record.type === 'pl3' ? '排列三' : '大乐透')} · ${escapeHtml(formatRecordTime(record.createdAt))}</h3>
+              <p>使用截至第 ${escapeHtml(record.baseIssue || '--')} 期的历史数据，预测第 ${escapeHtml(record.targetIssue)} 期</p>
             </div>
             <div class="history-record-actions">
               <span class="history-status ${statusClass}">${statusText}</span>
-              <button class="history-copy-btn" data-copy-record-id="${record.id}" onclick="App.copyPredictionRecord('${record.id}')">
+              <button class="history-copy-btn" data-copy-record-id="${escapeHtml(record.id)}" onclick="App.copyPredictionRecord('${escapeHtml(record.id)}')">
                 复制本轮
               </button>
             </div>
@@ -760,21 +817,13 @@
 
   function renderPredictions(predictions) {
     const grid = document.getElementById('predictionsGrid');
-    
-    const strategyLabels = {
-      cold: '❄️ 冷号优先',
-      hot: '🔥 热号优先',
-      balanced: '⚖️ 均衡推荐',
-      gap: '📊 遗漏回补',
-      random: '📉 布林线策略'
-    };
 
     const isPl3 = state.currentLottery === 'pl3';
-    
+
     grid.innerHTML = predictions.map((p, i) => `
       <div class="prediction-card card" style="animation-delay: ${i * 0.1}s">
         <div class="pred-header">
-          <span class="pred-label">${strategyLabels[p.strategy] || p.strategy}</span>
+          <span class="pred-label">${escapeHtml(STRATEGY_LABELS_EMOJI[p.strategy] || p.strategy)}</span>
           <span class="pred-num">方案 ${i + 1}</span>
         </div>
         <div class="pred-balls">
@@ -804,28 +853,18 @@
     const isPl3 = state.currentLottery === 'pl3';
     const text = formatPredictionLines(state.predictions, isPl3);
 
-    const doFeedback = () => {
+    copyToClipboard(text, () => {
       const btn = document.getElementById('btnCopyAll');
       const originalHTML = btn.innerHTML;
       btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> 复制成功！`;
       btn.style.borderColor = 'var(--accent)';
       btn.style.color = 'var(--accent)';
-      
       setTimeout(() => {
         btn.innerHTML = originalHTML;
         btn.style.borderColor = '';
         btn.style.color = '';
       }, 2000);
-    };
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(doFeedback).catch(err => {
-        console.warn('Navigator clipboard failed, trying fallback:', err);
-        fallbackCopy(text, doFeedback);
-      });
-    } else {
-      fallbackCopy(text, doFeedback);
-    }
+    });
   }
 
   function copyPredictionRecord(recordId) {
@@ -835,26 +874,16 @@
     const text = formatPredictionLines(record.predictions, record.type === 'pl3');
     const btn = document.querySelector(`[data-copy-record-id="${recordId}"]`);
 
-    const doFeedback = () => {
+    copyToClipboard(text, () => {
       if (!btn) return;
       const originalText = btn.textContent;
       btn.textContent = '已复制';
       btn.classList.add('copied');
-
       setTimeout(() => {
         btn.textContent = originalText;
         btn.classList.remove('copied');
       }, 1600);
-    };
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(doFeedback).catch(err => {
-        console.warn('Navigator clipboard failed, trying fallback:', err);
-        fallbackCopy(text, doFeedback);
-      });
-    } else {
-      fallbackCopy(text, doFeedback);
-    }
+    });
   }
 
   // ==================== 号码比对模块 ====================
@@ -915,7 +944,7 @@
     const isPl3 = state.currentLottery === 'pl3';
 
     const lines = inputVal.split('\n');
-    let html = '<h4>核对结果对比（对比最新第 ' + latestDraw.issue + ' 期）</h4>';
+    let html = '<h4>核对结果对比（对比最新第 ' + escapeHtml(latestDraw.issue) + ' 期）</h4>';
     let hasValidLines = false;
 
     lines.forEach((line, index) => {
@@ -1090,13 +1119,6 @@
   function renderBacktestComparison(results, isPl3) {
     if (!results.strategyStats && !results.baselineStats) return '';
 
-    const strategyLabels = {
-      cold: '冷号优先',
-      hot: '热号优先',
-      balanced: '均衡推荐',
-      gap: '遗漏回补',
-      random: '布林线策略'
-    };
     const baselineLabels = {
       random: '纯随机基线',
       constrainedRandom: '约束随机基线'
@@ -1117,7 +1139,7 @@
     }
 
     const strategyRows = Object.entries(results.strategyStats || {})
-      .map(([name, stat]) => row(strategyLabels[name] || name, stat, 'strategy'))
+      .map(([name, stat]) => row(STRATEGY_LABELS[name] || name, stat, 'strategy'))
       .join('');
     const baselineRows = Object.entries(results.baselineStats || {})
       .map(([name, stat]) => row(baselineLabels[name] || name, stat, 'baseline'))
@@ -1143,13 +1165,6 @@
       `;
     }
 
-    const strategyLabels = {
-      cold: '冷号优先',
-      hot: '热号优先',
-      balanced: '均衡推荐',
-      gap: '遗漏回补',
-      random: '布林线策略'
-    };
     const baselineLabels = {
       random: '纯随机基线',
       constrainedRandom: '约束随机基线'
@@ -1185,7 +1200,7 @@
       const strategyStats = windowReport.summary.strategyStats || {};
       const baselineStats = windowReport.summary.baselineStats || {};
       const strategyRows = strategyOrder
-        .map(name => row(strategyLabels[name] || name, strategyStats[name], 'strategy'))
+        .map(name => row(STRATEGY_LABELS[name] || name, strategyStats[name], 'strategy'))
         .join('');
       const baselineRows = baselineOrder
         .map(name => row(baselineLabels[name] || name, baselineStats[name], 'baseline'))
@@ -1352,10 +1367,11 @@
     });
     
     // 搜索筛选
-    document.getElementById('searchInput').addEventListener('input', (e) => {
-      state.searchKeyword = e.target.value.trim();
+    const debouncedFilter = debounce(() => {
+      state.searchKeyword = document.getElementById('searchInput').value.trim();
       filterHistory();
-    });
+    }, 250);
+    document.getElementById('searchInput').addEventListener('input', debouncedFilter);
     
     document.getElementById('yearFilter').addEventListener('change', (e) => {
       state.yearFilter = e.target.value;
@@ -1385,10 +1401,10 @@
         btn.classList.remove('active');
       } else {
         if (state.selectedTrendNumbers.length >= 5) {
-          // 最多选5个
           const oldNum = state.selectedTrendNumbers.shift();
           const oldBtn = document.querySelector(`.trend-num-btn[data-num="${oldNum}"]`);
           if (oldBtn) oldBtn.classList.remove('active');
+          showToast('最多选择 5 个号码');
         }
         state.selectedTrendNumbers.push(num);
         btn.classList.add('active');
@@ -1499,9 +1515,14 @@
     document.getElementById('btnCopyAll').style.display = 'none';
     document.getElementById('backtestSection').style.display = 'none';
 
+    const loadStart = Date.now();
     const loaded = await loadData();
     loadPredictionRecords();
     renderPredictionHistory();
+
+    const elapsed = Date.now() - loadStart;
+    const minDisplay = 300;
+    if (elapsed < minDisplay) await new Promise(r => setTimeout(r, minDisplay - elapsed));
 
     overlay.classList.add('fade-out');
     setTimeout(() => overlay.style.display = 'none', 500);
@@ -1539,10 +1560,15 @@
     initParticles();
     bindEvents();
     
+    const loadStart = Date.now();
     const loaded = await loadData();
     loadPredictionRecords();
     renderPredictionHistory();
-    
+
+    const elapsed = Date.now() - loadStart;
+    const minDisplay = 300;
+    if (elapsed < minDisplay) await new Promise(r => setTimeout(r, minDisplay - elapsed));
+
     const overlay = document.getElementById('loadingOverlay');
     overlay.classList.add('fade-out');
     setTimeout(() => overlay.style.display = 'none', 500);

@@ -19,7 +19,6 @@ function parseOfficialItem(item) {
     issue: item.lotteryDrawNum,
     date: item.lotteryDrawTime ? item.lotteryDrawTime.split(' ')[0] : '',
     front: numbers.slice(0, 3),
-    back: [],
     sales: item.totalSaleAmount ? parseInt(String(item.totalSaleAmount).replace(/,/g, ''), 10) : null,
     pool: item.poolBalanceAfterdraw ? parseInt(String(item.poolBalanceAfterdraw).replace(/,/g, ''), 10) : null
   };
@@ -31,7 +30,6 @@ function parseJisuItem(item) {
     issue: item.issueno,
     date: item.opendate || '',
     front: front.slice(0, 3),
-    back: [],
     sales: item.saleamount ? parseInt(String(item.saleamount).replace(/,/g, ''), 10) : null,
     pool: item.totalmoney ? parseInt(String(item.totalmoney).replace(/,/g, ''), 10) : null
   };

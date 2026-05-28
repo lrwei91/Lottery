@@ -87,7 +87,7 @@ function saveRecords(outputFile, records, sourceName) {
     data: records
   };
 
-  fs.writeFileSync(outputFile, JSON.stringify(output, null, 2), 'utf8');
+  fs.writeFileSync(outputFile, JSON.stringify(output), 'utf8');
 }
 
 function validateRecord(record, expectedFrontCount, expectedBackCount) {
@@ -97,7 +97,7 @@ function validateRecord(record, expectedFrontCount, expectedBackCount) {
   if (!Array.isArray(record.front) || record.front.length !== expectedFrontCount) {
     throw new Error(`第 ${record.issue} 期前区数量异常: ${JSON.stringify(record.front)}`);
   }
-  if (!Array.isArray(record.back) || record.back.length !== expectedBackCount) {
+  if (expectedBackCount > 0 && (!Array.isArray(record.back) || record.back.length !== expectedBackCount)) {
     throw new Error(`第 ${record.issue} 期后区数量异常: ${JSON.stringify(record.back)}`);
   }
   if ([...record.front, ...record.back].some(num => !Number.isFinite(num))) {
