@@ -74,6 +74,74 @@
     'DR Congo': 'CD'
   };
 
+  const COUNTRY_CN = {
+    Argentina: '阿根廷',
+    Brazil: '巴西',
+    France: '法国',
+    Germany: '德国',
+    Spain: '西班牙',
+    England: '英格兰',
+    Portugal: '葡萄牙',
+    Netherlands: '荷兰',
+    Italy: '意大利',
+    Belgium: '比利时',
+    Croatia: '克罗地亚',
+    Switzerland: '瑞士',
+    Austria: '奥地利',
+    Poland: '波兰',
+    Ukraine: '乌克兰',
+    Romania: '罗马尼亚',
+    'Czech Republic': '捷克',
+    Turkey: '土耳其',
+    Serbia: '塞尔维亚',
+    Sweden: '瑞典',
+    Morocco: '摩洛哥',
+    Senegal: '塞内加尔',
+    Egypt: '埃及',
+    Cameroon: '喀麦隆',
+    Nigeria: '尼日利亚',
+    Algeria: '阿尔及利亚',
+    Ghana: '加纳',
+    'Ivory Coast': '科特迪瓦',
+    Tunisia: '突尼斯',
+    Japan: '日本',
+    'South Korea': '韩国',
+    Iran: '伊朗',
+    Qatar: '卡塔尔',
+    'Saudi Arabia': '沙特阿拉伯',
+    Australia: '澳大利亚',
+    USA: '美国',
+    Mexico: '墨西哥',
+    Canada: '加拿大',
+    Panama: '巴拿马',
+    'Costa Rica': '哥斯达黎加',
+    Honduras: '洪都拉斯',
+    Jamaica: '牙买加',
+    Haiti: '海地',
+    'New Zealand': '新西兰',
+    Ecuador: '厄瓜多尔',
+    Paraguay: '巴拉圭',
+    Colombia: '哥伦比亚',
+    Uruguay: '乌拉圭',
+    Uzbekistan: '乌兹别克斯坦',
+    Jordan: '约旦',
+    'Cape Verde': '佛得角',
+    'DR Congo': '刚果民主共和国'
+  };
+
+  function countryName(english) {
+    return COUNTRY_CN[english] || english;
+  }
+
+  function translateText(text) {
+    if (!text) return '';
+    let result = text;
+    for (const en of Object.keys(COUNTRY_CN)) {
+      result = result.split(en).join(countryName(en));
+    }
+    return result;
+  }
+
   const H2H_RECORDS = {
     'Argentina|Brazil': { wA: 41, d: 26, wB: 47, t: 114, note: '南美经典对决，巴西总体占优。' },
     'Argentina|France': { wA: 5, d: 3, wB: 4, t: 12, note: '2022 决赛重演，阿根廷点球险胜。' },
@@ -285,7 +353,7 @@
       <div class="wc-top-card">
         <span class="wc-rank">${index + 1}</span>
         <span class="wc-code">${code(team.country)}</span>
-        <span class="wc-name">${escapeHtml(team.country)}</span>
+        <span class="wc-name">${escapeHtml(countryName(team.country))}</span>
         <strong>${pct(team.final_prob, 2)}</strong>
       </div>
     `).join('');
@@ -299,7 +367,7 @@
           <div class="wc-rank ${index < 3 ? `is-top-${index + 1}` : ''}">${index + 1}</div>
           <div class="wc-code">${code(team.country)}</div>
           <div class="wc-team-main">
-            <div class="wc-team-name">${escapeHtml(team.country)}</div>
+            <div class="wc-team-name">${escapeHtml(countryName(team.country))}</div>
             <div class="wc-team-sub">Elo ${(team.elo || 0).toFixed(0)} · 修正 Elo ${(team.mod_elo || team.elo || 0).toFixed(0)}</div>
             <div class="wc-progress"><span style="width:${Math.min(100, probability * 4).toFixed(1)}%"></span></div>
           </div>
@@ -342,7 +410,7 @@
         <details class="wc-detail-row">
           <summary>
             <span class="wc-code">${code(team.country)}</span>
-            <span class="wc-team-name">${escapeHtml(team.country)}</span>
+            <span class="wc-team-name">${escapeHtml(countryName(team.country))}</span>
             <strong>${pct(team.final_prob, 1)}</strong>
           </summary>
           <div class="wc-factor-list">${bars}</div>
@@ -369,8 +437,8 @@
       <details class="wc-detail-row">
         <summary>
           <span class="wc-code">${code(team.country)}</span>
-          <span class="wc-team-name">${escapeHtml(team.country)}</span>
-          <span class="wc-pill">${escapeHtml(team.verdict || '玄学中性')}</span>
+          <span class="wc-team-name">${escapeHtml(countryName(team.country))}</span>
+          <span class="wc-pill">${escapeHtml(translateText(team.verdict) || '玄学中性')}</span>
           <strong>${pct(team.final_prob, 2)}</strong>
         </summary>
         <div class="wc-mystic-grid">
@@ -417,7 +485,7 @@
         <div class="wc-ucl-card">
           <div class="wc-code">${code(country)}</div>
           <div>
-            <h3>${escapeHtml(country)}</h3>
+            <h3>${escapeHtml(countryName(country))}</h3>
             <p>${escapeHtml(item.description || '欧冠心态信号')}</p>
             <strong class="${clsByShift(item.total_bonus)}">${signedPct(item.total_bonus, 2)}</strong>
           </div>
@@ -429,7 +497,7 @@
 
   function renderH2hPanel() {
     const options = sortedTeams().map(team => (
-      `<option value="${escapeHtml(team.country)}">${code(team.country)} ${escapeHtml(team.country)} · ${pct(team.final_prob, 1)}</option>`
+      `<option value="${escapeHtml(team.country)}">${code(team.country)} ${escapeHtml(countryName(team.country))} · ${pct(team.final_prob, 1)}</option>`
     )).join('');
 
     return `
@@ -452,7 +520,7 @@
 
   function renderSquadPanel() {
     const options = sortedTeams().map(team => (
-      `<option value="${escapeHtml(team.country)}">${code(team.country)} ${escapeHtml(team.country)} · ${pct(team.final_prob, 1)}</option>`
+      `<option value="${escapeHtml(team.country)}">${code(team.country)} ${escapeHtml(countryName(team.country))} · ${pct(team.final_prob, 1)}</option>`
     )).join('');
 
     return `
@@ -480,7 +548,7 @@
         return `
           <div class="wc-market-row">
             <span class="wc-code">${code(team.country)}</span>
-            <span class="wc-team-name">${escapeHtml(team.country)}</span>
+            <span class="wc-team-name">${escapeHtml(countryName(team.country))}</span>
             <div class="wc-market-bars">
               <span style="width:${(model / max * 100).toFixed(0)}%"></span>
               <i style="width:${(market / max * 100).toFixed(0)}%"></i>
@@ -507,7 +575,7 @@
         <div class="wc-value-grid">
           ${valuePicks.map(team => `
             <div class="wc-value-card">
-              <span>${code(team.country)} ${escapeHtml(team.country)}</span>
+              <span>${code(team.country)} ${escapeHtml(countryName(team.country))}</span>
               <strong>${signedPct(team.final_prob - POLY_WINNER[team.country].price, 1)}</strong>
               <small>模型 ${pct(team.final_prob, 1)} · 市场 ${pct(POLY_WINNER[team.country].price, 1)}</small>
             </div>
@@ -772,9 +840,9 @@
       </div>
       <div class="wc-score-card">
         <div class="wc-expected">
-          <span>${escapeHtml(teamA.country)} xG <strong>${scores.lambdaA.toFixed(2)}</strong></span>
+          <span>${escapeHtml(countryName(teamA.country))} xG <strong>${scores.lambdaA.toFixed(2)}</strong></span>
           <span>精选比分 <strong>${scores.featured.goalsA}-${scores.featured.goalsB}</strong></span>
-          <span>${escapeHtml(teamB.country)} xG <strong>${scores.lambdaB.toFixed(2)}</strong></span>
+          <span>${escapeHtml(countryName(teamB.country))} xG <strong>${scores.lambdaB.toFixed(2)}</strong></span>
         </div>
         <div class="wc-score-grid">
           ${scores.likely.map(item => `
@@ -833,7 +901,7 @@
       <div class="wc-squad-head">
         <div class="wc-code">${code(team.country)}</div>
         <div>
-          <h3>${escapeHtml(team.country)}</h3>
+          <h3>${escapeHtml(countryName(team.country))}</h3>
           <p>Elo ${(team.elo || 0).toFixed(0)} · 修正 Elo ${(team.mod_elo || team.elo || 0).toFixed(0)} · ${players.length} players</p>
         </div>
         <strong>${pct(team.final_prob, 2)}</strong>
