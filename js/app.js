@@ -21,6 +21,7 @@
     selectedTrendNumbers: [1, 5, 10],
     predictions: [],
     predictionRecords: [],
+    strategyEvolution: null,
     countdownTimerId: null
   };
 
@@ -147,6 +148,10 @@
     return `ticai_prediction_records_v1_${type}`;
   }
 
+  function getEvolutionStorageKey(type = state.currentLottery) {
+    return `ticai_strategy_evolution_v1_${type}`;
+  }
+
   function loadPredictionRecords() {
     try {
       const raw = localStorage.getItem(getPredictionStorageKey());
@@ -166,6 +171,25 @@
       );
     } catch (error) {
       console.warn('预测记录保存失败:', error);
+    }
+  }
+
+  function loadStrategyEvolution() {
+    try {
+      const raw = localStorage.getItem(getEvolutionStorageKey());
+      state.strategyEvolution = raw ? JSON.parse(raw) : null;
+    } catch (error) {
+      console.warn('策略进化读取失败:', error);
+      state.strategyEvolution = null;
+    }
+  }
+
+  function persistStrategyEvolution(evolution) {
+    state.strategyEvolution = evolution;
+    try {
+      localStorage.setItem(getEvolutionStorageKey(), JSON.stringify(evolution));
+    } catch (error) {
+      console.warn('策略进化保存失败:', error);
     }
   }
 
@@ -832,7 +856,8 @@
     btn.innerHTML = originalHTML.replace('生成预测号码', '生成中...');
 
     try {
-      const predictions = Predictor.generateMultiplePredictions(state.data, 5);
+      const evolution = rebuildStrategyEvolution();
+      const predictions = Predictor.generateMultiplePredictions(state.data, 5, { evolution });
       state.predictions = predictions;
       savePredictionRecord(predictions);
 
@@ -886,28 +911,90 @@
 
     if (isPl3) {
       const result = checkPL3Winning(prediction.front, draw.front);
+      const positionMatches = prediction.front.filter((n, index) => n === draw.front[index]).length;
+      const matchedValues = getMultisetMatches(prediction.front, draw.front);
+      const valueMatches = matchedValues.length;
+      const prize = result.prize;
+      const reason = buildPL3ReviewReason(prediction.front, draw.front, prize, positionMatches, valueMatches);
+      const matchedFront = prize === '直选'
+        ? prediction.front.filter((n, index) => n === draw.front[index])
+        : prize
+          ? matchedValues
+          : prediction.front.filter((n, index) => n === draw.front[index]);
       return {
-        frontMatches: result.fCount,
+        frontMatches: positionMatches,
         backMatches: 0,
-        prize: result.prize,
-        matchedFront: prediction.front.filter((n, index) => {
-          if (result.prize === '直选') return n === draw.front[index];
-          return result.prize && draw.front.includes(n);
-        }),
-        matchedBack: []
+        valueMatches,
+        prize,
+        matchedFront,
+        matchedBack: [],
+        reason,
+        tag: prize ? `命中${prize}` : (valueMatches > positionMatches ? '位置错位' : '未达门槛'),
+        score: prize ? (prize === '直选' ? 3.5 : 3) : (positionMatches * 0.45 + valueMatches * 0.35)
       };
     }
 
     const matchedFront = prediction.front.filter(n => draw.front.includes(n));
     const matchedBack = prediction.back.filter(n => draw.back.includes(n));
     const prize = getPrizeTierName(matchedFront.length, matchedBack.length);
+    const reason = buildDLTReviewReason(matchedFront.length, matchedBack.length, prize);
     return {
       frontMatches: matchedFront.length,
       backMatches: matchedBack.length,
       prize,
       matchedFront,
-      matchedBack
+      matchedBack,
+      reason,
+      tag: prize ? prize : getDLTFailureTag(matchedFront.length, matchedBack.length),
+      score: matchedFront.length + matchedBack.length * 1.2 + (prize ? 2 : 0)
     };
+  }
+
+  function getMultisetMatches(input, target) {
+    const remaining = target.slice();
+    const matches = [];
+    input.forEach(num => {
+      const idx = remaining.indexOf(num);
+      if (idx >= 0) {
+        matches.push(num);
+        remaining.splice(idx, 1);
+      }
+    });
+    return matches;
+  }
+
+  function buildDLTReviewReason(frontMatches, backMatches, prize) {
+    if (prize) {
+      return `命中前区 ${frontMatches} 个、后区 ${backMatches} 个，达到${prize}条件。`;
+    }
+    if (backMatches === 2 && frontMatches < 1) {
+      return `后区全中，但前区仅命中 ${frontMatches} 个，低于九等奖的前区补强门槛。`;
+    }
+    if (frontMatches >= 3 && backMatches === 0) {
+      return `前区命中 ${frontMatches} 个，但后区未命中，缺少后区支撑。`;
+    }
+    if (frontMatches < 3 && backMatches < 2) {
+      return `前区仅命中 ${frontMatches} 个、后区命中 ${backMatches} 个，整体低于九等奖组合门槛。`;
+    }
+    return `命中 ${frontMatches}+${backMatches}，距离最低奖级仍差前区或后区关键命中。`;
+  }
+
+  function getDLTFailureTag(frontMatches, backMatches) {
+    if (frontMatches >= 3 && backMatches === 0) return '后区失配';
+    if (backMatches === 2 && frontMatches === 0) return '前区不足';
+    return '中奖门槛不足';
+  }
+
+  function buildPL3ReviewReason(input, target, prize, positionMatches, valueMatches) {
+    if (prize === '直选') return `三位号码与开奖位置完全一致，命中直选。`;
+    if (prize) return `三位数字集合与开奖号一致，但顺序不同，命中${prize}。`;
+    if (valueMatches > positionMatches) {
+      return `命中 ${valueMatches} 个数字，但仅 ${positionMatches} 个在正确位置，主要问题是位置错位。`;
+    }
+    if (positionMatches > 0) {
+      return `有 ${positionMatches} 个位置命中，但数字集合未达到组选条件。`;
+    }
+    return `预测 ${input.join('')} 与开奖号 ${target.join('')} 无位置命中，数字集合也未形成组选命中。`;
   }
 
   function resolveReviewDraw(record) {
@@ -931,6 +1018,123 @@
     }).join('');
   }
 
+  function renderDrawBalls(draw, isPl3) {
+    if (!draw) return '';
+    return `
+      <div class="review-draw-balls">
+        ${renderMiniBalls(draw.front || [], 'front')}
+        ${isPl3 ? '' : '<span class="history-plus">+</span>'}
+        ${isPl3 ? '' : renderMiniBalls(draw.back || [], 'back')}
+      </div>
+    `;
+  }
+
+  function createEmptyStrategyStat(strategy) {
+    return {
+      strategy,
+      reviewCount: 0,
+      winCount: 0,
+      totalFrontMatches: 0,
+      totalBackMatches: 0,
+      totalScore: 0,
+      averageMatch: 0,
+      recentPerformance: 0,
+      weightMultiplier: 1,
+      lastReviewIssue: '',
+      direction: 'stable'
+    };
+  }
+
+  function clamp(num, min, max) {
+    return Math.max(min, Math.min(max, num));
+  }
+
+  function rebuildStrategyEvolution() {
+    const isPl3 = isPL3();
+    const stats = {};
+    Object.keys(STRATEGY_LABELS).forEach(strategy => {
+      stats[strategy] = createEmptyStrategyStat(strategy);
+      stats[strategy].recentScores = [];
+    });
+
+    state.predictionRecords.slice().reverse().forEach(record => {
+      const reviewDraw = resolveReviewDraw(record);
+      if (!reviewDraw) return;
+
+      (record.predictions || []).forEach(prediction => {
+        const strategy = prediction.strategy || 'balanced';
+        if (!stats[strategy]) stats[strategy] = createEmptyStrategyStat(strategy);
+        if (!stats[strategy].recentScores) stats[strategy].recentScores = [];
+
+        const evaluation = evaluatePrediction(prediction, reviewDraw, isPl3);
+        if (!evaluation) return;
+
+        stats[strategy].reviewCount += 1;
+        stats[strategy].winCount += evaluation.prize ? 1 : 0;
+        stats[strategy].totalFrontMatches += evaluation.frontMatches || 0;
+        stats[strategy].totalBackMatches += evaluation.backMatches || 0;
+        stats[strategy].totalScore += evaluation.score || 0;
+        stats[strategy].lastReviewIssue = String(reviewDraw.issue || '');
+        stats[strategy].recentScores.push(evaluation.score || 0);
+        stats[strategy].recentScores = stats[strategy].recentScores.slice(-6);
+      });
+    });
+
+    Object.values(stats).forEach(stat => {
+      if (!stat.reviewCount) {
+        stat.recentPerformance = 0;
+        stat.weightMultiplier = 1;
+        stat.direction = 'stable';
+        delete stat.recentScores;
+        return;
+      }
+
+      const baseDivisor = isPl3 ? stat.reviewCount : stat.reviewCount;
+      stat.averageMatch = Math.round(((stat.totalFrontMatches + stat.totalBackMatches) / baseDivisor) * 100) / 100;
+      stat.recentPerformance = Math.round((stat.recentScores.reduce((sum, score) => sum + score, 0) / stat.recentScores.length) * 100) / 100;
+
+      const baseline = isPl3 ? 1.05 : 2.15;
+      const winLift = stat.winCount > 0 ? Math.min(0.12, stat.winCount / stat.reviewCount * 0.18) : 0;
+      const performanceDelta = clamp((stat.recentPerformance - baseline) / baseline, -0.3, 0.3);
+      stat.weightMultiplier = Math.round(clamp(1 + performanceDelta * 0.45 + winLift, 0.75, 1.25) * 100) / 100;
+      stat.direction = stat.weightMultiplier >= 1.06 ? 'up' : stat.weightMultiplier <= 0.94 ? 'down' : 'stable';
+      delete stat.recentScores;
+    });
+
+    const evolution = {
+      type: state.currentLottery,
+      updatedAt: new Date().toISOString(),
+      strategyStats: stats,
+      summary: buildEvolutionAdvice(stats)
+    };
+    persistStrategyEvolution(evolution);
+    return evolution;
+  }
+
+  function buildEvolutionAdvice(stats) {
+    const reviewed = Object.values(stats).filter(stat => stat.reviewCount > 0);
+    if (!reviewed.length) return '暂无已复盘记录，策略进化将在开奖后自动生成。';
+
+    const sorted = reviewed.slice().sort((a, b) => b.weightMultiplier - a.weightMultiplier);
+    const top = sorted[0];
+    const weak = sorted[sorted.length - 1];
+    const topLabel = STRATEGY_LABELS[top.strategy] || top.strategy;
+    const weakLabel = STRATEGY_LABELS[weak.strategy] || weak.strategy;
+
+    if (top.strategy === weak.strategy || Math.abs(top.weightMultiplier - weak.weightMultiplier) < 0.08) {
+      return `各策略近期表现接近，下期维持均衡轮转，避免单期复盘过拟合。`;
+    }
+    return `${topLabel}近期命中更稳，下期提高优先级；${weakLabel}连续表现偏弱，温和降低权重。`;
+  }
+
+  function getStrategyEvolutionTag(strategy) {
+    const stat = state.strategyEvolution?.strategyStats?.[strategy];
+    if (!stat || !stat.reviewCount) return '策略待观察';
+    if (stat.direction === 'up') return '策略加权上调';
+    if (stat.direction === 'down') return '策略加权下调';
+    return '策略权重稳定';
+  }
+
   function renderPredictionHistory() {
     const section = document.getElementById('predictionHistorySection');
     const list = document.getElementById('predictionHistoryList');
@@ -943,6 +1147,7 @@
     }
 
     const isPl3 = isPL3();
+    const evolution = rebuildStrategyEvolution();
 
     section.style.display = 'block';
     list.innerHTML = state.predictionRecords.map(record => {
@@ -959,6 +1164,9 @@
           : isPl3
             ? (evaluation.prize ? `命中 ${evaluation.prize}` : `位置命中 ${evaluation.frontMatches}/3`)
             : `${evaluation.frontMatches}+${evaluation.backMatches}${evaluation.prize ? ' · ' + evaluation.prize : ''}`;
+        const reasonText = evaluation ? evaluation.reason : '等待开奖后自动生成复盘原因。';
+        const resultTag = evaluation ? evaluation.tag : '待开奖';
+        const evolutionTag = getStrategyEvolutionTag(prediction.strategy);
 
         return `
           <div class="prediction-history-ticket">
@@ -971,9 +1179,35 @@
               ${isPl3 ? '' : '<span class="history-plus">+</span>'}
               ${isPl3 ? '' : renderMiniBalls(prediction.back, 'back', evaluation ? evaluation.matchedBack : [])}
             </div>
+            <div class="history-ticket-tags">
+              <span class="review-tag ${evaluation && evaluation.prize ? 'win' : ''}">${escapeHtml(resultTag)}</span>
+              <span class="review-tag evolution">${escapeHtml(evolutionTag)}</span>
+            </div>
+            <p class="history-ticket-reason">${escapeHtml(reasonText)}</p>
           </div>
         `;
       }).join('');
+
+      const reviewSummary = reviewDraw
+        ? `
+          <div class="history-review-summary">
+            <div>
+              <span class="review-kicker">本期开奖号码</span>
+              <strong>第 ${escapeHtml(reviewDraw.issue)} 期</strong>
+            </div>
+            ${renderDrawBalls(reviewDraw, isPl3)}
+          </div>
+          <div class="history-evolution-advice">
+            <span>策略进化建议</span>
+            <p>${escapeHtml(evolution.summary)}</p>
+          </div>
+        `
+        : `
+          <div class="history-evolution-advice pending">
+            <span>策略进化建议</span>
+            <p>等待第 ${escapeHtml(record.targetIssue)} 期开奖后生成复盘结论，并反哺下一轮预测权重。</p>
+          </div>
+        `;
 
       return `
         <article class="prediction-history-item">
@@ -989,6 +1223,7 @@
               </button>
             </div>
           </div>
+          ${reviewSummary}
           <div class="prediction-history-tickets">
             ${tickets}
           </div>
@@ -1001,7 +1236,9 @@
     if (!state.predictionRecords.length) return;
     state.predictionRecords = [];
     persistPredictionRecords();
+    rebuildStrategyEvolution();
     renderPredictionHistory();
+    showToast('预测记录已清空，策略进化已重置');
   }
 
   function formatPredictionLines(predictions, isPl3) {
@@ -1726,6 +1963,7 @@
     const loadStart = Date.now();
     const loaded = await loadData();
     loadPredictionRecords();
+    loadStrategyEvolution();
     renderPredictionHistory();
 
     const elapsed = Date.now() - loadStart;
@@ -1773,6 +2011,7 @@
     const loadStart = Date.now();
     const loaded = await loadData();
     loadPredictionRecords();
+    loadStrategyEvolution();
     renderPredictionHistory();
 
     const elapsed = Date.now() - loadStart;

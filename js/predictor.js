@@ -261,7 +261,7 @@
           front.set(num, front.get(num) + weight);
         }
       }
-      for (const num of draw.back) {
+      for (const num of (draw.back || [])) {
         if (back.has(num)) {
           back.set(num, back.get(num) + weight);
         }
@@ -1476,6 +1476,44 @@
   // 9. 生成多注预测
   // ============================================================
 
+  function getEvolutionMultiplier(evolution, strategy) {
+    const stat = evolution && evolution.strategyStats && evolution.strategyStats[strategy];
+    if (!stat || !Number.isFinite(stat.weightMultiplier)) return 1;
+    return Math.max(0.75, Math.min(1.25, stat.weightMultiplier));
+  }
+
+  function buildStrategyOrder(evolution, count) {
+    const ranked = DEFAULT_STRATEGIES
+      .map(strategy => ({
+        strategy,
+        multiplier: getEvolutionMultiplier(evolution, strategy)
+      }))
+      .sort((a, b) => b.multiplier - a.multiplier || DEFAULT_STRATEGIES.indexOf(a.strategy) - DEFAULT_STRATEGIES.indexOf(b.strategy))
+      .map(item => item.strategy);
+
+    if (count <= DEFAULT_STRATEGIES.length) return ranked;
+
+    const expanded = ranked.slice();
+    while (expanded.length < count) {
+      const next = ranked
+        .slice()
+        .sort((a, b) => getEvolutionMultiplier(evolution, b) - getEvolutionMultiplier(evolution, a));
+      expanded.push(...next);
+    }
+    return expanded;
+  }
+
+  function formatEvolutionReason(evolution, strategy) {
+    const stat = evolution && evolution.strategyStats && evolution.strategyStats[strategy];
+    if (!stat || !stat.reviewCount) return '策略进化: 暂无复盘样本，沿用基础权重';
+    const direction = stat.direction === 'up'
+      ? '上调'
+      : stat.direction === 'down'
+        ? '下调'
+        : '稳定';
+    return `策略进化: ${direction}至 ${stat.weightMultiplier}x | 复盘${stat.reviewCount}次 / 中奖${stat.winCount}次 / 近期表现${stat.recentPerformance}`;
+  }
+
   /**
    * 使用多种策略生成多注预测号码
    * @param {Array} data - 开奖数据
@@ -1483,7 +1521,7 @@
    * @returns {Array<{ front, back, scores, reasoning, strategy }>}
    */
   function generateMultiplePredictions(data, count = 5, options = {}) {
-    const strategies = DEFAULT_STRATEGIES;
+    const strategies = buildStrategyOrder(options.evolution, count);
     const predictions = [];
     const context = options.context || createPredictionContext(data);
     const rng = options.rng || Math.random;
@@ -1500,6 +1538,7 @@
         seen.add(key);
         predictions.push({
           ...prediction,
+          reasoning: `${prediction.reasoning || ''}\n${formatEvolutionReason(options.evolution, strategy)}`.trim(),
           strategy
         });
       }
@@ -1508,8 +1547,10 @@
 
     while (predictions.length < count) {
       const strategy = strategies[predictions.length % strategies.length];
+      const prediction = generatePrediction(data, strategy, { ...options, rng, context });
       predictions.push({
-        ...generatePrediction(data, strategy, { ...options, rng, context }),
+        ...prediction,
+        reasoning: `${prediction.reasoning || ''}\n${formatEvolutionReason(options.evolution, strategy)}`.trim(),
         strategy
       });
     }

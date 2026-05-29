@@ -1,0 +1,184 @@
+{
+  "issue": "26058",
+  "date": "2026-05-27",
+  "type": "dlt",
+  "draw": {
+    "issue": "26058",
+    "date": "2026-05-27",
+    "front": [
+      7,
+      12,
+      13,
+      18,
+      34
+    ],
+    "back": [
+      1,
+      5
+    ],
+    "sales": 354634349,
+    "pool": 786536913
+  },
+  "predictions": [
+    {
+      "strategy": "balanced",
+      "front": [
+        8,
+        9,
+        13,
+        18,
+        28
+      ],
+      "back": [
+        4,
+        12
+      ],
+      "reasoning": "策略: balanced | 基于最近50期频率/遗漏/冷热分析",
+      "evaluation": {
+        "frontMatches": 2,
+        "backMatches": 0,
+        "prize": "未中奖",
+        "matchedFront": [
+          13,
+          18
+        ],
+        "matchedBack": [],
+        "unmatchedFront": [
+          8,
+          9,
+          28
+        ],
+        "missedFront": [
+          7,
+          12,
+          34
+        ],
+        "missedBack": [
+          1,
+          5
+        ]
+      }
+    },
+    {
+      "strategy": "hot",
+      "front": [
+        19,
+        21,
+        22,
+        29,
+        32
+      ],
+      "back": [
+        4,
+        10
+      ],
+      "reasoning": "策略: hot | 基于最近50期频率/遗漏/冷热分析",
+      "evaluation": {
+        "frontMatches": 0,
+        "backMatches": 0,
+        "prize": "未中奖",
+        "matchedFront": [],
+        "matchedBack": [],
+        "unmatchedFront": [
+          19,
+          21,
+          22,
+          29,
+          32
+        ],
+        "missedFront": [
+          7,
+          12,
+          13,
+          18,
+          34
+        ],
+        "missedBack": [
+          1,
+          5
+        ]
+      }
+    },
+    {
+      "strategy": "cold",
+      "front": [
+        2,
+        9,
+        15,
+        29,
+        30
+      ],
+      "back": [
+        3,
+        12
+      ],
+      "reasoning": "策略: cold | 基于最近50期频率/遗漏/冷热分析",
+      "evaluation": {
+        "frontMatches": 0,
+        "backMatches": 0,
+        "prize": "未中奖",
+        "matchedFront": [],
+        "matchedBack": [],
+        "unmatchedFront": [
+          2,
+          9,
+          15,
+          29,
+          30
+        ],
+        "missedFront": [
+          7,
+          12,
+          13,
+          18,
+          34
+        ],
+        "missedBack": [
+          1,
+          5
+        ]
+      }
+    },
+    {
+      "strategy": "gap",
+      "front": [
+        9,
+        10,
+        20,
+        28,
+        32
+      ],
+      "back": [
+        7,
+        11
+      ],
+      "reasoning": "策略: gap | 基于最近50期频率/遗漏/冷热分析",
+      "evaluation": {
+        "frontMatches": 0,
+        "backMatches": 0,
+        "prize": "未中奖",
+        "matchedFront": [],
+        "matchedBack": [],
+        "unmatchedFront": [
+          9,
+          10,
+          20,
+          28,
+          32
+        ],
+        "missedFront": [
+          7,
+          12,
+          13,
+          18,
+          34
+        ],
+        "missedBack": [
+          1,
+          5
+        ]
+      }
+    }
+  ],
+  "timestamp": "2026-05-29T16:08:01.865Z"
+}
