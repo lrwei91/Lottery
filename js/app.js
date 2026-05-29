@@ -25,6 +25,7 @@
   };
 
   const PREDICTION_HISTORY_LIMIT = 20;
+  const LOTTERY_SECTION_NAMES = ['home', 'history', 'stats', 'predict'];
 
   const LOTTERY_CONFIG = {
     dlt: {
@@ -58,6 +59,13 @@
       selectedTrendNumbers: [1, 3, 5],
       checkerPlaceholder: '输入格式示例：\n5 4 4\n4 6 6\n039',
       checkerHelp: '请输入您的排列三号码，支持核对多组（每组一行），每组 3 位数字。'
+    },
+    worldcup: {
+      label: '2026 世界杯',
+      logo: ['世', '杯'],
+      subtitle: '冠军概率与对战预测',
+      dataBadge: '52 支球队',
+      updateTime: '数据日期 2026-05-26'
     }
   };
 
@@ -76,6 +84,10 @@
 
   function isPL3() {
     return state.currentLottery === 'pl3';
+  }
+
+  function isWorldCup() {
+    return state.currentLottery === 'worldcup';
   }
 
   function escapeHtml(str) {
@@ -225,12 +237,28 @@
     const cfg = getLotteryConfig();
     const appEl = document.getElementById('app');
     appEl.classList.toggle('theme-pl3', state.currentLottery === 'pl3');
-    appEl.classList.toggle('theme-dlt', state.currentLottery !== 'pl3');
+    appEl.classList.toggle('theme-worldcup', isWorldCup());
+    appEl.classList.toggle('theme-dlt', state.currentLottery === 'dlt');
 
     setText('logoBallRed', cfg.logo[0]);
     setText('logoBallBlue', cfg.logo[1]);
     setText('logoTitle', cfg.label);
     setText('logoSubtitle', cfg.subtitle);
+
+    if (isWorldCup()) {
+      const metadata = window.WorldCup?.getMetadata?.();
+      const teamCount = metadata?.teamCount || 52;
+      const sourceDate = metadata?.sourceDataDate || '2026-05-26';
+      document.getElementById('dataCount').innerHTML = `<span class="badge-dot"></span>${teamCount} 支球队`;
+      document.getElementById('updateTime').textContent = `数据日期 ${sourceDate}`;
+      setText('footerTitle', '世界杯预测工具 · 仅供学习参考');
+      setText('footerSubtitle', '数据来源：2026-world-cup-predictor 静态导出 · 所有预测仅供概率研究参考');
+      return;
+    }
+
+    setText('footerTitle', '体彩数据分析工具 · 仅供学习参考');
+    setText('footerSubtitle', '数据来源：中国体育彩票 · 所有数据仅供参考，以官方公布为准');
+
     setText('latestFrontLabel', cfg.frontLabel);
     setText('latestBackLabel', cfg.backLabel);
     setText('historyFrontHeader', cfg.historyFrontHeader);
@@ -1603,11 +1631,16 @@
   }
 
   function switchSection(name) {
+    if (isWorldCup() && name !== 'worldcup') {
+      return;
+    }
+
     state.currentSection = name;
     
     // 切换标签
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-    document.querySelector(`.nav-tab[data-section="${name}"]`).classList.add('active');
+    const activeTab = document.querySelector(`.nav-tab[data-section="${name}"]`);
+    if (activeTab) activeTab.classList.add('active');
     
     // 切换区域
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -1627,10 +1660,50 @@
     }
   }
 
+  async function showWorldCup() {
+    const overlay = document.getElementById('loadingOverlay');
+    overlay.style.display = 'flex';
+    overlay.classList.remove('fade-out');
+
+    state.currentLottery = 'worldcup';
+    applyLotteryCopy();
+
+    document.querySelectorAll('.selector-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.lottery === 'worldcup');
+    });
+
+    if (state.countdownTimerId !== null) {
+      clearInterval(state.countdownTimerId);
+      state.countdownTimerId = null;
+    }
+
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('sectionWorldcup').classList.add('active');
+
+    const loadStart = Date.now();
+    if (window.WorldCup && typeof window.WorldCup.init === 'function') {
+      await window.WorldCup.init();
+    }
+    applyLotteryCopy();
+
+    const elapsed = Date.now() - loadStart;
+    const minDisplay = 300;
+    if (elapsed < minDisplay) await new Promise(r => setTimeout(r, minDisplay - elapsed));
+
+    overlay.classList.add('fade-out');
+    setTimeout(() => overlay.style.display = 'none', 500);
+  }
+
   // ==================== 初始化 ====================
   // ==================== 彩种智能切换 ====================
   async function switchLottery(type) {
     if (!LOTTERY_CONFIG[type] || state.currentLottery === type) return;
+
+    if (type === 'worldcup') {
+      await showWorldCup();
+      return;
+    }
 
     const overlay = document.getElementById('loadingOverlay');
     overlay.style.display = 'flex';
@@ -1645,6 +1718,10 @@
       if (t.dataset.lottery === type) t.classList.add('active');
       else t.classList.remove('active');
     });
+
+    if (!LOTTERY_SECTION_NAMES.includes(state.currentSection)) {
+      state.currentSection = 'home';
+    }
 
     const loadStart = Date.now();
     const loaded = await loadData();

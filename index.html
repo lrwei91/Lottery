@@ -32,6 +32,7 @@
         <div class="lottery-selector" id="lotterySelector">
           <button class="selector-tab active" data-lottery="dlt">超级大乐透</button>
           <button class="selector-tab" data-lottery="pl3">排列三</button>
+          <button class="selector-tab" data-lottery="worldcup">世界杯</button>
           <div class="selector-slider"></div>
         </div>
 
@@ -600,11 +601,20 @@
       </div>
     </section>
 
+    <!-- ==================== 世界杯预测 ==================== -->
+    <section class="section" id="sectionWorldcup">
+      <div id="worldcupRoot">
+        <div class="card">
+          <div class="empty-state">正在加载世界杯预测数据...</div>
+        </div>
+      </div>
+    </section>
+
     <!-- 页脚 -->
     <footer class="footer">
       <div class="footer-inner">
-        <p>体彩数据分析工具 · 仅供学习参考</p>
-        <p class="footer-small">数据来源：中国体育彩票 · 所有数据仅供参考，以官方公布为准</p>
+        <p id="footerTitle">体彩数据分析工具 · 仅供学习参考</p>
+        <p class="footer-small" id="footerSubtitle">数据来源：中国体育彩票 · 所有数据仅供参考，以官方公布为准</p>
       </div>
     </footer>
   </div>
@@ -645,6 +655,7 @@
 
   <script src="js/charts.js"></script>
   <script src="js/predictor.js"></script>
+  <script src="js/worldcup.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
