@@ -1,116 +1,117 @@
 {
-  "issue": "26058",
-  "date": "2026-05-27",
+  "issue": "26059",
+  "date": "2026-05-30",
   "type": "dlt",
   "draw": {
-    "issue": "26058",
-    "date": "2026-05-27",
+    "issue": "26059",
+    "date": "2026-05-30",
     "front": [
-      7,
-      12,
+      6,
       13,
-      18,
-      34
+      17,
+      19,
+      26
     ],
     "back": [
-      1,
-      5
+      7,
+      8
     ],
-    "sales": 354634349,
-    "pool": 786536913
+    "sales": 373161795,
+    "pool": 818749861
   },
   "predictions": [
     {
       "strategy": "balanced",
       "front": [
-        8,
-        9,
-        13,
+        1,
+        16,
+        17,
         18,
-        28
+        30
       ],
       "back": [
-        4,
-        12
+        1,
+        6
       ],
       "reasoning": "策略: balanced | 基于最近50期频率/遗漏/冷热分析",
       "evaluation": {
-        "frontMatches": 2,
+        "frontMatches": 1,
         "backMatches": 0,
         "prize": "未中奖",
         "matchedFront": [
-          13,
-          18
+          17
         ],
         "matchedBack": [],
         "unmatchedFront": [
-          8,
-          9,
-          28
+          1,
+          16,
+          18,
+          30
         ],
         "missedFront": [
-          7,
-          12,
-          34
+          6,
+          13,
+          19,
+          26
         ],
         "missedBack": [
-          1,
-          5
+          7,
+          8
         ]
       }
     },
     {
       "strategy": "hot",
       "front": [
+        12,
+        14,
         19,
-        21,
-        22,
         29,
-        32
+        34
       ],
       "back": [
-        4,
-        10
+        1,
+        4
       ],
       "reasoning": "策略: hot | 基于最近50期频率/遗漏/冷热分析",
       "evaluation": {
-        "frontMatches": 0,
+        "frontMatches": 1,
         "backMatches": 0,
         "prize": "未中奖",
-        "matchedFront": [],
+        "matchedFront": [
+          19
+        ],
         "matchedBack": [],
         "unmatchedFront": [
-          19,
-          21,
-          22,
-          29,
-          32
-        ],
-        "missedFront": [
-          7,
           12,
-          13,
-          18,
+          14,
+          29,
           34
         ],
+        "missedFront": [
+          6,
+          13,
+          17,
+          26
+        ],
         "missedBack": [
-          1,
-          5
+          7,
+          8
         ]
       }
     },
     {
       "strategy": "cold",
       "front": [
-        2,
-        9,
+        7,
+        10,
+        14,
         15,
-        29,
-        30
+        31
       ],
       "back": [
         3,
-        12
+        11
       ],
       "reasoning": "策略: cold | 基于最近50期频率/遗漏/冷热分析",
       "evaluation": {
@@ -120,65 +121,66 @@
         "matchedFront": [],
         "matchedBack": [],
         "unmatchedFront": [
-          2,
-          9,
+          7,
+          10,
+          14,
           15,
-          29,
-          30
+          31
         ],
         "missedFront": [
-          7,
-          12,
+          6,
           13,
-          18,
-          34
+          17,
+          19,
+          26
         ],
         "missedBack": [
-          1,
-          5
+          7,
+          8
         ]
       }
     },
     {
       "strategy": "gap",
       "front": [
-        9,
-        10,
-        20,
-        28,
+        1,
+        7,
+        8,
+        15,
         32
       ],
       "back": [
-        7,
-        11
+        8,
+        10
       ],
       "reasoning": "策略: gap | 基于最近50期频率/遗漏/冷热分析",
       "evaluation": {
         "frontMatches": 0,
-        "backMatches": 0,
+        "backMatches": 1,
         "prize": "未中奖",
         "matchedFront": [],
-        "matchedBack": [],
+        "matchedBack": [
+          8
+        ],
         "unmatchedFront": [
-          9,
-          10,
-          20,
-          28,
+          1,
+          7,
+          8,
+          15,
           32
         ],
         "missedFront": [
-          7,
-          12,
+          6,
           13,
-          18,
-          34
+          17,
+          19,
+          26
         ],
         "missedBack": [
-          1,
-          5
+          7
         ]
       }
     }
   ],
-  "timestamp": "2026-05-29T16:08:01.865Z"
+  "timestamp": "2026-05-30T15:31:17.620Z"
 }
