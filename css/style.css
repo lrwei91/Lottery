@@ -3093,23 +3093,6 @@ body {
   font-size: 0.8rem;
 }
 
-.wc-h2h-controls {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: var(--space-md);
-  align-items: end;
-  margin-bottom: var(--space-lg);
-}
-
-.wc-h2h-controls label {
-  display: grid;
-  gap: var(--space-xs);
-  color: var(--text-secondary);
-  font-size: 0.78rem;
-  font-weight: 700;
-}
-
-.wc-h2h-controls select,
 .wc-select {
   width: 100%;
   background: rgba(255, 255, 255, 0.05);
@@ -3121,14 +3104,6 @@ body {
   min-height: 42px;
   outline: none;
   padding: 9px 12px;
-}
-
-.wc-vs {
-  color: var(--warning);
-  font-family: var(--font-heading);
-  font-size: 1.2rem;
-  font-weight: 900;
-  padding-bottom: 8px;
 }
 
 .wc-winbar {
@@ -3267,6 +3242,38 @@ body {
 .wc-record span {
   color: var(--text-muted);
   font-size: 0.72rem;
+}
+
+.wc-official-h2h-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.wc-official-h2h-list > div {
+  display: grid;
+  grid-template-columns: 82px minmax(0, 1fr);
+  gap: 3px 10px;
+  padding: 9px 10px;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.wc-official-h2h-list span,
+.wc-official-h2h-list small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.wc-official-h2h-list strong {
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  min-width: 0;
+}
+
+.wc-official-h2h-list small {
+  grid-column: 2;
 }
 
 .wc-player-group {

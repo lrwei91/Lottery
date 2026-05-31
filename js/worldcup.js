@@ -17,8 +17,6 @@
     matchesData: null,
     matchesLoaded: false,
     activeTab: 'matches',
-    selectedA: '',
-    selectedB: '',
     selectedSquad: '',
     selectedGroup: 'TIME',
     countdownTimerId: null
@@ -173,49 +171,6 @@
     return result;
   }
 
-  const H2H_RECORDS = {
-    'Argentina|Brazil': { wA: 41, d: 26, wB: 47, t: 114, note: '南美经典对决，巴西总体占优。' },
-    'Argentina|France': { wA: 5, d: 3, wB: 4, t: 12, note: '2022 决赛重演，阿根廷点球险胜。' },
-    'Brazil|France': { wA: 6, d: 4, wB: 8, t: 18, note: '两队在淘汰赛阶段多次制造关键转折。' },
-    'France|Germany': { wA: 13, d: 4, wB: 14, t: 31, note: '欧洲强强对话，大赛多次相遇。' },
-    'England|Germany': { wA: 13, d: 5, wB: 14, t: 32, note: '经典大战，点球记忆影响心理预期。' },
-    'England|France': { wA: 7, d: 7, wB: 17, t: 31, note: '法国近期大赛占优。' },
-    'Germany|Spain': { wA: 8, d: 6, wB: 11, t: 25, note: '传控与整体执行的代表性对抗。' },
-    'Portugal|Spain': { wA: 18, d: 8, wB: 11, t: 37, note: '伊比利亚德比，风格反差明显。' },
-    'Brazil|Germany': { wA: 9, d: 5, wB: 9, t: 23, note: '2014 半决赛 1-7 是重要心理样本。' },
-    'Argentina|Germany': { wA: 8, d: 4, wB: 8, t: 20, note: '世界杯决赛级别的经典对抗。' },
-    'Croatia|England': { wA: 2, d: 3, wB: 3, t: 8, note: '2018 世界杯半决赛克罗地亚加时胜。' },
-    'Uruguay|Brazil': { wA: 31, d: 18, wB: 27, t: 76, note: '南美高强度对决之一。' },
-    'Netherlands|Germany': { wA: 14, d: 15, wB: 16, t: 45, note: '欧洲老牌劲旅长期拉锯。' },
-    'Italy|Germany': { wA: 15, d: 13, wB: 9, t: 37, note: '历史淘汰赛样本丰富。' },
-    'Spain|France': { wA: 16, d: 7, wB: 13, t: 36, note: '技术流与冲击力的直接比较。' },
-    'Belgium|France': { wA: 5, d: 4, wB: 9, t: 18, note: '法国近期杯赛表现更稳定。' },
-    'England|Brazil': { wA: 9, d: 5, wB: 13, t: 27, note: '英巴对抗常体现节奏控制差异。' },
-    'Portugal|Argentina': { wA: 2, d: 1, wB: 4, t: 7, note: '样本较少，但关注度很高。' },
-    'England|Croatia': { wA: 6, d: 2, wB: 3, t: 11, note: '两队多次在关键杯赛交手，英格兰历史占优，但克罗地亚曾在2018世界杯半决赛加时淘汰三狮军团。' },
-    'Mexico|South Africa': { wA: 2, d: 1, wB: 1, t: 4, note: '包括2010年世界杯揭幕战惊心动魄的1-1握手言和，双方在对抗中球风互有克制。' },
-    'Brazil|Morocco': { wA: 2, d: 0, wB: 1, t: 3, note: '巴西在历史交锋中占优，但近几期交手中摩洛哥在2023年热身赛曾以2-1挑落桑巴军团。' },
-    'France|Senegal': { wA: 0, d: 0, wB: 1, t: 1, note: '两队唯一交手为2002年日韩世界杯揭幕战，塞内加尔1-0完成世界杯历史上最著名的爆冷之一。' },
-    'Netherlands|Japan': { wA: 2, d: 1, wB: 0, t: 3, note: '荷兰对日本保持历史不败战绩，曾在2010年南非世界杯小组赛中1-0击败蓝武士。' },
-    'Argentina|Algeria': { wA: 1, d: 0, wB: 0, t: 1, note: '两队曾在2007年热身赛贡献了一场进球大战，阿根廷以4-3惊险战胜阿尔及利亚。' }
-  };
-
-  const H2H_TACTICAL = {
-    'Brazil|France': '桑巴前场创造力 vs 法式纵深推进。',
-    'Argentina|France': '潘帕斯控制与反击效率 vs 欧洲铁军冲击。',
-    'Argentina|Brazil': '南美双雄，个人灵感与整体压迫同时在线。',
-    'France|Germany': '个人爆点 vs 整体执行。',
-    'England|Germany': '边路传中与定位球 vs 中路组织和纪律。',
-    'Portugal|Spain': '转换速度 vs 控球压制。',
-    'Brazil|Germany': '进攻艺术 vs 纪律铁军。',
-    'England|Croatia': '英式高空轰炸与快马反击 vs 克罗地亚中路黄金三人组的精细球路掌控。',
-    'Mexico|South Africa': '墨式灵动小快灵与中路穿切 vs 南非本土体系超强的闪击速度与韧性。',
-    'Brazil|Morocco': '桑巴军团极致的个人天赋与球星灵感 vs 摩洛哥极具纪律性的低位锁死防线与右路齐飞。',
-    'France|Senegal': '法国高大的欧洲纪律与个人冲击力 vs 特兰加雄狮钢铁般坚硬的防守阻截与快速推进。',
-    'Netherlands|Japan': '橙衣军团立体的高空压迫与边路施压 vs 日本极致的脚下传切与精细团队配合。',
-    'Argentina|Algeria': '潘帕斯雄鹰优雅的组织渗透与天才创造力 vs 北非之狐顽强的中场逼抢与大开大合。'
-  };
-
   const POLY_WINNER = {
     France: { price: 0.18 },
     Spain: { price: 0.17 },
@@ -311,7 +266,7 @@
 
   function getBeijingTimeInfo(date, time) {
     try {
-      // Input time is in UTC (Z) timezone from the official ICS file
+      // Input time is UTC from the official FIFA calendar API.
       const d = new Date(date + 'T' + time + ':00Z');
       
       // Format parts in UTC+8 (Asia/Shanghai)
@@ -360,6 +315,18 @@
     return state.teams.find(team => team.country === country);
   }
 
+  function findScheduleMatch(matchId, home, away) {
+    if (!state.matchesData || !state.matchesData.groups) return null;
+    for (const group of Object.values(state.matchesData.groups)) {
+      const match = (group.matches || []).find(item => (
+        (matchId && item.id === matchId) ||
+        (!matchId && item.home === home && item.away === away)
+      ));
+      if (match) return match;
+    }
+    return null;
+  }
+
   async function loadNames() {
     try {
       const res = await fetch('data/worldcup_names.json', { cache: 'no-cache' });
@@ -402,8 +369,6 @@
       }
       state.ucl = payload.ucl || {};
       const teams = sortedTeams();
-      state.selectedA = teams[0]?.country || '';
-      state.selectedB = teams[1]?.country || '';
       state.selectedSquad = teams[0]?.country || '';
       state.loaded = true;
       render();
@@ -620,7 +585,7 @@
         '<path d="M2 12h20"/>' +
         '</svg>';
 
-      return '<div class="wc-match-card is-clickable" data-home="' + match.home + '" data-away="' + match.away + '" title="点击查看对战预测分析">' +
+      return '<div class="wc-match-card is-clickable" data-match-id="' + escapeHtml(match.id || '') + '" data-home="' + escapeHtml(match.home) + '" data-away="' + escapeHtml(match.away) + '" title="点击查看对战预测分析">' +
         '<div class="wc-match-header">' +
           '<div class="wc-match-time-badge">' +
             '<span class="wc-match-date">' + timeInfo.date + '</span>' +
@@ -733,7 +698,7 @@
       '<div class="card-header wc-matches-header">' +
         '<div>' +
           '<h2>2026 世界杯 · 小组赛赛程</h2>' +
-          '<p class="wc-desc">数据每日更新，展示各小组实时对战安排。共 12 组 72 场小组赛。</p>' +
+          '<p class="wc-desc">数据每日从 FIFA 官方赛程接口更新，展示小组赛对战、场馆与比分状态。共 12 组 72 场小组赛。</p>' +
         '</div>' +
         (lastUpdated ? '<span class="wc-update-badge">' + lastUpdated + '</span>' : '') +
       '</div>' +
@@ -881,29 +846,6 @@
     }).join('');
   }
 
-  function renderH2hPanel() {
-    const options = sortedTeams().map(team => (
-      `<option value="${escapeHtml(team.country)}">${code(team.country)} ${escapeHtml(countryName(team.country))} · ${pct(team.final_prob, 1)}</option>`
-    )).join('');
-
-    return `
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2>H2H 对战预测</h2>
-            <p class="wc-desc">使用修正 Elo 计算胜平负，再通过 Poisson xG 生成比分概率矩阵。</p>
-          </div>
-        </div>
-        <div class="wc-h2h-controls">
-          <label>球队 A<select id="wcTeamA">${options}</select></label>
-          <div class="wc-vs">VS</div>
-          <label>球队 B<select id="wcTeamB">${options}</select></label>
-        </div>
-        <div class="wc-h2h-result" id="wcH2hResult"></div>
-      </div>
-    `;
-  }
-
   function renderSquadPanel() {
     const options = sortedTeams().map(team => (
       `<option value="${escapeHtml(team.country)}">${code(team.country)} ${escapeHtml(countryName(team.country))} · ${pct(team.final_prob, 1)}</option>`
@@ -955,7 +897,7 @@
         <div class="card-header">
           <div>
             <h2>市场博弈</h2>
-            <p class="wc-desc">对比模型概率与源项目内置的 Polymarket 冠军价格。蓝色为模型，黄色为市场。</p>
+            <p class="wc-desc">对比模型概率与源项目内置的 Polymarket 冠军价格快照。蓝色为模型，黄色为市场。</p>
           </div>
         </div>
         <div class="wc-value-grid">
@@ -973,6 +915,9 @@
   }
 
   function renderInfoPanel() {
+    const matchMeta = state.matchesData?.metadata || {};
+    const scheduleSourceName = matchMeta.sourceName || 'FIFA public calendar API';
+    const scheduleUpdatedAt = formatDateTime(matchMeta.lastUpdated);
     return `
       <div class="card">
         <div class="card-header">
@@ -984,7 +929,7 @@
         <div class="wc-info-grid">
           <div class="wc-info-block">
             <h3>数据来源</h3>
-            <p>Wikipedia 球员名单、FiveThirtyEight Elo 缓存、源项目手工校准参数。</p>
+            <p>球队与概率基础数据来自源项目输出；小组赛赛程、场馆、比分状态和可用历史交锋来自 FIFA 官方公开接口。</p>
           </div>
           <div class="wc-info-block">
             <h3>冠军概率</h3>
@@ -992,7 +937,11 @@
           </div>
           <div class="wc-info-block">
             <h3>对战预测</h3>
-            <p>胜平负基于修正 Elo 差值，比分矩阵基于 Poisson xG，并保留大比分尾部增强逻辑。</p>
+            <p>胜平负基于修正 Elo 差值，比分矩阵基于 Poisson xG；这些是模型推演，不等同于官方赛果或赔率。</p>
+          </div>
+          <div class="wc-info-block">
+            <h3>赛程同步</h3>
+            <p>${escapeHtml(scheduleSourceName)} 每日同步到 <code>data/worldcup_matches.json</code>；最近同步：${scheduleUpdatedAt}。</p>
           </div>
           <div class="wc-info-block">
             <h3>静态迁移</h3>
@@ -1084,7 +1033,7 @@
         if (!card) return;
         const home = card.dataset.home;
         const away = card.dataset.away;
-        showMatchPredictionModal(home, away);
+        showMatchPredictionModal(home, away, card.dataset.matchId);
       });
     }
 
@@ -1234,9 +1183,10 @@
     return groups || '<div class="empty-state">暂无可比对球员数据。</div>';
   }
 
-  function showMatchPredictionModal(home, away) {
+  function showMatchPredictionModal(home, away, matchId = '') {
     const teamA = findTeam(home);
     const teamB = findTeam(away);
+    const scheduleMatch = findScheduleMatch(matchId, home, away);
 
     // Remove existing modal if any
     const existing = el('wcH2hModal');
@@ -1293,57 +1243,14 @@
     const aPct = result.winA * 100;
     const bPct = result.winB * 100;
     const dPct = result.draw * 100;
-    const recKey = `${teamA.country}|${teamB.country}`;
-    const recKeyRev = `${teamB.country}|${teamA.country}`;
-    let record = H2H_RECORDS[recKey] || H2H_RECORDS[recKeyRev];
-    let isReversed = !!H2H_RECORDS[recKeyRev] && !H2H_RECORDS[recKey];
-    let tactic = H2H_TACTICAL[recKey] || H2H_TACTICAL[recKeyRev];
-
-    // If no precalculated record exists, dynamically generate a highly realistic, statistically sound record based on ELO and regional metrics!
-    if (!record) {
-      const eloDiff = Math.abs(teamA.elo - teamB.elo);
-      const isSameContinent = code(teamA.country).slice(0, 1) === code(teamB.country).slice(0, 1);
-      
-      // Decide total matches (same continent play more frequently)
-      let t = isSameContinent ? 6 + Math.floor((eloDiff * 7) % 8) : 1 + Math.floor((eloDiff * 3) % 4);
-      if (t === 0) t = 1;
-      
-      // Calculate realistic wins based on ELO win probability
-      const eloWinProb = 1 / (1 + Math.pow(10, -(teamA.elo - teamB.elo) / 400));
-      let wA = Math.round(t * eloWinProb * 0.85);
-      let wB = Math.round(t * (1 - eloWinProb) * 0.85);
-      let d = t - wA - wB;
-      if (d < 0) { d = 0; wA = t - wB; }
-      
-      const stronger = teamA.elo > teamB.elo ? teamA.country : teamB.country;
-      const weaker = teamA.elo > teamB.elo ? teamB.country : teamA.country;
-      const strongerCn = countryName(stronger);
-      const weakerCn = countryName(weaker);
-      
-      let note = '';
-      if (eloDiff < 50) {
-        note = `两队历史交手记录极度焦灼，防守严密且球风针锋相对，均势明显。`;
-      } else if (eloDiff < 150) {
-        note = `历史交锋中 ${strongerCn} 稍占上风，但近几期交手 ${weakerCn} 在反击与定位球中屡屡制造险情。`;
-      } else {
-        note = `实力差距较清晰，${strongerCn} 依靠坚实的战术底蕴在历史交锋中掌握主动权。`;
-      }
-      
-      record = { wA, d, wB, t, note };
-      isReversed = false;
-    }
-
-    if (!tactic) {
-      const eloDiff = teamA.elo - teamB.elo;
-      if (eloDiff > 150) {
-        tactic = `${escapeHtml(countryName(teamA.country))} 擅长前场高位逼抢与肋部渗透 vs ${escapeHtml(countryName(teamB.country))} 倾向低位阻截并依靠快马坚决打击对手身后空档。`;
-      } else if (eloDiff < -150) {
-        tactic = `${escapeHtml(countryName(teamA.country))} 倾向于扎紧防线并加强腰部绞杀 vs ${escapeHtml(countryName(teamB.country))} 追求中路传切控制与局部过载配合。`;
-      } else {
-        tactic = `两队中场博弈预计会异常惨烈，战术上均注重前场局部压迫、边路齐飞与定位球奇袭。`;
-      }
-    }
-
+    const officialH2h = scheduleMatch?.headToHead || null;
+    const record = officialH2h ? {
+      wA: officialH2h.wHome,
+      d: officialH2h.draws,
+      wB: officialH2h.wAway,
+      t: officialH2h.total,
+      note: `FIFA 官方历史交锋统计，进球 ${officialH2h.goalsHome}-${officialH2h.goalsAway}。`
+    } : null;
 
     modal.innerHTML = `
       <div class="modal-card card wc-h2h-modal-card">
@@ -1358,7 +1265,7 @@
         <div class="modal-body wc-h2h-modal-body">
           <div class="wc-modal-prediction-title">
             <h3>H2H 对战智能预测</h3>
-            <p>基于双方 Elo 实力差、玄学偏移、大比分修正模型及 Poisson 分布模拟计算所得。</p>
+            <p>赛程和历史交锋来自 FIFA 官方接口；胜平负与比分为模型推演，仅作赛前数据参考。</p>
           </div>
           <div class="wc-winbar">
             <span style="width:${aPct.toFixed(1)}%">${aPct.toFixed(1)}%</span>
@@ -1400,16 +1307,26 @@
               ${factorDiff(teamA, teamB)}
             </div>
             <div class="wc-h2h-card">
-              <h3>交锋历史与风格</h3>
+              <h3>官方交锋样本</h3>
               ${record ? `
                 <div class="wc-record">
-                  <div><strong>${isReversed ? record.wB : record.wA}</strong><span>${code(teamA.country)} 胜</span></div>
+                  <div><strong>${record.wA}</strong><span>${code(teamA.country)} 胜</span></div>
                   <div><strong>${record.d}</strong><span>平</span></div>
-                  <div><strong>${isReversed ? record.wA : record.wB}</strong><span>${code(teamB.country)} 胜</span></div>
+                  <div><strong>${record.wB}</strong><span>${code(teamB.country)} 胜</span></div>
                 </div>
                 <p>${escapeHtml(record.note)} <span>${record.t} 场样本</span></p>
-              ` : '<p>暂无内置历史交锋样本。</p>'}
-              ${tactic ? `<p style="margin-top: 8px;"><strong>战术风格：</strong>${escapeHtml(tactic)}</p>` : ''}
+                ${officialH2h && officialH2h.matches?.length ? `
+                  <div class="wc-official-h2h-list">
+                    ${officialH2h.matches.slice(0, 3).map(item => `
+                      <div>
+                        <span>${escapeHtml(item.date || '--')}</span>
+                        <strong>${escapeHtml(countryName(item.home))} ${item.homeScore ?? '-'}-${item.awayScore ?? '-'} ${escapeHtml(countryName(item.away))}</strong>
+                        <small>${escapeHtml(item.competition || item.stage || '')}</small>
+                      </div>
+                    `).join('')}
+                  </div>
+                ` : ''}
+              ` : '<p>FIFA 官方接口暂无这两队的历史交锋样本，历史战绩不做推断。</p>'}
             </div>
           </div>
           <div class="wc-h2h-card">
