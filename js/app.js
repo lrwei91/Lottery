@@ -21,7 +21,6 @@
     selectedTrendNumbers: [1, 5, 10],
     predictions: [],
     predictionRecords: [],
-    predictionHistoryExpanded: false,
     strategyEvolution: null,
     countdownTimerId: null
   };
@@ -308,7 +307,6 @@
     state.historyPage = 1;
     state.filteredData = [];
     state.predictions = [];
-    state.predictionHistoryExpanded = false;
     state.selectedTrendNumbers = getLotteryConfig().selectedTrendNumbers.slice();
 
     document.getElementById('searchInput').value = '';
@@ -1152,39 +1150,14 @@
     return '策略权重稳定';
   }
 
-  function renderPredictionHistory() {
-    const section = document.getElementById('predictionHistorySection');
-    const list = document.getElementById('predictionHistoryList');
-    if (!section || !list) return;
+  function renderPredictionRecordItem(record, isPl3, evolution) {
+    const reviewDraw = resolveReviewDraw(record);
+    const statusText = reviewDraw
+      ? `已按第 ${escapeHtml(reviewDraw.issue)} 期复盘`
+      : `等待第 ${escapeHtml(record.targetIssue)} 期开奖`;
+    const statusClass = reviewDraw ? 'reviewed' : 'pending';
 
-    if (!state.predictionRecords.length) {
-      section.style.display = 'none';
-      list.innerHTML = '';
-      return;
-    }
-
-    const isPl3 = isPL3();
-    const evolution = rebuildStrategyEvolution();
-    const toggleBtn = document.getElementById('btnTogglePredictionHistory');
-    const hasMoreRecords = state.predictionRecords.length > PREDICTION_HISTORY_VISIBLE_LIMIT;
-    const visibleRecords = state.predictionHistoryExpanded
-      ? state.predictionRecords
-      : state.predictionRecords.slice(0, PREDICTION_HISTORY_VISIBLE_LIMIT);
-
-    if (toggleBtn) {
-      toggleBtn.style.display = hasMoreRecords ? 'inline-flex' : 'none';
-      toggleBtn.textContent = state.predictionHistoryExpanded ? '收起历史' : '查看历史';
-    }
-
-    section.style.display = 'block';
-    list.innerHTML = visibleRecords.map(record => {
-      const reviewDraw = resolveReviewDraw(record);
-      const statusText = reviewDraw
-        ? `已按第 ${escapeHtml(reviewDraw.issue)} 期复盘`
-        : `等待第 ${escapeHtml(record.targetIssue)} 期开奖`;
-      const statusClass = reviewDraw ? 'reviewed' : 'pending';
-
-      const tickets = record.predictions.map((prediction, index) => {
+    const tickets = record.predictions.map((prediction, index) => {
         const evaluation = evaluatePrediction(prediction, reviewDraw, isPl3);
         const resultText = !evaluation
           ? '待开奖'
@@ -1215,8 +1188,8 @@
         `;
       }).join('');
 
-      const reviewSummary = reviewDraw
-        ? `
+    const reviewSummary = reviewDraw
+      ? `
           <div class="history-review-summary">
             <div>
               <span class="review-kicker">本期开奖号码</span>
@@ -1236,7 +1209,7 @@
           </div>
         `;
 
-      return `
+    return `
         <article class="prediction-history-item">
           <div class="history-record-head">
             <div>
@@ -1256,13 +1229,50 @@
           </div>
         </article>
       `;
-    }).join('');
   }
 
-  function togglePredictionHistory() {
+  function renderPredictionHistory() {
+    const section = document.getElementById('predictionHistorySection');
+    const list = document.getElementById('predictionHistoryList');
+    if (!section || !list) return;
+
+    if (!state.predictionRecords.length) {
+      section.style.display = 'none';
+      list.innerHTML = '';
+      return;
+    }
+
+    const isPl3 = isPL3();
+    const evolution = rebuildStrategyEvolution();
+    const historyBtn = document.getElementById('btnShowPredictionHistory');
+    const visibleRecords = state.predictionRecords.slice(0, PREDICTION_HISTORY_VISIBLE_LIMIT);
+
+    if (historyBtn) {
+      historyBtn.style.display = state.predictionRecords.length > PREDICTION_HISTORY_VISIBLE_LIMIT ? 'inline-flex' : 'none';
+    }
+
+    section.style.display = 'block';
+    list.innerHTML = visibleRecords.map(record => renderPredictionRecordItem(record, isPl3, evolution)).join('');
+  }
+
+  function showPredictionHistoryModal() {
     if (state.predictionRecords.length <= PREDICTION_HISTORY_VISIBLE_LIMIT) return;
-    state.predictionHistoryExpanded = !state.predictionHistoryExpanded;
-    renderPredictionHistory();
+
+    const modal = document.getElementById('predictionHistoryModal');
+    const list = document.getElementById('predictionHistoryModalList');
+    if (!modal || !list) return;
+
+    const isPl3 = isPL3();
+    const evolution = rebuildStrategyEvolution();
+    list.innerHTML = state.predictionRecords
+      .map(record => renderPredictionRecordItem(record, isPl3, evolution))
+      .join('');
+    modal.style.display = 'flex';
+  }
+
+  function hidePredictionHistoryModal() {
+    const modal = document.getElementById('predictionHistoryModal');
+    if (modal) modal.style.display = 'none';
   }
 
   function formatPredictionLines(predictions, isPl3) {
@@ -1842,6 +1852,12 @@
         hideWinningChecker();
       }
     });
+
+    document.getElementById('predictionHistoryModal').addEventListener('click', (e) => {
+      if (e.target.id === 'predictionHistoryModal') {
+        hidePredictionHistoryModal();
+      }
+    });
     
     // 搜索筛选
     const debouncedFilter = debounce(() => {
@@ -2056,7 +2072,8 @@
     generatePredictions,
     copyAllPredictions,
     copyPredictionRecord,
-    togglePredictionHistory,
+    showPredictionHistoryModal,
+    hidePredictionHistoryModal,
     showWinningChecker,
     hideWinningChecker,
     checkCustomNumbers,

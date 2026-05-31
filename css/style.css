@@ -2296,6 +2296,10 @@ body {
   flex-direction: column;
 }
 
+.history-modal-card {
+  max-width: min(1080px, calc(100vw - 32px));
+}
+
 .modal-header {
   display: flex;
   align-items: center;
@@ -2336,6 +2340,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+}
+
+.history-modal-body {
+  padding-right: 4px;
 }
 
 .modal-desc {
