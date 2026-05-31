@@ -24,7 +24,7 @@
     countdownTimerId: null
   };
 
-  const WORLD_CUP_START = new Date('2026-06-11T13:00:00-06:00');
+  const WORLD_CUP_START = new Date('2026-06-11T19:00:00Z');
 
   const COUNTRY_CODE = {
     Argentina: 'AR',
@@ -536,8 +536,8 @@
 
       const timeInfo = (() => {
         try {
-          // Input time is in UTC-6 timezone (standard Mexico/US Central time for 2026 World Cup)
-          const d = new Date(match.date + 'T' + match.time + ':00-06:00');
+          // Input time is in UTC (Z) timezone from the official ICS file
+          const d = new Date(match.date + 'T' + match.time + ':00Z');
           
           // Format parts in UTC+8 (Asia/Shanghai)
           const formatter = new Intl.DateTimeFormat('zh-CN', {
@@ -1129,7 +1129,56 @@
   function showMatchPredictionModal(home, away) {
     const teamA = findTeam(home);
     const teamB = findTeam(away);
-    if (!teamA || !teamB) return;
+
+    // Remove existing modal if any
+    const existing = el('wcH2hModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay wc-h2h-modal-overlay';
+    modal.id = 'wcH2hModal';
+    modal.style.display = 'flex';
+
+    if (!teamA || !teamB) {
+      const missingTeams = [];
+      if (!teamA) missingTeams.push(escapeHtml(countryName(home)));
+      if (!teamB) missingTeams.push(escapeHtml(countryName(away)));
+      
+      modal.innerHTML = `
+        <div class="modal-card card wc-h2h-modal-card" style="max-width: 460px;">
+          <div class="modal-header wc-h2h-modal-header" style="border-bottom: none; margin-bottom: 0;">
+            <h3 style="font-size: 1.15rem; color: var(--danger); font-weight: 700;">⚠️ 预测数据不足</h3>
+            <button class="modal-close" id="wcH2hModalClose" aria-label="关闭预测窗口">×</button>
+          </div>
+          <div class="modal-body" style="text-align: center; padding: 0 var(--space-lg) var(--space-lg) var(--space-lg);">
+            <div class="wc-modal-prediction-title" style="margin-bottom: var(--space-md);">
+              <span style="font-size: 3rem; display: block; margin-bottom: 12px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));">📊</span>
+              <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">
+                ${escapeHtml(countryName(home))} VS ${escapeHtml(countryName(away))}
+              </h4>
+              <p style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.6; margin-bottom: var(--space-md);">
+                非常抱歉！由于队伍 <strong style="color: var(--danger); font-weight: 800;">${missingTeams.join(' 和 ')}</strong> 缺失 Elo 历史战绩、战术因子及球员身价等核心模型数据，系统无法对此场比赛进行 Poisson 模拟和对战推演。
+              </p>
+              <button class="btn btn-secondary" id="wcH2hModalCloseBtn" style="min-height: 38px; padding: 6px 24px; font-weight: 700;">我知道了</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      
+      const closeBtn = modal.querySelector('#wcH2hModalClose');
+      const closeBtn2 = modal.querySelector('#wcH2hModalCloseBtn');
+      const closeModal = () => {
+        modal.classList.add('fade-out');
+        setTimeout(() => modal.remove(), 200);
+      };
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (closeBtn2) closeBtn2.addEventListener('click', closeModal);
+      modal.addEventListener('click', e => {
+        if (e.target === modal) closeModal();
+      });
+      return;
+    }
 
     const result = h2hCalc(teamA, teamB);
     const scores = scorePredictions(teamA, teamB);
