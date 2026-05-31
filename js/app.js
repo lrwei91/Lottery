@@ -21,11 +21,13 @@
     selectedTrendNumbers: [1, 5, 10],
     predictions: [],
     predictionRecords: [],
+    predictionHistoryExpanded: false,
     strategyEvolution: null,
     countdownTimerId: null
   };
 
   const PREDICTION_HISTORY_LIMIT = 20;
+  const PREDICTION_HISTORY_VISIBLE_LIMIT = 3;
   const LOTTERY_SECTION_NAMES = ['home', 'history', 'stats', 'predict'];
 
   const LOTTERY_CONFIG = {
@@ -306,6 +308,7 @@
     state.historyPage = 1;
     state.filteredData = [];
     state.predictions = [];
+    state.predictionHistoryExpanded = false;
     state.selectedTrendNumbers = getLotteryConfig().selectedTrendNumbers.slice();
 
     document.getElementById('searchInput').value = '';
@@ -1148,9 +1151,19 @@
 
     const isPl3 = isPL3();
     const evolution = rebuildStrategyEvolution();
+    const toggleBtn = document.getElementById('btnTogglePredictionHistory');
+    const hasMoreRecords = state.predictionRecords.length > PREDICTION_HISTORY_VISIBLE_LIMIT;
+    const visibleRecords = state.predictionHistoryExpanded
+      ? state.predictionRecords
+      : state.predictionRecords.slice(0, PREDICTION_HISTORY_VISIBLE_LIMIT);
+
+    if (toggleBtn) {
+      toggleBtn.style.display = hasMoreRecords ? 'inline-flex' : 'none';
+      toggleBtn.textContent = state.predictionHistoryExpanded ? '收起历史' : '查看历史';
+    }
 
     section.style.display = 'block';
-    list.innerHTML = state.predictionRecords.map(record => {
+    list.innerHTML = visibleRecords.map(record => {
       const reviewDraw = resolveReviewDraw(record);
       const statusText = reviewDraw
         ? `已按第 ${escapeHtml(reviewDraw.issue)} 期复盘`
@@ -1232,13 +1245,10 @@
     }).join('');
   }
 
-  function clearPredictionHistory() {
-    if (!state.predictionRecords.length) return;
-    state.predictionRecords = [];
-    persistPredictionRecords();
-    rebuildStrategyEvolution();
+  function togglePredictionHistory() {
+    if (state.predictionRecords.length <= PREDICTION_HISTORY_VISIBLE_LIMIT) return;
+    state.predictionHistoryExpanded = !state.predictionHistoryExpanded;
     renderPredictionHistory();
-    showToast('预测记录已清空，策略进化已重置');
   }
 
   function formatPredictionLines(predictions, isPl3) {
@@ -2032,7 +2042,7 @@
     generatePredictions,
     copyAllPredictions,
     copyPredictionRecord,
-    clearPredictionHistory,
+    togglePredictionHistory,
     showWinningChecker,
     hideWinningChecker,
     checkCustomNumbers,
