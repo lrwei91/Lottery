@@ -1266,14 +1266,6 @@
     const isReversed = !!H2H_RECORDS[recKeyRev] && !H2H_RECORDS[recKey];
     const tactic = H2H_TACTICAL[recKey] || H2H_TACTICAL[recKeyRev];
 
-    // Remove existing modal if any
-    const existing = el('wcH2hModal');
-    if (existing) existing.remove();
-
-    const modal = document.createElement('div');
-    modal.className = 'modal-overlay wc-h2h-modal-overlay';
-    modal.id = 'wcH2hModal';
-    modal.style.display = 'flex';
 
     modal.innerHTML = `
       <div class="modal-card card wc-h2h-modal-card">
