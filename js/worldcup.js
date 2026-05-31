@@ -20,6 +20,7 @@
     selectedA: '',
     selectedB: '',
     selectedSquad: '',
+    selectedGroup: 'ALL',
     countdownTimerId: null
   };
 
@@ -80,6 +81,66 @@
     'Cape Verde': 'CV',
     'DR Congo': 'CD'
   };
+
+  const COUNTRY_FLAGS = {
+    'Argentina': '🇦🇷',
+    'Brazil': '🇧🇷',
+    'France': '🇫🇷',
+    'Germany': '🇩🇪',
+    'Spain': '🇪🇸',
+    'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    'Portugal': '🇵🇹',
+    'Netherlands': '🇳🇱',
+    'Italy': '🇮🇹',
+    'Belgium': '🇧🇪',
+    'Croatia': '🇭🇷',
+    'Switzerland': '🇨🇭',
+    'Austria': '🇦🇹',
+    'Poland': '🇵🇱',
+    'Ukraine': '🇺🇦',
+    'Romania': '🇷🇴',
+    'Czech Republic': '🇨🇿',
+    'Turkey': '🇹🇷',
+    'Serbia': '🇷🇸',
+    'Sweden': '🇸🇪',
+    'Morocco': '🇲🇦',
+    'Senegal': '🇸🇳',
+    'Egypt': '🇪🇬',
+    'Cameroon': '🇨🇲',
+    'Nigeria': '🇳🇬',
+    'Algeria': '🇩🇿',
+    'Ghana': '🇬🇭',
+    'Ivory Coast': '🇨🇮',
+    'Tunisia': '🇹🇳',
+    'Japan': '🇯🇵',
+    'South Korea': '🇰🇷',
+    'Iran': '🇮🇷',
+    'Qatar': '🇶🇦',
+    'Saudi Arabia': '🇸🇦',
+    'Australia': '🇦🇺',
+    'USA': '🇺🇸',
+    'Mexico': '🇲🇽',
+    'Canada': '🇨🇦',
+    'Panama': '🇵🇦',
+    'Costa Rica': '🇨🇷',
+    'Honduras': '🇭🇳',
+    'Jamaica': '🇯🇲',
+    'Haiti': '🇭🇹',
+    'New Zealand': '🇳🇿',
+    'Ecuador': '🇪🇨',
+    'Paraguay': '🇵🇾',
+    'Colombia': '🇨🇴',
+    'Uruguay': '🇺🇾',
+    'Norway': '🇳🇴',
+    'Uzbekistan': '🇺🇿',
+    'Jordan': '🇯🇴',
+    'Cape Verde': '🇨🇻',
+    'DR Congo': '🇨🇩'
+  };
+
+  function flag(country) {
+    return COUNTRY_FLAGS[country] || '🏳️';
+  }
 
   // Translations loaded from data/worldcup_names.json
   let COUNTRY_CN = {};
@@ -342,7 +403,6 @@
         <button class="wc-tab" data-wc-tab="champion">冠军概率</button>
         <button class="wc-tab" data-wc-tab="factor">因子拆解</button>
         <button class="wc-tab" data-wc-tab="mystic">玄学分析</button>
-        <button class="wc-tab" data-wc-tab="h2h">对战预测</button>
         <button class="wc-tab" data-wc-tab="squad">球队阵容</button>
         <button class="wc-tab" data-wc-tab="market">市场博弈</button>
         <button class="wc-tab" data-wc-tab="info">模型说明</button>
@@ -352,7 +412,6 @@
       <div class="wc-panel" id="wcPanelChampion">${renderChampionPanel()}</div>
       <div class="wc-panel" id="wcPanelFactor">${renderFactorPanel()}</div>
       <div class="wc-panel" id="wcPanelMystic">${renderMysticPanel()}</div>
-      <div class="wc-panel" id="wcPanelH2h">${renderH2hPanel()}</div>
       <div class="wc-panel" id="wcPanelSquad">${renderSquadPanel()}</div>
       <div class="wc-panel" id="wcPanelMarket">${renderMarketPanel()}</div>
       <div class="wc-panel" id="wcPanelInfo">${renderInfoPanel()}</div>
@@ -362,7 +421,6 @@
     renderTopStrip();
     startWorldCupCountdown();
     switchTab(state.activeTab);
-    updateH2h();
     updateSquad();
   }
 
@@ -464,45 +522,90 @@
       const awayCn = countryName(match.away);
       const homeCode = code(match.home);
       const awayCode = code(match.away);
+      const homeFlag = flag(match.home);
+      const awayFlag = flag(match.away);
       const isScheduled = match.status === 'scheduled';
       const isCompleted = match.status === 'completed';
 
       let scoreHtml;
       if (isCompleted && match.homeScore != null) {
-        scoreHtml = '<strong class="wc-match-score is-final">' + match.homeScore + ' - ' + match.awayScore + '</strong>';
+        scoreHtml = '<div class="wc-match-score-badge">' + match.homeScore + ' - ' + match.awayScore + '</div>';
       } else {
-        scoreHtml = '<span class="wc-match-vs">vs</span>';
+        scoreHtml = '<div class="wc-match-vs-badge">VS</div>';
       }
 
-      const dayName = (() => {
+      const timeInfo = (() => {
         try {
+          // Input time is in UTC-6 timezone (standard Mexico/US Central time for 2026 World Cup)
           const d = new Date(match.date + 'T' + match.time + ':00-06:00');
-          const names = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-          return names[d.getDay()];
-        } catch { return ''; }
+          
+          // Format parts in UTC+8 (Asia/Shanghai)
+          const formatter = new Intl.DateTimeFormat('zh-CN', {
+            timeZone: 'Asia/Shanghai',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            weekday: 'short',
+            hour12: false
+          });
+          const parts = formatter.formatToParts(d);
+          const month = parts.find(p => p.type === 'month').value;
+          const day = parts.find(p => p.type === 'day').value;
+          const hour = parts.find(p => p.type === 'hour').value;
+          const minute = parts.find(p => p.type === 'minute').value;
+          let weekday = parts.find(p => p.type === 'weekday').value;
+          
+          if (weekday.length === 1) {
+            weekday = '周' + weekday;
+          }
+          
+          return {
+            date: month + '-' + day,
+            time: hour + ':' + minute,
+            day: weekday
+          };
+        } catch (e) {
+          console.error("Time zone conversion failed:", e);
+          return {
+            date: match.date.slice(5),
+            time: match.time,
+            day: ''
+          };
+        }
       })();
 
-      return '<div class="wc-match-row">' +
-        '<div class="wc-match-datetime">' +
-          '<span class="wc-match-date">' + match.date.slice(5) + '</span>' +
-          '<span class="wc-match-day">' + dayName + '</span>' +
-          '<span class="wc-match-time">' + match.time + '</span>' +
-        '</div>' +
-        '<div class="wc-match-teams">' +
-          '<span class="wc-match-team is-home">' +
-            '<span class="wc-match-code">' + homeCode + '</span>' +
-            '<span class="wc-match-name">' + escapeHtml(homeCn) + '</span>' +
-          '</span>' +
-          scoreHtml +
-          '<span class="wc-match-team is-away">' +
-            '<span class="wc-match-name">' + escapeHtml(awayCn) + '</span>' +
-            '<span class="wc-match-code">' + awayCode + '</span>' +
-          '</span>' +
-        '</div>' +
-        '<div class="wc-match-meta">' +
-          '<span class="wc-match-venue">' + escapeHtml(match.venue) + '</span>' +
+      // Beautiful SVG Stadium Icon
+      const stadiumIconSvg = '<svg class="wc-venue-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<circle cx="12" cy="12" r="10"/>' +
+        '<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>' +
+        '<path d="M2 12h20"/>' +
+        '</svg>';
+
+      return '<div class="wc-match-card is-clickable" data-home="' + match.home + '" data-away="' + match.away + '" title="点击查看对战预测分析">' +
+        '<div class="wc-match-header">' +
+          '<div class="wc-match-time-badge">' +
+            '<span class="wc-match-date">' + timeInfo.date + '</span>' +
+            '<span class="wc-match-day">' + timeInfo.day + '</span>' +
+            '<span class="wc-match-time">' + timeInfo.time + '</span>' +
+          '</div>' +
           (isScheduled ? '<span class="wc-match-status is-scheduled">未开始</span>' : '') +
           (isCompleted && match.homeScore != null ? '<span class="wc-match-status is-final">已结束</span>' : '') +
+        '</div>' +
+        '<div class="wc-match-body">' +
+          '<div class="wc-match-team is-home">' +
+            '<span class="wc-match-name">' + escapeHtml(homeCn) + '</span>' +
+            '<span class="wc-match-badge">' + homeFlag + ' <small class="wc-match-code">' + homeCode + '</small></span>' +
+          '</div>' +
+          scoreHtml +
+          '<div class="wc-match-team is-away">' +
+            '<span class="wc-match-badge"><small class="wc-match-code">' + awayCode + '</small> ' + awayFlag + '</span>' +
+            '<span class="wc-match-name">' + escapeHtml(awayCn) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wc-match-footer">' +
+          stadiumIconSvg +
+          '<span class="wc-match-venue" title="' + escapeHtml(match.venue) + '">' + escapeHtml(match.venue) + '</span>' +
         '</div>' +
       '</div>';
     }
@@ -513,25 +616,36 @@
       const teams = g.teams || [];
       const matches = g.matches || [];
 
-      return '<details class="wc-match-group" open>' +
+      // Initially open based on active filter
+      const isSelected = state.selectedGroup === 'ALL' || state.selectedGroup === label;
+      const hiddenClass = isSelected ? '' : ' is-hidden';
+      const isOpen = (state.selectedGroup === label || state.selectedGroup === 'ALL') ? ' open' : '';
+
+      return '<details class="wc-match-group' + hiddenClass + '"' + isOpen + ' data-group="' + label + '">' +
         '<summary>' +
           '<span class="wc-group-badge">' + label + ' 组</span>' +
           '<span class="wc-group-teams">' + teams.map(t => escapeHtml(countryName(t))).join(' · ') + '</span>' +
         '</summary>' +
-        '<div class="wc-match-list">' +
+        '<div class="wc-match-grid">' +
           matches.map(matchRow).join('') +
         '</div>' +
       '</details>';
     }
 
+    const groupTabsHtml = '<div class="wc-group-selector" id="wcGroupSelector">' +
+      '<button class="wc-group-tab active" data-group="ALL">全部小组</button>' +
+      groupLabels.map(label => '<button class="wc-group-tab" data-group="' + label + '">' + label + ' 组</button>').join('') +
+      '</div>';
+
     return '<div class="card">' +
-      '<div class="card-header">' +
+      '<div class="card-header wc-matches-header">' +
         '<div>' +
           '<h2>2026 世界杯 · 小组赛赛程</h2>' +
           '<p class="wc-desc">数据每日更新，展示各小组实时对战安排。共 12 组 72 场小组赛。</p>' +
         '</div>' +
         (lastUpdated ? '<span class="wc-update-badge">' + lastUpdated + '</span>' : '') +
       '</div>' +
+      groupTabsHtml +
       '<div class="wc-match-board">' +
         groupLabels.map(groupBlock).join('') +
       '</div>' +
@@ -824,18 +938,45 @@
       });
     }
 
-    const teamA = el('wcTeamA');
-    const teamB = el('wcTeamB');
-    if (teamA && teamB) {
-      teamA.value = state.selectedA;
-      teamB.value = state.selectedB;
-      teamA.addEventListener('change', () => {
-        state.selectedA = teamA.value;
-        updateH2h();
+    const groupSelector = el('wcGroupSelector');
+    if (groupSelector) {
+      groupSelector.querySelectorAll('.wc-group-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.group === state.selectedGroup);
       });
-      teamB.addEventListener('change', () => {
-        state.selectedB = teamB.value;
-        updateH2h();
+
+      groupSelector.addEventListener('click', event => {
+        const button = event.target.closest('.wc-group-tab');
+        if (!button) return;
+
+        const group = button.dataset.group;
+        state.selectedGroup = group;
+
+        groupSelector.querySelectorAll('.wc-group-tab').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.group === group);
+        });
+
+        const groupsList = document.querySelectorAll('.wc-match-group');
+        groupsList.forEach(details => {
+          const label = details.dataset.group;
+          const isVisible = (group === 'ALL' || label === group);
+          details.classList.toggle('is-hidden', !isVisible);
+          if (group !== 'ALL' && label === group) {
+            details.setAttribute('open', '');
+          } else if (group === 'ALL') {
+            details.setAttribute('open', '');
+          }
+        });
+      });
+    }
+
+    const matchBoard = document.querySelector('.wc-match-board');
+    if (matchBoard) {
+      matchBoard.addEventListener('click', event => {
+        const card = event.target.closest('.wc-match-card.is-clickable');
+        if (!card) return;
+        const home = card.dataset.home;
+        const away = card.dataset.away;
+        showMatchPredictionModal(home, away);
       });
     }
 
@@ -985,15 +1126,10 @@
     return groups || '<div class="empty-state">暂无可比对球员数据。</div>';
   }
 
-  function updateH2h() {
-    const target = el('wcH2hResult');
-    if (!target) return;
-    const teamA = findTeam(state.selectedA);
-    const teamB = findTeam(state.selectedB);
-    if (!teamA || !teamB) {
-      target.innerHTML = '<div class="empty-state">请选择两支球队。</div>';
-      return;
-    }
+  function showMatchPredictionModal(home, away) {
+    const teamA = findTeam(home);
+    const teamB = findTeam(away);
+    if (!teamA || !teamB) return;
 
     const result = h2hCalc(teamA, teamB);
     const scores = scorePredictions(teamA, teamB);
@@ -1006,64 +1142,105 @@
     const isReversed = !!H2H_RECORDS[recKeyRev] && !H2H_RECORDS[recKey];
     const tactic = H2H_TACTICAL[recKey] || H2H_TACTICAL[recKeyRev];
 
-    target.innerHTML = `
-      <div class="wc-winbar">
-        <span style="width:${aPct.toFixed(1)}%">${aPct.toFixed(1)}%</span>
-        <i style="width:${dPct.toFixed(1)}%">${dPct.toFixed(1)}%</i>
-        <b style="width:${bPct.toFixed(1)}%">${bPct.toFixed(1)}%</b>
-      </div>
-      <div class="wc-h2h-metrics">
-        <div><span>${code(teamA.country)} 胜</span><strong>${aPct.toFixed(1)}%</strong></div>
-        <div><span>平局</span><strong>${dPct.toFixed(1)}%</strong></div>
-        <div><span>${code(teamB.country)} 胜</span><strong>${bPct.toFixed(1)}%</strong></div>
-      </div>
-      <div class="wc-score-card">
-        <div class="wc-expected">
-          <span>${escapeHtml(countryName(teamA.country))} xG <strong>${scores.lambdaA.toFixed(2)}</strong></span>
-          <span>精选比分 <strong>${scores.featured.goalsA}-${scores.featured.goalsB}</strong></span>
-          <span>${escapeHtml(countryName(teamB.country))} xG <strong>${scores.lambdaB.toFixed(2)}</strong></span>
+    // Remove existing modal if any
+    const existing = el('wcH2hModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay wc-h2h-modal-overlay';
+    modal.id = 'wcH2hModal';
+    modal.style.display = 'flex';
+
+    modal.innerHTML = `
+      <div class="modal-card card wc-h2h-modal-card">
+        <div class="modal-header wc-h2h-modal-header">
+          <div class="wc-modal-title-teams">
+            <span class="wc-modal-flag-badge">${flag(teamA.country)} ${escapeHtml(countryName(teamA.country))}</span>
+            <span class="wc-modal-vs">VS</span>
+            <span class="wc-modal-flag-badge">${flag(teamB.country)} ${escapeHtml(countryName(teamB.country))}</span>
+          </div>
+          <button class="modal-close" id="wcH2hModalClose" aria-label="关闭预测窗口">×</button>
         </div>
-        <div class="wc-score-grid">
-          ${scores.likely.map(item => `
-            <div class="${item === scores.featured ? 'is-featured' : ''}">
-              <strong>${item.goalsA} - ${item.goalsB}</strong>
-              <span>${pct(item.prob, 1)}</span>
+        <div class="modal-body wc-h2h-modal-body">
+          <div class="wc-modal-prediction-title">
+            <h3>H2H 对战智能预测</h3>
+            <p>基于双方 Elo 实力差、玄学偏移、大比分修正模型及 Poisson 分布模拟计算所得。</p>
+          </div>
+          <div class="wc-winbar">
+            <span style="width:${aPct.toFixed(1)}%">${aPct.toFixed(1)}%</span>
+            <i style="width:${dPct.toFixed(1)}%">${dPct.toFixed(1)}%</i>
+            <b style="width:${bPct.toFixed(1)}%">${bPct.toFixed(1)}%</b>
+          </div>
+          <div class="wc-h2h-metrics">
+            <div><span>${code(teamA.country)} 胜</span><strong>${aPct.toFixed(1)}%</strong></div>
+            <div><span>平局</span><strong>${dPct.toFixed(1)}%</strong></div>
+            <div><span>${code(teamB.country)} 胜</span><strong>${bPct.toFixed(1)}%</strong></div>
+          </div>
+          <div class="wc-score-card">
+            <div class="wc-expected">
+              <span>${escapeHtml(countryName(teamA.country))} xG <strong>${scores.lambdaA.toFixed(2)}</strong></span>
+              <span>精选比分 <strong>${scores.featured.goalsA}-${scores.featured.goalsB}</strong></span>
+              <span>${escapeHtml(countryName(teamB.country))} xG <strong>${scores.lambdaB.toFixed(2)}</strong></span>
             </div>
-          `).join('')}
-        </div>
-        <h3>大比分博弈区</h3>
-        <div class="wc-score-grid is-high">
-          ${scores.high.map(item => `
-            <div>
-              <strong>${item.goalsA} - ${item.goalsB}</strong>
-              <span>${pct(item.prob, 1)}</span>
+            <div class="wc-score-grid">
+              ${scores.likely.map(item => `
+                <div class="${item === scores.featured ? 'is-featured' : ''}">
+                  <strong>${item.goalsA} - ${item.goalsB}</strong>
+                  <span>${pct(item.prob, 1)}</span>
+                </div>
+              `).join('')}
             </div>
-          `).join('')}
-        </div>
-      </div>
-      <div class="wc-h2h-split">
-        <div class="wc-h2h-card">
-          <h3>因子对比</h3>
-          ${factorDiff(teamA, teamB)}
-        </div>
-        <div class="wc-h2h-card">
-          <h3>历史与风格</h3>
-          ${record ? `
-            <div class="wc-record">
-              <div><strong>${isReversed ? record.wB : record.wA}</strong><span>${code(teamA.country)} 胜</span></div>
-              <div><strong>${record.d}</strong><span>平</span></div>
-              <div><strong>${isReversed ? record.wA : record.wB}</strong><span>${code(teamB.country)} 胜</span></div>
+            <h3>大比分博弈区</h3>
+            <div class="wc-score-grid is-high">
+              ${scores.high.map(item => `
+                <div>
+                  <strong>${item.goalsA} - ${item.goalsB}</strong>
+                  <span>${pct(item.prob, 1)}</span>
+                </div>
+              `).join('')}
             </div>
-            <p>${escapeHtml(record.note)} <span>${record.t} 场样本</span></p>
-          ` : '<p>暂无内置历史交锋样本。</p>'}
-          ${tactic ? `<p><strong>战术风格：</strong>${escapeHtml(tactic)}</p>` : ''}
+          </div>
+          <div class="wc-h2h-split">
+            <div class="wc-h2h-card">
+              <h3>核心因子对比</h3>
+              ${factorDiff(teamA, teamB)}
+            </div>
+            <div class="wc-h2h-card">
+              <h3>交锋历史与风格</h3>
+              ${record ? `
+                <div class="wc-record">
+                  <div><strong>${isReversed ? record.wB : record.wA}</strong><span>${code(teamA.country)} 胜</span></div>
+                  <div><strong>${record.d}</strong><span>平</span></div>
+                  <div><strong>${isReversed ? record.wA : record.wB}</strong><span>${code(teamB.country)} 胜</span></div>
+                </div>
+                <p>${escapeHtml(record.note)} <span>${record.t} 场样本</span></p>
+              ` : '<p>暂无内置历史交锋样本。</p>'}
+              ${tactic ? `<p style="margin-top: 8px;"><strong>战术风格：</strong>${escapeHtml(tactic)}</p>` : ''}
+            </div>
+          </div>
+          <div class="wc-h2h-card">
+            <h3>球员位置对位较量</h3>
+            ${playerMatchups(teamA, teamB)}
+          </div>
         </div>
-      </div>
-      <div class="wc-h2h-card">
-        <h3>球员位置对位</h3>
-        ${playerMatchups(teamA, teamB)}
       </div>
     `;
+
+    document.body.appendChild(modal);
+
+    const closeBtn = modal.querySelector('#wcH2hModalClose');
+    const closeModal = () => {
+      modal.classList.add('fade-out');
+      setTimeout(() => modal.remove(), 200);
+    };
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeModal);
+    }
+    modal.addEventListener('click', e => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
   }
 
   function updateSquad() {
