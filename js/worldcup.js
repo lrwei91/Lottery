@@ -16,8 +16,11 @@
     activeTab: 'champion',
     selectedA: '',
     selectedB: '',
-    selectedSquad: ''
+    selectedSquad: '',
+    countdownTimerId: null
   };
+
+  const WORLD_CUP_START = new Date('2026-06-11T13:00:00-06:00');
 
   const COUNTRY_CODE = {
     Argentina: 'AR',
@@ -254,6 +257,10 @@
     return `${value > 0 ? '+' : ''}${num}%`;
   }
 
+  function pad2(value) {
+    return value < 10 ? `0${value}` : String(value);
+  }
+
   function code(country) {
     return COUNTRY_CODE[country] || country.slice(0, 2).toUpperCase();
   }
@@ -313,13 +320,36 @@
             <h2>世界杯预测中心</h2>
             <p>整合 Elo 修正冠军概率、玄学因子、H2H 胜平负与 Poisson 比分矩阵，面向赛前推演和概率对照。</p>
           </div>
-          <div class="wc-meta-grid">
-            <div class="wc-meta-item"><span>球队数</span><strong>${state.metadata?.teamCount || state.teams.length}</strong></div>
-            <div class="wc-meta-item"><span>数据日期</span><strong>${escapeHtml(state.metadata?.sourceDataDate || '--')}</strong></div>
-            <div class="wc-meta-item"><span>源提交</span><strong>${escapeHtml(state.metadata?.sourceCommit || '--')}</strong></div>
-          </div>
         </div>
         <div class="wc-top-strip" id="wcTopStrip"></div>
+      </div>
+
+      <div class="countdown wc-countdown card" id="wcCountdownCard">
+        <div class="card-header">
+          <h2>世界杯开赛倒计时</h2>
+          <span class="countdown-label" id="wcCountdownLabel">--</span>
+        </div>
+        <div class="countdown-timer" id="wcCountdownTimer">
+          <div class="countdown-unit">
+            <span class="countdown-value" id="wcCdDays">0</span>
+            <span class="countdown-text">天</span>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="wcCdHours">00</span>
+            <span class="countdown-text">时</span>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="wcCdMinutes">00</span>
+            <span class="countdown-text">分</span>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-unit">
+            <span class="countdown-value" id="wcCdSeconds">00</span>
+            <span class="countdown-text">秒</span>
+          </div>
+        </div>
       </div>
 
       <div class="wc-tabs" id="worldcupTabs">
@@ -343,9 +373,74 @@
 
     bindPanelEvents();
     renderTopStrip();
+    startWorldCupCountdown();
     switchTab(state.activeTab);
     updateH2h();
     updateSquad();
+  }
+
+  function resetWorldCupCountdownMarkup() {
+    const timer = el('wcCountdownTimer');
+    if (!timer) return;
+
+    timer.innerHTML = `
+      <div class="countdown-unit">
+        <span class="countdown-value" id="wcCdDays">0</span>
+        <span class="countdown-text">天</span>
+      </div>
+      <div class="countdown-sep">:</div>
+      <div class="countdown-unit">
+        <span class="countdown-value" id="wcCdHours">00</span>
+        <span class="countdown-text">时</span>
+      </div>
+      <div class="countdown-sep">:</div>
+      <div class="countdown-unit">
+        <span class="countdown-value" id="wcCdMinutes">00</span>
+        <span class="countdown-text">分</span>
+      </div>
+      <div class="countdown-sep">:</div>
+      <div class="countdown-unit">
+        <span class="countdown-value" id="wcCdSeconds">00</span>
+        <span class="countdown-text">秒</span>
+      </div>
+    `;
+  }
+
+  function startWorldCupCountdown() {
+    if (state.countdownTimerId !== null) {
+      clearInterval(state.countdownTimerId);
+    }
+
+    const updateCountdown = () => {
+      const timer = el('wcCountdownTimer');
+      const label = el('wcCountdownLabel');
+      if (!timer || !label) return;
+
+      const diff = WORLD_CUP_START.getTime() - Date.now();
+      if (diff <= 0) {
+        timer.innerHTML = '<div class="countdown-live">世界杯进行中</div>';
+        label.textContent = '2026年6月11日 墨西哥城开幕';
+        return;
+      }
+
+      if (!el('wcCdDays')) {
+        resetWorldCupCountdownMarkup();
+      }
+
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+
+      el('wcCdDays').textContent = days;
+      el('wcCdHours').textContent = pad2(hours);
+      el('wcCdMinutes').textContent = pad2(minutes);
+      el('wcCdSeconds').textContent = pad2(seconds);
+      label.textContent = '6月12日 周五 03:00 北京时间';
+    };
+
+    updateCountdown();
+    state.countdownTimerId = setInterval(updateCountdown, 1000);
   }
 
   function renderTopStrip() {

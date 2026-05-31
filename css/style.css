@@ -2704,9 +2704,9 @@ body {
 
 .wc-hero-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+  grid-template-columns: 1fr;
   gap: var(--space-xl);
-  align-items: end;
+  align-items: start;
 }
 
 .wc-kicker {
@@ -2733,6 +2733,10 @@ body {
   font-size: 0.92rem;
   line-height: 1.7;
   max-width: 72ch;
+}
+
+.wc-countdown {
+  margin-top: var(--space-lg);
 }
 
 .wc-meta-grid {
