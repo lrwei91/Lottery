@@ -863,177 +863,143 @@
       "ci_high": 0.1430670568292201,
       "players": [
         {
-          "name": "P1_Eng",
-          "age": 24,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 14.362653969956163,
-          "national_caps": 61,
-          "national_goals": 16,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P2_Eng",
-          "age": 33,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 41.77039318349343,
-          "national_caps": 24,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Eng",
+          "name": "Jordan Pickford",
           "age": 32,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 32.648174106748506,
-          "national_caps": 2,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Eng",
-          "age": 31,
           "position": "GK",
-          "club": "Club",
-          "market_value": 11.859791662988348,
-          "national_caps": 55,
-          "national_goals": 15,
+          "club": "Everton",
+          "market_value": 22.0,
+          "national_goals": 0,
+          "national_caps": 68,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P5_Eng",
-          "age": 28,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 58.35295101319722,
-          "national_caps": 26,
-          "national_goals": 3,
+          "name": "Harry Kane",
+          "age": 32,
+          "position": "FW",
+          "club": "Bayern Munich",
+          "market_value": 100.0,
+          "national_goals": 68,
+          "national_caps": 98,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P6_Eng",
-          "age": 33,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 42.30339920985043,
-          "national_caps": 51,
-          "national_goals": 14,
+          "name": "Jude Bellingham",
+          "age": 22,
+          "position": "MF",
+          "club": "Real Madrid",
+          "market_value": 180.0,
+          "national_goals": 5,
+          "national_caps": 38,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P7_Eng",
-          "age": 33,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 50.146474398168806,
-          "national_caps": 23,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P8_Eng",
-          "age": 28,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 16.733605639126687,
-          "national_caps": 78,
-          "national_goals": 25,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P9_Eng",
-          "age": 30,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 42.926468453696295,
-          "national_caps": 28,
-          "national_goals": 7,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P10_Eng",
-          "age": 26,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 44.29433721377664,
-          "national_caps": 6,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P11_Eng",
+          "name": "Bukayo Saka",
           "age": 24,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 56.18182264334601,
-          "national_caps": 39,
-          "national_goals": 6,
+          "position": "FW",
+          "club": "Arsenal",
+          "market_value": 130.0,
+          "national_goals": 12,
+          "national_caps": 40,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P12_Eng",
-          "age": 28,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 20.14906051358486,
-          "national_caps": 39,
-          "national_goals": 9,
+          "name": "Phil Foden",
+          "age": 26,
+          "position": "FW",
+          "club": "Manchester City",
+          "market_value": 150.0,
+          "national_goals": 4,
+          "national_caps": 41,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P13_Eng",
+          "name": "Declan Rice",
+          "age": 27,
+          "position": "MF",
+          "club": "Arsenal",
+          "market_value": 120.0,
+          "national_goals": 3,
+          "national_caps": 58,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "John Stones",
+          "age": 32,
+          "position": "DF",
+          "club": "Manchester City",
+          "market_value": 38.0,
+          "national_goals": 3,
+          "national_caps": 79,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Kyle Walker",
+          "age": 36,
+          "position": "DF",
+          "club": "Manchester City",
+          "market_value": 8.0,
+          "national_goals": 1,
+          "national_caps": 90,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Kieran Trippier",
           "age": 35,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 31.81017226373663,
-          "national_caps": 11,
+          "position": "DF",
+          "club": "Newcastle United",
+          "market_value": 10.0,
+          "national_goals": 1,
+          "national_caps": 54,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Trent Alexander-Arnold",
+          "age": 27,
+          "position": "DF",
+          "club": "Liverpool",
+          "market_value": 70.0,
+          "national_goals": 3,
+          "national_caps": 31,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Ollie Watkins",
+          "age": 30,
+          "position": "FW",
+          "club": "Aston Villa",
+          "market_value": 65.0,
+          "national_goals": 4,
+          "national_caps": 15,
+          "tournaments": []
+        },
+        {
+          "name": "Cole Palmer",
+          "age": 24,
+          "position": "FW",
+          "club": "Chelsea",
+          "market_value": 90.0,
           "national_goals": 2,
-          "tournaments": []
-        },
-        {
-          "name": "P14_Eng",
-          "age": 33,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 29.35589987363892,
-          "national_caps": 0,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P15_Eng",
-          "age": 28,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 32.62187306573788,
-          "national_caps": 45,
-          "national_goals": 0,
+          "national_caps": 10,
           "tournaments": []
         }
       ]
@@ -1064,177 +1030,141 @@
       "ci_high": 0.1518602421722787,
       "players": [
         {
-          "name": "P1_Spa",
-          "age": 31,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 11.921987276527886,
-          "national_caps": 63,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P2_Spa",
+          "name": "Unai Simón",
           "age": 28,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 33.27952250595157,
-          "national_caps": 29,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Spa",
-          "age": 21,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 31.94625389703099,
-          "national_caps": 23,
-          "national_goals": 5,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Spa",
-          "age": 21,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 8.880387235761678,
-          "national_caps": 20,
-          "national_goals": 5,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Spa",
-          "age": 24,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 45.44268778708013,
-          "national_caps": 30,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Spa",
-          "age": 24,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 52.26048460085439,
-          "national_caps": 25,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Spa",
-          "age": 32,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 58.64594763683317,
-          "national_caps": 55,
-          "national_goals": 13,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P8_Spa",
-          "age": 27,
           "position": "GK",
-          "club": "Club",
-          "market_value": 34.741201290168966,
-          "national_caps": 81,
-          "national_goals": 10,
+          "club": "Athletic Bilbao",
+          "market_value": 30.0,
+          "national_goals": 0,
+          "national_caps": 46,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P9_Spa",
-          "age": 27,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 57.099333695520045,
-          "national_caps": 30,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P10_Spa",
-          "age": 22,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 50.28412151699324,
-          "national_caps": 82,
-          "national_goals": 26,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P11_Spa",
-          "age": 23,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 53.73626566417731,
-          "national_caps": 68,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P12_Spa",
-          "age": 23,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 52.067011539911384,
-          "national_caps": 45,
-          "national_goals": 11,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P13_Spa",
-          "age": 22,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 32.33536219143633,
-          "national_caps": 65,
-          "national_goals": 20,
-          "tournaments": []
-        },
-        {
-          "name": "P14_Spa",
-          "age": 21,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 27.742268779261657,
-          "national_caps": 5,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P15_Spa",
+          "name": "Rodri",
           "age": 29,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 55.238312347395485,
-          "national_caps": 32,
+          "position": "MF",
+          "club": "Manchester City",
+          "market_value": 130.0,
+          "national_goals": 4,
+          "national_caps": 56,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Lamine Yamal",
+          "age": 18,
+          "position": "FW",
+          "club": "Barcelona",
+          "market_value": 150.0,
+          "national_goals": 3,
+          "national_caps": 14,
+          "tournaments": []
+        },
+        {
+          "name": "Nico Williams",
+          "age": 23,
+          "position": "FW",
+          "club": "Athletic Bilbao",
+          "market_value": 70.0,
+          "national_goals": 4,
+          "national_caps": 20,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Pedri",
+          "age": 23,
+          "position": "MF",
+          "club": "Barcelona",
+          "market_value": 80.0,
+          "national_goals": 2,
+          "national_caps": 24,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Gavi",
+          "age": 21,
+          "position": "MF",
+          "club": "Barcelona",
+          "market_value": 90.0,
           "national_goals": 5,
+          "national_caps": 27,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Dani Carvajal",
+          "age": 34,
+          "position": "DF",
+          "club": "Real Madrid",
+          "market_value": 12.0,
+          "national_goals": 1,
+          "national_caps": 49,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Robin Le Normand",
+          "age": 29,
+          "position": "DF",
+          "club": "Real Sociedad",
+          "market_value": 40.0,
+          "national_goals": 1,
+          "national_caps": 17,
+          "tournaments": []
+        },
+        {
+          "name": "Aymeric Laporte",
+          "age": 32,
+          "position": "DF",
+          "club": "Al-Nassr",
+          "market_value": 20.0,
+          "national_goals": 1,
+          "national_caps": 35,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Álvaro Morata",
+          "age": 33,
+          "position": "FW",
+          "club": "Atlético Madrid",
+          "market_value": 16.0,
+          "national_goals": 36,
+          "national_caps": 80,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Dani Olmo",
+          "age": 28,
+          "position": "MF",
+          "club": "RB Leipzig",
+          "market_value": 60.0,
+          "national_goals": 11,
+          "national_caps": 39,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Alejandro Grimaldo",
+          "age": 30,
+          "position": "DF",
+          "club": "Bayer Leverkusen",
+          "market_value": 45.0,
+          "national_goals": 0,
+          "national_caps": 8,
           "tournaments": []
         }
       ]
@@ -1472,178 +1402,142 @@
       "ci_high": 0.1310869465863222,
       "players": [
         {
-          "name": "P1_Net",
-          "age": 29,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 31.024920142457315,
-          "national_caps": 73,
-          "national_goals": 17,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P2_Net",
-          "age": 33,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 37.53657997917796,
-          "national_caps": 12,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Net",
-          "age": 35,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 9.182260284662622,
-          "national_caps": 53,
-          "national_goals": 8,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Net",
-          "age": 35,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 18.97787738853895,
-          "national_caps": 24,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Net",
-          "age": 27,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 45.83381925995965,
-          "national_caps": 22,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Net",
-          "age": 26,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 41.67344548816668,
-          "national_caps": 41,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Net",
-          "age": 30,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 37.593803023682035,
-          "national_caps": 82,
-          "national_goals": 9,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P8_Net",
-          "age": 24,
+          "name": "Bart Verbruggen",
+          "age": 23,
           "position": "GK",
-          "club": "Club",
-          "market_value": 33.30562395041909,
-          "national_caps": 22,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
+          "club": "Brighton",
+          "market_value": 20.0,
+          "national_goals": 0,
+          "national_caps": 15,
+          "tournaments": []
         },
         {
-          "name": "P9_Net",
-          "age": 35,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 48.6110205194862,
-          "national_caps": 31,
-          "national_goals": 4,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P10_Net",
-          "age": 21,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 45.26197754878603,
-          "national_caps": 46,
-          "national_goals": 6,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P11_Net",
-          "age": 27,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 23.74689741805108,
-          "national_caps": 33,
-          "national_goals": 4,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P12_Net",
-          "age": 22,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 43.23985029971358,
-          "national_caps": 6,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P13_Net",
+          "name": "Virgil van Dijk",
           "age": 34,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 15.043784731428428,
-          "national_caps": 33,
+          "position": "DF",
+          "club": "Liverpool",
+          "market_value": 32.0,
+          "national_goals": 9,
+          "national_caps": 74,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Frenkie de Jong",
+          "age": 29,
+          "position": "MF",
+          "club": "Barcelona",
+          "market_value": 70.0,
+          "national_goals": 2,
+          "national_caps": 54,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Memphis Depay",
+          "age": 32,
+          "position": "FW",
+          "club": "Atlético Madrid",
+          "market_value": 15.0,
+          "national_goals": 46,
+          "national_caps": 98,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Cody Gakpo",
+          "age": 27,
+          "position": "FW",
+          "club": "Liverpool",
+          "market_value": 55.0,
+          "national_goals": 12,
+          "national_caps": 30,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Nathan Aké",
+          "age": 31,
+          "position": "DF",
+          "club": "Manchester City",
+          "market_value": 40.0,
           "national_goals": 5,
-          "tournaments": []
+          "national_caps": 53,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P14_Net",
+          "name": "Matthijs de Ligt",
+          "age": 26,
+          "position": "DF",
+          "club": "Bayern Munich",
+          "market_value": 65.0,
+          "national_goals": 2,
+          "national_caps": 48,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Denzel Dumfries",
+          "age": 30,
+          "position": "DF",
+          "club": "Inter Milan",
+          "market_value": 30.0,
+          "national_goals": 6,
+          "national_caps": 58,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Xavi Simons",
+          "age": 23,
+          "position": "MF",
+          "club": "RB Leipzig",
+          "market_value": 80.0,
+          "national_goals": 2,
+          "national_caps": 20,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Jeremie Frimpong",
           "age": 25,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 36.73132406170522,
-          "national_caps": 75,
-          "national_goals": 11,
+          "position": "DF",
+          "club": "Bayer Leverkusen",
+          "market_value": 50.0,
+          "national_goals": 1,
+          "national_caps": 8,
           "tournaments": []
         },
         {
-          "name": "P15_Net",
-          "age": 21,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 34.42563219351332,
-          "national_caps": 57,
-          "national_goals": 14,
+          "name": "Tijjani Reijnders",
+          "age": 27,
+          "position": "MF",
+          "club": "AC Milan",
+          "market_value": 35.0,
+          "national_goals": 3,
+          "national_caps": 15,
           "tournaments": []
+        },
+        {
+          "name": "Wout Weghorst",
+          "age": 33,
+          "position": "FW",
+          "club": "Hoffenheim",
+          "market_value": 6.0,
+          "national_goals": 12,
+          "national_caps": 39,
+          "tournaments": [
+            "2022"
+          ]
         }
       ]
     },
@@ -2288,178 +2182,140 @@
       "ci_high": 0.1257144571692039,
       "players": [
         {
-          "name": "P1_Ger",
-          "age": 22,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 36.34604346774397,
-          "national_caps": 49,
-          "national_goals": 14,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P2_Ger",
-          "age": 33,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 52.49362324912752,
-          "national_caps": 8,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Ger",
-          "age": 30,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 55.0733506148543,
-          "national_caps": 0,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Ger",
-          "age": 23,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 37.623699018561005,
-          "national_caps": 31,
-          "national_goals": 6,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Ger",
-          "age": 28,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 19.765270596279684,
-          "national_caps": 68,
-          "national_goals": 6,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Ger",
-          "age": 27,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 10.541134933753561,
-          "national_caps": 25,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Ger",
-          "age": 25,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 48.43559779068371,
-          "national_caps": 78,
-          "national_goals": 19,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P8_Ger",
-          "age": 30,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 31.02284351274328,
-          "national_caps": 25,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P9_Ger",
-          "age": 25,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 7.83691261193393,
-          "national_caps": 44,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P10_Ger",
-          "age": 21,
+          "name": "Marc-André ter Stegen",
+          "age": 34,
           "position": "GK",
-          "club": "Club",
-          "market_value": 15.08909759745318,
-          "national_caps": 20,
-          "national_goals": 5,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P11_Ger",
-          "age": 21,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 21.24894775657291,
-          "national_caps": 34,
-          "national_goals": 9,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P12_Ger",
-          "age": 28,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 30.69702940744584,
-          "national_caps": 3,
+          "club": "Barcelona",
+          "market_value": 28.0,
           "national_goals": 0,
+          "national_caps": 40,
+          "tournaments": []
+        },
+        {
+          "name": "Antonio Rüdiger",
+          "age": 33,
+          "position": "DF",
+          "club": "Real Madrid",
+          "market_value": 25.0,
+          "national_goals": 3,
+          "national_caps": 70,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P13_Ger",
-          "age": 27,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 32.158074189265506,
-          "national_caps": 62,
-          "national_goals": 2,
-          "tournaments": []
+          "name": "Joshua Kimmich",
+          "age": 31,
+          "position": "DF",
+          "club": "Bayern Munich",
+          "market_value": 50.0,
+          "national_goals": 7,
+          "national_caps": 90,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P14_Ger",
-          "age": 25,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 57.87753235135101,
-          "national_caps": 55,
-          "national_goals": 12,
-          "tournaments": []
-        },
-        {
-          "name": "P15_Ger",
-          "age": 32,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 16.110048777126934,
-          "national_caps": 20,
+          "name": "Jamal Musiala",
+          "age": 23,
+          "position": "MF",
+          "club": "Bayern Munich",
+          "market_value": 120.0,
           "national_goals": 6,
+          "national_caps": 36,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Florian Wirtz",
+          "age": 23,
+          "position": "MF",
+          "club": "Bayer Leverkusen",
+          "market_value": 130.0,
+          "national_goals": 4,
+          "national_caps": 25,
           "tournaments": []
+        },
+        {
+          "name": "Kai Havertz",
+          "age": 26,
+          "position": "FW",
+          "club": "Arsenal",
+          "market_value": 75.0,
+          "national_goals": 18,
+          "national_caps": 51,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "İlkay Gündoğan",
+          "age": 35,
+          "position": "MF",
+          "club": "Barcelona",
+          "market_value": 15.0,
+          "national_goals": 19,
+          "national_caps": 82,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Leroy Sané",
+          "age": 30,
+          "position": "FW",
+          "club": "Bayern Munich",
+          "market_value": 60.0,
+          "national_goals": 13,
+          "national_caps": 65,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Jonathan Tah",
+          "age": 30,
+          "position": "DF",
+          "club": "Bayer Leverkusen",
+          "market_value": 30.0,
+          "national_goals": 0,
+          "national_caps": 30,
+          "tournaments": []
+        },
+        {
+          "name": "Nico Schlotterbeck",
+          "age": 26,
+          "position": "DF",
+          "club": "Borussia Dortmund",
+          "market_value": 40.0,
+          "national_goals": 0,
+          "national_caps": 15,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Robert Andrich",
+          "age": 31,
+          "position": "MF",
+          "club": "Bayer Leverkusen",
+          "market_value": 17.0,
+          "national_goals": 0,
+          "national_caps": 10,
+          "tournaments": []
+        },
+        {
+          "name": "Niclas Füllkrug",
+          "age": 33,
+          "position": "FW",
+          "club": "Borussia Dortmund",
+          "market_value": 15.0,
+          "national_goals": 14,
+          "national_caps": 22,
+          "tournaments": [
+            "2022"
+          ]
         }
       ]
     },
@@ -2696,178 +2552,120 @@
       "ci_high": 0.11615799508642512,
       "players": [
         {
-          "name": "P1_Ecu",
-          "age": 34,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 7.084159221385746,
-          "national_caps": 34,
-          "national_goals": 8,
+          "name": "Moisés Caicedo",
+          "age": 24,
+          "position": "MF",
+          "club": "Chelsea",
+          "market_value": 75.0,
+          "national_goals": 3,
+          "national_caps": 46,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P2_Ecu",
-          "age": 31,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 35.4843203753982,
-          "national_caps": 55,
-          "national_goals": 15,
+          "name": "Piero Hincapié",
+          "age": 24,
+          "position": "DF",
+          "club": "Bayer Leverkusen",
+          "market_value": 40.0,
+          "national_goals": 2,
+          "national_caps": 37,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P3_Ecu",
-          "age": 21,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 7.430713116262719,
-          "national_caps": 16,
-          "national_goals": 0,
+          "name": "Enner Valencia",
+          "age": 36,
+          "position": "FW",
+          "club": "Internacional",
+          "market_value": 2.5,
+          "national_goals": 43,
+          "national_caps": 89,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P4_Ecu",
-          "age": 26,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 49.02928412588348,
-          "national_caps": 28,
-          "national_goals": 7,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Ecu",
-          "age": 21,
-          "position": "GK",
-          "club": "Club",
-          "market_value": 44.07395030393235,
-          "national_caps": 25,
+          "name": "Pervis Estupiñán",
+          "age": 28,
+          "position": "DF",
+          "club": "Brighton",
+          "market_value": 30.0,
           "national_goals": 4,
+          "national_caps": 38,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P6_Ecu",
+          "name": "Willian Pacho",
           "age": 24,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 39.07405308186198,
-          "national_caps": 21,
+          "position": "DF",
+          "club": "Eintracht Frankfurt",
+          "market_value": 35.0,
           "national_goals": 2,
+          "national_caps": 16,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P7_Ecu",
-          "age": 22,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 5.092018482840191,
-          "national_caps": 76,
-          "national_goals": 14,
-          "tournaments": [
-            "2022"
-          ]
+          "name": "Alexander Domínguez",
+          "age": 38,
+          "position": "GK",
+          "club": "LDU Quito",
+          "market_value": 0.5,
+          "national_goals": 0,
+          "national_caps": 74,
+          "tournaments": []
         },
         {
-          "name": "P8_Ecu",
-          "age": 35,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 43.11572350497048,
-          "national_caps": 24,
+          "name": "Kendry Páez",
+          "age": 19,
+          "position": "MF",
+          "club": "Independiente del Valle",
+          "market_value": 10.0,
           "national_goals": 2,
+          "national_caps": 12,
+          "tournaments": []
+        },
+        {
+          "name": "Angelo Preciado",
+          "age": 28,
+          "position": "DF",
+          "club": "Sparta Prague",
+          "market_value": 5.0,
+          "national_goals": 0,
+          "national_caps": 40,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P9_Ecu",
-          "age": 34,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 20.29119982810943,
-          "national_caps": 7,
+          "name": "Carlos Gruezo",
+          "age": 31,
+          "position": "MF",
+          "club": "San Jose Earthquakes",
+          "market_value": 3.0,
           "national_goals": 1,
+          "national_caps": 60,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P10_Ecu",
-          "age": 21,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 5.77939179799539,
-          "national_caps": 69,
-          "national_goals": 14,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P11_Ecu",
-          "age": 25,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 36.31878680060612,
-          "national_caps": 24,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P12_Ecu",
-          "age": 21,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 52.10695876455138,
-          "national_caps": 52,
-          "national_goals": 10,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P13_Ecu",
-          "age": 21,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 25.211810762340534,
-          "national_caps": 20,
+          "name": "Jeremy Sarmiento",
+          "age": 23,
+          "position": "MF",
+          "club": "Ipswich Town",
+          "market_value": 5.0,
           "national_goals": 2,
-          "tournaments": []
-        },
-        {
-          "name": "P14_Ecu",
-          "age": 21,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 49.566116534540384,
-          "national_caps": 0,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P15_Ecu",
-          "age": 24,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 8.644334249374564,
-          "national_caps": 77,
-          "national_goals": 9,
-          "tournaments": []
+          "national_caps": 20,
+          "tournaments": [
+            "2022"
+          ]
         }
       ]
     },
@@ -2897,178 +2695,124 @@
       "ci_high": 0.1144039585928191,
       "players": [
         {
-          "name": "P1_Uru",
-          "age": 30,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 28.129801280385276,
-          "national_caps": 53,
-          "national_goals": 14,
+          "name": "Federico Valverde",
+          "age": 27,
+          "position": "MF",
+          "club": "Real Madrid",
+          "market_value": 120.0,
+          "national_goals": 7,
+          "national_caps": 62,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P2_Uru",
-          "age": 23,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 28.414427608516075,
-          "national_caps": 73,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Uru",
-          "age": 25,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 41.01959423171765,
-          "national_caps": 67,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Uru",
-          "age": 21,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 54.24448721998799,
-          "national_caps": 33,
-          "national_goals": 10,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Uru",
-          "age": 21,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 43.61411292340427,
-          "national_caps": 30,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Uru",
-          "age": 29,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 14.728571402319488,
-          "national_caps": 56,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Uru",
-          "age": 21,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 14.920116063568303,
-          "national_caps": 24,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P8_Uru",
-          "age": 21,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 32.85996519352307,
-          "national_caps": 45,
-          "national_goals": 5,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P9_Uru",
-          "age": 23,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 23.047332489309014,
-          "national_caps": 25,
-          "national_goals": 5,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P10_Uru",
-          "age": 33,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 39.18995795379466,
-          "national_caps": 17,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P11_Uru",
+          "name": "Darwin Núñez",
           "age": 26,
-          "position": "GK",
-          "club": "Club",
-          "market_value": 43.83746085575464,
-          "national_caps": 64,
+          "position": "FW",
+          "club": "Liverpool",
+          "market_value": 65.0,
           "national_goals": 13,
+          "national_caps": 29,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P12_Uru",
-          "age": 21,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 44.72832778175591,
-          "national_caps": 23,
-          "national_goals": 2,
+          "name": "Ronald Araújo",
+          "age": 27,
+          "position": "DF",
+          "club": "Barcelona",
+          "market_value": 70.0,
+          "national_goals": 1,
+          "national_caps": 20,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P13_Uru",
-          "age": 21,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 27.41678664471957,
-          "national_caps": 10,
-          "national_goals": 2,
-          "tournaments": []
+          "name": "Luis Suárez",
+          "age": 39,
+          "position": "FW",
+          "club": "Inter Miami",
+          "market_value": 1.5,
+          "national_goals": 68,
+          "national_caps": 138,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P14_Uru",
-          "age": 34,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 54.22187097530732,
+          "name": "José María Giménez",
+          "age": 31,
+          "position": "DF",
+          "club": "Atlético Madrid",
+          "market_value": 25.0,
+          "national_goals": 8,
+          "national_caps": 88,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Sergio Rochet",
+          "age": 33,
+          "position": "GK",
+          "club": "Internacional",
+          "market_value": 3.5,
+          "national_goals": 0,
+          "national_caps": 25,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Manuel Ugarte",
+          "age": 25,
+          "position": "MF",
+          "club": "PSG",
+          "market_value": 45.0,
+          "national_goals": 0,
           "national_caps": 22,
-          "national_goals": 3,
-          "tournaments": []
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P15_Uru",
-          "age": 21,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 5.140430768092928,
-          "national_caps": 84,
-          "national_goals": 12,
-          "tournaments": []
+          "name": "Rodrigo Bentancur",
+          "age": 28,
+          "position": "MF",
+          "club": "Tottenham",
+          "market_value": 35.0,
+          "national_goals": 2,
+          "national_caps": 61,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Facundo Pellistri",
+          "age": 24,
+          "position": "FW",
+          "club": "Granada",
+          "market_value": 10.0,
+          "national_goals": 2,
+          "national_caps": 26,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Giorgian de Arrascaeta",
+          "age": 32,
+          "position": "MF",
+          "club": "Flamengo",
+          "market_value": 15.0,
+          "national_goals": 10,
+          "national_caps": 50,
+          "tournaments": [
+            "2022"
+          ]
         }
       ]
     },
@@ -3510,177 +3254,121 @@
       "ci_high": 0.11008347079686251,
       "players": [
         {
-          "name": "P1_Swi",
-          "age": 21,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 27.9818519349829,
-          "national_caps": 16,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P2_Swi",
-          "age": 27,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 45.73304593161809,
-          "national_caps": 60,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Swi",
-          "age": 23,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 12.099753274145934,
-          "national_caps": 46,
-          "national_goals": 9,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Swi",
-          "age": 22,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 19.170193486435362,
-          "national_caps": 26,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Swi",
-          "age": 24,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 26.872889856824553,
-          "national_caps": 38,
-          "national_goals": 9,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Swi",
-          "age": 30,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 56.148825422157984,
-          "national_caps": 23,
-          "national_goals": 7,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Swi",
-          "age": 21,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 10.982935403984973,
-          "national_caps": 16,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P8_Swi",
-          "age": 30,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 48.90320385769215,
-          "national_caps": 70,
-          "national_goals": 18,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P9_Swi",
-          "age": 24,
+          "name": "Yann Sommer",
+          "age": 37,
           "position": "GK",
-          "club": "Club",
-          "market_value": 39.64317652123563,
-          "national_caps": 82,
-          "national_goals": 19,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P10_Swi",
-          "age": 27,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 33.34406754749783,
-          "national_caps": 55,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P11_Swi",
-          "age": 28,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 27.217256952118642,
-          "national_caps": 7,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P12_Swi",
-          "age": 24,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 44.44903477713214,
-          "national_caps": 34,
-          "national_goals": 5,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P13_Swi",
-          "age": 27,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 46.79520896299238,
-          "national_caps": 40,
-          "national_goals": 4,
-          "tournaments": []
-        },
-        {
-          "name": "P14_Swi",
-          "age": 27,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 41.228035169829596,
-          "national_caps": 35,
-          "national_goals": 2,
-          "tournaments": []
-        },
-        {
-          "name": "P15_Swi",
-          "age": 21,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 27.67301206470434,
-          "national_caps": 0,
+          "club": "Inter Milan",
+          "market_value": 3.0,
           "national_goals": 0,
+          "national_caps": 94,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Granit Xhaka",
+          "age": 33,
+          "position": "MF",
+          "club": "Bayer Leverkusen",
+          "market_value": 20.0,
+          "national_goals": 14,
+          "national_caps": 125,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Manuel Akanji",
+          "age": 30,
+          "position": "DF",
+          "club": "Manchester City",
+          "market_value": 45.0,
+          "national_goals": 3,
+          "national_caps": 65,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Xherdan Shaqiri",
+          "age": 34,
+          "position": "MF",
+          "club": "Chicago Fire",
+          "market_value": 2.0,
+          "national_goals": 32,
+          "national_caps": 125,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Remo Freuler",
+          "age": 34,
+          "position": "MF",
+          "club": "Bologna",
+          "market_value": 10.0,
+          "national_goals": 8,
+          "national_caps": 70,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Denis Zakaria",
+          "age": 29,
+          "position": "MF",
+          "club": "Monaco",
+          "market_value": 25.0,
+          "national_goals": 3,
+          "national_caps": 54,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Ricardo Rodriguez",
+          "age": 33,
+          "position": "DF",
+          "club": "Torino",
+          "market_value": 3.5,
+          "national_goals": 9,
+          "national_caps": 120,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Fabian Schär",
+          "age": 34,
+          "position": "DF",
+          "club": "Newcastle United",
+          "market_value": 10.0,
+          "national_goals": 8,
+          "national_caps": 82,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Breel Embolo",
+          "age": 29,
+          "position": "FW",
+          "club": "Monaco",
+          "market_value": 12.0,
+          "national_goals": 15,
+          "national_caps": 68,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Dan Ndoye",
+          "age": 25,
+          "position": "FW",
+          "club": "Bologna",
+          "market_value": 22.0,
+          "national_goals": 2,
+          "national_caps": 15,
           "tournaments": []
         }
       ]
@@ -5154,166 +4842,120 @@
       "ci_high": 0.10295687324002328,
       "players": [
         {
-          "name": "P1_USA",
-          "age": 30,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 51.79339512199115,
-          "national_caps": 26,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P2_USA",
-          "age": 23,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 12.48676958007041,
-          "national_caps": 5,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_USA",
-          "age": 30,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 57.043002257104646,
-          "national_caps": 5,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_USA",
-          "age": 30,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 41.47840561891431,
-          "national_caps": 7,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_USA",
-          "age": 21,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 33.80198577946287,
-          "national_caps": 55,
-          "national_goals": 9,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_USA",
-          "age": 23,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 6.195763337048517,
-          "national_caps": 70,
-          "national_goals": 4,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_USA",
-          "age": 20,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 50.00518044625521,
-          "national_caps": 7,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P8_USA",
-          "age": 23,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 7.915169575340437,
-          "national_caps": 4,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P9_USA",
-          "age": 24,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 32.2801523759284,
-          "national_caps": 34,
-          "national_goals": 4,
-          "tournaments": []
-        },
-        {
-          "name": "P10_USA",
-          "age": 22,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 19.22174175759906,
-          "national_caps": 7,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P11_USA",
-          "age": 28,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 32.728675620609,
-          "national_caps": 3,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P12_USA",
-          "age": 20,
-          "position": "GK",
-          "club": "Club",
-          "market_value": 45.448637671027775,
-          "national_caps": 17,
-          "national_goals": 5,
-          "tournaments": []
-        },
-        {
-          "name": "P13_USA",
+          "name": "Christian Pulisic",
           "age": 27,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 15.187097422840624,
-          "national_caps": 4,
-          "national_goals": 0,
+          "position": "FW",
+          "club": "AC Milan",
+          "market_value": 40.0,
+          "national_goals": 30,
+          "national_caps": 72,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Weston McKennie",
+          "age": 27,
+          "position": "MF",
+          "club": "Juventus",
+          "market_value": 28.0,
+          "national_goals": 11,
+          "national_caps": 56,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Tyler Adams",
+          "age": 27,
+          "position": "MF",
+          "club": "Bournemouth",
+          "market_value": 15.0,
+          "national_goals": 2,
+          "national_caps": 40,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Antonee Robinson",
+          "age": 28,
+          "position": "DF",
+          "club": "Fulham",
+          "market_value": 20.0,
+          "national_goals": 4,
+          "national_caps": 46,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Folarin Balogun",
+          "age": 24,
+          "position": "FW",
+          "club": "Monaco",
+          "market_value": 30.0,
+          "national_goals": 5,
+          "national_caps": 17,
           "tournaments": []
         },
         {
-          "name": "P14_USA",
-          "age": 25,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 20.642435337270953,
-          "national_caps": 11,
-          "national_goals": 3,
-          "tournaments": []
-        },
-        {
-          "name": "P15_USA",
+          "name": "Matt Turner",
           "age": 31,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 9.122088873353825,
-          "national_caps": 20,
+          "position": "GK",
+          "club": "Nottingham Forest",
+          "market_value": 5.0,
           "national_goals": 0,
+          "national_caps": 44,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Timothy Weah",
+          "age": 26,
+          "position": "FW",
+          "club": "Juventus",
+          "market_value": 15.0,
+          "national_goals": 6,
+          "national_caps": 41,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Yunus Musah",
+          "age": 23,
+          "position": "MF",
+          "club": "AC Milan",
+          "market_value": 22.0,
+          "national_goals": 0,
+          "national_caps": 39,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Chris Richards",
+          "age": 26,
+          "position": "DF",
+          "club": "Crystal Palace",
+          "market_value": 12.0,
+          "national_goals": 1,
+          "national_caps": 21,
           "tournaments": []
+        },
+        {
+          "name": "Giovanni Reyna",
+          "age": 23,
+          "position": "MF",
+          "club": "Nottingham Forest",
+          "market_value": 20.0,
+          "national_goals": 8,
+          "national_caps": 31,
+          "tournaments": [
+            "2022"
+          ]
         }
       ]
     },
@@ -5343,166 +4985,120 @@
       "ci_high": 0.10284230762625042,
       "players": [
         {
-          "name": "P1_Mor",
-          "age": 31,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 27.278858576628462,
-          "national_caps": 4,
-          "national_goals": 0,
+          "name": "Achraf Hakimi",
+          "age": 27,
+          "position": "DF",
+          "club": "PSG",
+          "market_value": 60.0,
+          "national_goals": 9,
+          "national_caps": 77,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P2_Mor",
-          "age": 25,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 49.83537361360924,
-          "national_caps": 69,
-          "national_goals": 10,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Mor",
-          "age": 25,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 50.235895430175574,
-          "national_caps": 5,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Mor",
-          "age": 24,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 25.29950253555449,
-          "national_caps": 56,
-          "national_goals": 16,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Mor",
-          "age": 20,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 32.98788944115841,
-          "national_caps": 48,
-          "national_goals": 10,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Mor",
-          "age": 26,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 29.029877144162253,
-          "national_caps": 32,
-          "national_goals": 10,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Mor",
-          "age": 24,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 23.071098934912683,
-          "national_caps": 10,
-          "national_goals": 2,
-          "tournaments": []
-        },
-        {
-          "name": "P8_Mor",
-          "age": 34,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 45.18218557924431,
-          "national_caps": 13,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P9_Mor",
-          "age": 32,
+          "name": "Yassine Bounou",
+          "age": 35,
           "position": "GK",
-          "club": "Club",
-          "market_value": 32.641601231697194,
-          "national_caps": 2,
+          "club": "Al-Hilal",
+          "market_value": 10.0,
           "national_goals": 0,
-          "tournaments": []
+          "national_caps": 65,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P10_Mor",
-          "age": 20,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 11.76139956604057,
-          "national_caps": 0,
-          "national_goals": 0,
-          "tournaments": []
+          "name": "Hakim Ziyech",
+          "age": 33,
+          "position": "MF",
+          "club": "Galatasaray",
+          "market_value": 9.0,
+          "national_goals": 23,
+          "national_caps": 62,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P11_Mor",
+          "name": "Sofyan Amrabat",
           "age": 29,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 41.74657180459149,
-          "national_caps": 18,
-          "national_goals": 2,
-          "tournaments": []
-        },
-        {
-          "name": "P12_Mor",
-          "age": 26,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 58.56019275287546,
-          "national_caps": 0,
+          "position": "MF",
+          "club": "Manchester United",
+          "market_value": 22.0,
           "national_goals": 0,
-          "tournaments": []
+          "national_caps": 57,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P13_Mor",
+          "name": "Youssef En-Nesyri",
+          "age": 29,
+          "position": "FW",
+          "club": "Sevilla",
+          "market_value": 20.0,
+          "national_goals": 20,
+          "national_caps": 73,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Nayef Aguerd",
           "age": 30,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 56.0750658515289,
-          "national_caps": 18,
-          "national_goals": 0,
+          "position": "DF",
+          "club": "West Ham",
+          "market_value": 35.0,
+          "national_goals": 1,
+          "national_caps": 47,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Azzedine Ounahi",
+          "age": 26,
+          "position": "MF",
+          "club": "Marseille",
+          "market_value": 12.0,
+          "national_goals": 5,
+          "national_caps": 30,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Brahim Díaz",
+          "age": 26,
+          "position": "FW",
+          "club": "Real Madrid",
+          "market_value": 40.0,
+          "national_goals": 2,
+          "national_caps": 5,
           "tournaments": []
         },
         {
-          "name": "P14_Mor",
-          "age": 32,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 47.63407303413587,
-          "national_caps": 10,
+          "name": "Amine Adli",
+          "age": 26,
+          "position": "FW",
+          "club": "Bayer Leverkusen",
+          "market_value": 30.0,
+          "national_goals": 1,
+          "national_caps": 12,
+          "tournaments": []
+        },
+        {
+          "name": "Romain Saïss",
+          "age": 36,
+          "position": "DF",
+          "club": "Al-Shabab",
+          "market_value": 2.0,
           "national_goals": 3,
-          "tournaments": []
-        },
-        {
-          "name": "P15_Mor",
-          "age": 20,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 56.22924452649356,
-          "national_caps": 1,
-          "national_goals": 0,
-          "tournaments": []
+          "national_caps": 83,
+          "tournaments": [
+            "2022"
+          ]
         }
       ]
     },
@@ -5532,165 +5128,83 @@
       "ci_high": 0.10281467863889364,
       "players": [
         {
-          "name": "P1_Pan",
-          "age": 29,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 7.802715304216681,
-          "national_caps": 1,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
+          "name": "Adalberto Carrasquilla",
+          "age": 27,
+          "position": "MF",
+          "club": "Houston Dynamo",
+          "market_value": 4.5,
+          "national_goals": 2,
+          "national_caps": 57,
+          "tournaments": []
         },
         {
-          "name": "P2_Pan",
-          "age": 30,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 51.555226245433055,
-          "national_caps": 65,
-          "national_goals": 12,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Pan",
+          "name": "Aníbal Godoy",
           "age": 36,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 24.64181378286411,
-          "national_caps": 4,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Pan",
-          "age": 23,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 58.67128946597258,
-          "national_caps": 15,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Pan",
-          "age": 29,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 42.56432013548223,
-          "national_caps": 20,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Pan",
-          "age": 28,
-          "position": "GK",
-          "club": "Club",
-          "market_value": 37.361860591383966,
-          "national_caps": 9,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Pan",
-          "age": 24,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 7.900498324181617,
-          "national_caps": 7,
-          "national_goals": 2,
+          "position": "MF",
+          "club": "Nashville SC",
+          "market_value": 0.3,
+          "national_goals": 4,
+          "national_caps": 137,
           "tournaments": []
         },
         {
-          "name": "P8_Pan",
+          "name": "Eric Davis",
+          "age": 35,
+          "position": "DF",
+          "club": "Kosice",
+          "market_value": 0.4,
+          "national_goals": 7,
+          "national_caps": 90,
+          "tournaments": []
+        },
+        {
+          "name": "Michael Amir Murillo",
           "age": 30,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 59.1313177298082,
-          "national_caps": 0,
+          "position": "DF",
+          "club": "Marseille",
+          "market_value": 3.0,
+          "national_goals": 8,
+          "national_caps": 72,
+          "tournaments": []
+        },
+        {
+          "name": "Orlando Mosquera",
+          "age": 31,
+          "position": "GK",
+          "club": "Maccabi Tel Aviv",
+          "market_value": 0.5,
           "national_goals": 0,
+          "national_caps": 24,
           "tournaments": []
         },
         {
-          "name": "P9_Pan",
-          "age": 25,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 8.954367092583258,
-          "national_caps": 15,
-          "national_goals": 2,
+          "name": "José Fajardo",
+          "age": 32,
+          "position": "FW",
+          "club": "Universidad Católica",
+          "market_value": 0.6,
+          "national_goals": 11,
+          "national_caps": 46,
           "tournaments": []
         },
         {
-          "name": "P10_Pan",
-          "age": 24,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 49.84376398725195,
-          "national_caps": 0,
-          "national_goals": 0,
+          "name": "Cecilio Waterman",
+          "age": 35,
+          "position": "FW",
+          "club": "Alianza Lima",
+          "market_value": 0.3,
+          "national_goals": 10,
+          "national_caps": 38,
           "tournaments": []
         },
         {
-          "name": "P11_Pan",
-          "age": 26,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 10.466099194307173,
-          "national_caps": 1,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P12_Pan",
-          "age": 25,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 36.975832938815216,
-          "national_caps": 4,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P13_Pan",
-          "age": 20,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 35.57645105843858,
-          "national_caps": 8,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P14_Pan",
-          "age": 24,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 28.661489525185896,
-          "national_caps": 50,
-          "national_goals": 16,
-          "tournaments": []
-        },
-        {
-          "name": "P15_Pan",
-          "age": 20,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 54.763161806184925,
-          "national_caps": 16,
+          "name": "Fidel Escobar",
+          "age": 31,
+          "position": "DF",
+          "club": "Saprissa",
+          "market_value": 0.8,
           "national_goals": 3,
+          "national_caps": 76,
           "tournaments": []
         }
       ]
@@ -5721,165 +5235,73 @@
       "ci_high": 0.10239917971102601,
       "players": [
         {
-          "name": "P1_Egy",
-          "age": 25,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 43.90912605116549,
-          "national_caps": 40,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P2_Egy",
-          "age": 30,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 47.34475906377993,
-          "national_caps": 3,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Egy",
-          "age": 20,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 29.880223667408195,
-          "national_caps": 5,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Egy",
-          "age": 20,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 29.574355811015263,
-          "national_caps": 2,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Egy",
-          "age": 34,
-          "position": "GK",
-          "club": "Club",
-          "market_value": 56.21291688082734,
-          "national_caps": 11,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Egy",
-          "age": 21,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 29.105467694172358,
-          "national_caps": 0,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Egy",
-          "age": 25,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 55.56211357778433,
-          "national_caps": 7,
-          "national_goals": 1,
+          "name": "Mohamed Salah",
+          "age": 33,
+          "position": "FW",
+          "club": "Liverpool",
+          "market_value": 55.0,
+          "national_goals": 56,
+          "national_caps": 98,
           "tournaments": []
         },
         {
-          "name": "P8_Egy",
-          "age": 32,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 31.15406698225461,
-          "national_caps": 11,
-          "national_goals": 1,
+          "name": "Mohamed Elneny",
+          "age": 33,
+          "position": "MF",
+          "club": "Arsenal",
+          "market_value": 3.5,
+          "national_goals": 8,
+          "national_caps": 101,
           "tournaments": []
         },
         {
-          "name": "P9_Egy",
-          "age": 23,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 28.869287858290804,
-          "national_caps": 40,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P10_Egy",
-          "age": 21,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 39.05594161256102,
-          "national_caps": 7,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P11_Egy",
-          "age": 25,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 14.732679470236528,
-          "national_caps": 3,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P12_Egy",
+          "name": "Mostafa Mohamed",
           "age": 28,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 9.997151722271663,
-          "national_caps": 11,
-          "national_goals": 0,
+          "position": "FW",
+          "club": "Nantes",
+          "market_value": 15.0,
+          "national_goals": 12,
+          "national_caps": 37,
           "tournaments": []
         },
         {
-          "name": "P13_Egy",
-          "age": 24,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 18.95808602218966,
-          "national_caps": 65,
-          "national_goals": 10,
+          "name": "Trézéguet",
+          "age": 31,
+          "position": "FW",
+          "club": "Trabzonspor",
+          "market_value": 8.5,
+          "national_goals": 18,
+          "national_caps": 74,
           "tournaments": []
         },
         {
-          "name": "P14_Egy",
-          "age": 24,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 43.73237595191758,
-          "national_caps": 8,
+          "name": "Ahmed Hegazi",
+          "age": 35,
+          "position": "DF",
+          "club": "Al-Ittihad",
+          "market_value": 1.5,
           "national_goals": 2,
+          "national_caps": 88,
           "tournaments": []
         },
         {
-          "name": "P15_Egy",
-          "age": 36,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 36.82368825487666,
-          "national_caps": 8,
+          "name": "Mohamed El Shenawy",
+          "age": 37,
+          "position": "GK",
+          "club": "Al Ahly",
+          "market_value": 1.2,
           "national_goals": 0,
+          "national_caps": 55,
+          "tournaments": []
+        },
+        {
+          "name": "Omar Marmoush",
+          "age": 27,
+          "position": "FW",
+          "club": "Eintracht Frankfurt",
+          "market_value": 22.0,
+          "national_goals": 5,
+          "national_caps": 29,
           "tournaments": []
         }
       ]
@@ -7062,166 +6484,96 @@
       "ci_high": 0.10219023330572727,
       "players": [
         {
-          "name": "P1_Sen",
-          "age": 28,
+          "name": "Sadio Mané",
+          "age": 34,
+          "position": "FW",
+          "club": "Al-Nassr",
+          "market_value": 15.0,
+          "national_goals": 43,
+          "national_caps": 107,
+          "tournaments": []
+        },
+        {
+          "name": "Kalidou Koulibaly",
+          "age": 34,
+          "position": "DF",
+          "club": "Al-Hilal",
+          "market_value": 11.0,
+          "national_goals": 3,
+          "national_caps": 82,
+          "tournaments": []
+        },
+        {
+          "name": "Édouard Mendy",
+          "age": 34,
           "position": "GK",
-          "club": "Club",
-          "market_value": 39.21081062099705,
-          "national_caps": 21,
-          "national_goals": 6,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P2_Sen",
-          "age": 23,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 41.91569903062519,
-          "national_caps": 64,
-          "national_goals": 6,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Sen",
-          "age": 20,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 56.601670303288365,
-          "national_caps": 15,
+          "club": "Al-Ahli",
+          "market_value": 8.0,
           "national_goals": 0,
+          "national_caps": 39,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P4_Sen",
-          "age": 24,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 34.75031745355034,
-          "national_caps": 13,
-          "national_goals": 4,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Sen",
-          "age": 20,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 9.351236898493502,
-          "national_caps": 3,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Sen",
-          "age": 20,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 30.620019764819727,
-          "national_caps": 37,
-          "national_goals": 6,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Sen",
-          "age": 27,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 44.42639114792307,
-          "national_caps": 5,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P8_Sen",
-          "age": 25,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 57.54673781762552,
-          "national_caps": 8,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P9_Sen",
-          "age": 31,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 15.220963350780384,
-          "national_caps": 13,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P10_Sen",
-          "age": 20,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 32.97092623762292,
-          "national_caps": 58,
+          "name": "Idrissa Gueye",
+          "age": 36,
+          "position": "MF",
+          "club": "Everton",
+          "market_value": 2.0,
           "national_goals": 7,
-          "tournaments": []
+          "national_caps": 113,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P11_Sen",
-          "age": 27,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 55.32293150114548,
-          "national_caps": 8,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P12_Sen",
-          "age": 20,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 59.68651739361382,
-          "national_caps": 1,
+          "name": "Nicolas Jackson",
+          "age": 24,
+          "position": "FW",
+          "club": "Chelsea",
+          "market_value": 35.0,
           "national_goals": 0,
-          "tournaments": []
+          "national_caps": 14,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P13_Sen",
-          "age": 35,
-          "position": "GK",
-          "club": "Club",
-          "market_value": 10.588187427039834,
-          "national_caps": 12,
+          "name": "Pape Matar Sarr",
+          "age": 23,
+          "position": "MF",
+          "club": "Tottenham",
+          "market_value": 40.0,
           "national_goals": 1,
-          "tournaments": []
+          "national_caps": 24,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P14_Sen",
-          "age": 20,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 18.604294994035943,
-          "national_caps": 49,
-          "national_goals": 1,
-          "tournaments": []
+          "name": "Ismaïla Sarr",
+          "age": 28,
+          "position": "FW",
+          "club": "Marseille",
+          "market_value": 20.0,
+          "national_goals": 13,
+          "national_caps": 64,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P15_Sen",
-          "age": 29,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 29.94121426146129,
-          "national_caps": 0,
-          "national_goals": 0,
-          "tournaments": []
+          "name": "Abdou Diallo",
+          "age": 30,
+          "position": "DF",
+          "club": "Al-Arabi",
+          "market_value": 9.0,
+          "national_goals": 2,
+          "national_caps": 29,
+          "tournaments": [
+            "2022"
+          ]
         }
       ]
     },
@@ -8403,165 +7755,83 @@
       "ci_high": 0.10192595907093698,
       "players": [
         {
-          "name": "P1_Alg",
-          "age": 20,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 48.31431849483517,
-          "national_caps": 9,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P2_Alg",
-          "age": 24,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 9.637697630033628,
-          "national_caps": 1,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Alg",
-          "age": 27,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 15.47855854603174,
-          "national_caps": 12,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Alg",
-          "age": 20,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 13.164659400243407,
-          "national_caps": 6,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Alg",
-          "age": 26,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 17.303352670714602,
-          "national_caps": 14,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Alg",
-          "age": 21,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 20.71103523727524,
-          "national_caps": 9,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Alg",
-          "age": 20,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 42.681664212362776,
-          "national_caps": 1,
-          "national_goals": 0,
+          "name": "Riyad Mahrez",
+          "age": 35,
+          "position": "FW",
+          "club": "Al-Ahli",
+          "market_value": 12.0,
+          "national_goals": 31,
+          "national_caps": 94,
           "tournaments": []
         },
         {
-          "name": "P8_Alg",
-          "age": 34,
-          "position": "GK",
-          "club": "Club",
-          "market_value": 35.81066458126897,
-          "national_caps": 45,
-          "national_goals": 7,
-          "tournaments": []
-        },
-        {
-          "name": "P9_Alg",
-          "age": 20,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 23.56402370350157,
-          "national_caps": 12,
-          "national_goals": 3,
-          "tournaments": []
-        },
-        {
-          "name": "P10_Alg",
-          "age": 29,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 53.99234760942289,
-          "national_caps": 4,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P11_Alg",
-          "age": 36,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 24.363239290487723,
-          "national_caps": 30,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P12_Alg",
-          "age": 31,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 49.531041596327235,
-          "national_caps": 55,
-          "national_goals": 14,
-          "tournaments": []
-        },
-        {
-          "name": "P13_Alg",
+          "name": "Ismaël Bennacer",
           "age": 28,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 8.368726014664588,
-          "national_caps": 13,
-          "national_goals": 1,
+          "position": "MF",
+          "club": "AC Milan",
+          "market_value": 35.0,
+          "national_goals": 2,
+          "national_caps": 49,
           "tournaments": []
         },
         {
-          "name": "P14_Alg",
-          "age": 36,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 9.381041134815387,
-          "national_caps": 2,
-          "national_goals": 0,
+          "name": "Baghdad Bounedjah",
+          "age": 34,
+          "position": "FW",
+          "club": "Al-Sadd",
+          "market_value": 3.0,
+          "national_goals": 30,
+          "national_caps": 69,
           "tournaments": []
         },
         {
-          "name": "P15_Alg",
-          "age": 20,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 46.563343200801576,
-          "national_caps": 17,
+          "name": "Ramy Bensebaini",
+          "age": 31,
+          "position": "DF",
+          "club": "Borussia Dortmund",
+          "market_value": 12.0,
+          "national_goals": 6,
+          "national_caps": 62,
+          "tournaments": []
+        },
+        {
+          "name": "Aïssa Mandi",
+          "age": 34,
+          "position": "DF",
+          "club": "Villarreal",
+          "market_value": 2.0,
           "national_goals": 5,
+          "national_caps": 97,
+          "tournaments": []
+        },
+        {
+          "name": "Anthony Mandrea",
+          "age": 29,
+          "position": "GK",
+          "club": "Caen",
+          "market_value": 1.5,
+          "national_goals": 0,
+          "national_caps": 18,
+          "tournaments": []
+        },
+        {
+          "name": "Rayan Aït-Nouri",
+          "age": 24,
+          "position": "DF",
+          "club": "Wolverhampton",
+          "market_value": 32.0,
+          "national_goals": 0,
+          "national_caps": 13,
+          "tournaments": []
+        },
+        {
+          "name": "Said Benrahma",
+          "age": 30,
+          "position": "FW",
+          "club": "Lyon",
+          "market_value": 18.0,
+          "national_goals": 2,
+          "national_caps": 28,
           "tournaments": []
         }
       ]
@@ -8799,166 +8069,98 @@
       "ci_high": 0.10185595495460334,
       "players": [
         {
-          "name": "P1_Aus",
-          "age": 25,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 28.751673538681338,
-          "national_caps": 5,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P2_Aus",
-          "age": 25,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 10.546338254096357,
-          "national_caps": 0,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Aus",
-          "age": 21,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 16.677574149968386,
-          "national_caps": 9,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Aus",
-          "age": 23,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 35.94823939621165,
-          "national_caps": 4,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Aus",
-          "age": 31,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 54.81440759757889,
-          "national_caps": 4,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Aus",
-          "age": 27,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 20.325971492285113,
-          "national_caps": 70,
-          "national_goals": 19,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Aus",
-          "age": 24,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 34.52235906881141,
-          "national_caps": 4,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P8_Aus",
-          "age": 21,
-          "position": "GK",
-          "club": "Club",
-          "market_value": 52.81063940190951,
-          "national_caps": 25,
-          "national_goals": 4,
-          "tournaments": []
-        },
-        {
-          "name": "P9_Aus",
-          "age": 22,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 41.49443089615586,
-          "national_caps": 10,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P10_Aus",
-          "age": 26,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 43.13750745885775,
-          "national_caps": 49,
-          "national_goals": 4,
-          "tournaments": []
-        },
-        {
-          "name": "P11_Aus",
+          "name": "Mathew Ryan",
           "age": 34,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 57.66305423461238,
-          "national_caps": 51,
-          "national_goals": 13,
-          "tournaments": []
-        },
-        {
-          "name": "P12_Aus",
-          "age": 20,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 52.23232006659196,
-          "national_caps": 11,
+          "position": "GK",
+          "club": "AZ Alkmaar",
+          "market_value": 3.5,
           "national_goals": 0,
-          "tournaments": []
+          "national_caps": 93,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P13_Aus",
-          "age": 23,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 58.63061247803261,
-          "national_caps": 5,
+          "name": "Jackson Irvine",
+          "age": 33,
+          "position": "MF",
+          "club": "FC St. Pauli",
+          "market_value": 2.0,
+          "national_goals": 11,
+          "national_caps": 70,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Harry Souttar",
+          "age": 27,
+          "position": "DF",
+          "club": "Leicester City",
+          "market_value": 8.0,
+          "national_goals": 11,
+          "national_caps": 30,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Craig Goodwin",
+          "age": 34,
+          "position": "FW",
+          "club": "Al-Wehda",
+          "market_value": 1.2,
+          "national_goals": 6,
+          "national_caps": 25,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Mitchell Duke",
+          "age": 35,
+          "position": "FW",
+          "club": "Machida Zelvia",
+          "market_value": 0.8,
+          "national_goals": 12,
+          "national_caps": 40,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Kye Rowles",
+          "age": 27,
+          "position": "DF",
+          "club": "Hearts",
+          "market_value": 1.5,
+          "national_goals": 1,
+          "national_caps": 21,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Connor Metcalfe",
+          "age": 26,
+          "position": "MF",
+          "club": "FC St. Pauli",
+          "market_value": 2.5,
           "national_goals": 0,
+          "national_caps": 23,
           "tournaments": []
         },
         {
-          "name": "P14_Aus",
-          "age": 23,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 7.445816401034501,
-          "national_caps": 12,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P15_Aus",
-          "age": 29,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 38.72747556353829,
-          "national_caps": 14,
+          "name": "Aziz Behich",
+          "age": 35,
+          "position": "DF",
+          "club": "Melbourne City",
+          "market_value": 0.4,
           "national_goals": 2,
-          "tournaments": []
+          "national_caps": 69,
+          "tournaments": [
+            "2022"
+          ]
         }
       ]
     },
@@ -8988,165 +8190,97 @@
       "ci_high": 0.10185033620186125,
       "players": [
         {
-          "name": "P1_Can",
-          "age": 26,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 48.155021056263166,
-          "national_caps": 4,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P2_Can",
-          "age": 23,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 47.85464276911163,
-          "national_caps": 11,
-          "national_goals": 3,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Can",
-          "age": 20,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 29.122076834167483,
-          "national_caps": 17,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Can",
-          "age": 22,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 59.42409495805607,
-          "national_caps": 35,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Can",
-          "age": 20,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 7.4818334146933125,
-          "national_caps": 4,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Can",
-          "age": 24,
-          "position": "GK",
-          "club": "Club",
-          "market_value": 31.58564233894622,
-          "national_caps": 4,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Can",
-          "age": 22,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 7.567081179064095,
-          "national_caps": 13,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P8_Can",
-          "age": 22,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 59.248968100376466,
-          "national_caps": 19,
-          "national_goals": 4,
-          "tournaments": []
-        },
-        {
-          "name": "P9_Can",
-          "age": 22,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 13.600380591589047,
-          "national_caps": 9,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P10_Can",
-          "age": 26,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 15.37065756961587,
-          "national_caps": 11,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P11_Can",
-          "age": 30,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 22.482598538529103,
-          "national_caps": 11,
-          "national_goals": 2,
-          "tournaments": []
-        },
-        {
-          "name": "P12_Can",
-          "age": 20,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 16.039747256104192,
-          "national_caps": 6,
-          "national_goals": 2,
-          "tournaments": []
-        },
-        {
-          "name": "P13_Can",
-          "age": 22,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 20.34730592694261,
-          "national_caps": 7,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P14_Can",
-          "age": 20,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 26.68813876372412,
+          "name": "Alphonso Davies",
+          "age": 25,
+          "position": "DF",
+          "club": "Bayern Munich",
+          "market_value": 50.0,
+          "national_goals": 15,
           "national_caps": 53,
-          "national_goals": 7,
-          "tournaments": []
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P15_Can",
-          "age": 30,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 33.564728477219035,
-          "national_caps": 6,
-          "national_goals": 2,
+          "name": "Jonathan David",
+          "age": 26,
+          "position": "FW",
+          "club": "Lille",
+          "market_value": 50.0,
+          "national_goals": 28,
+          "national_caps": 48,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Cyle Larin",
+          "age": 31,
+          "position": "FW",
+          "club": "Mallorca",
+          "market_value": 10.0,
+          "national_goals": 29,
+          "national_caps": 68,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Stephen Eustáquio",
+          "age": 29,
+          "position": "MF",
+          "club": "FC Porto",
+          "market_value": 12.0,
+          "national_goals": 4,
+          "national_caps": 38,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Tajon Buchanan",
+          "age": 27,
+          "position": "FW",
+          "club": "Inter Milan",
+          "market_value": 10.0,
+          "national_goals": 4,
+          "national_caps": 41,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Alistair Johnston",
+          "age": 27,
+          "position": "DF",
+          "club": "Celtic",
+          "market_value": 8.0,
+          "national_goals": 1,
+          "national_caps": 48,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Kamal Miller",
+          "age": 29,
+          "position": "DF",
+          "club": "Portland Timbers",
+          "market_value": 3.5,
+          "national_goals": 0,
+          "national_caps": 44,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Maxime Crépeau",
+          "age": 32,
+          "position": "GK",
+          "club": "Portland Timbers",
+          "market_value": 1.2,
+          "national_goals": 0,
+          "national_caps": 22,
           "tournaments": []
         }
       ]
@@ -9177,166 +8311,100 @@
       "ci_high": 0.10179120954857439,
       "players": [
         {
-          "name": "P1_Gha",
-          "age": 20,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 6.538253909604108,
-          "national_caps": 8,
-          "national_goals": 2,
+          "name": "Mohammed Kudus",
+          "age": 25,
+          "position": "MF",
+          "club": "West Ham",
+          "market_value": 50.0,
+          "national_goals": 11,
+          "national_caps": 34,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P2_Gha",
-          "age": 26,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 15.581726472804675,
-          "national_caps": 5,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Gha",
-          "age": 21,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 36.53452850893098,
-          "national_caps": 62,
-          "national_goals": 5,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Gha",
-          "age": 29,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 42.093263749629834,
-          "national_caps": 6,
+          "name": "Iñaki Williams",
+          "age": 31,
+          "position": "FW",
+          "club": "Athletic Bilbao",
+          "market_value": 25.0,
           "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Gha",
-          "age": 20,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 20.904985059791912,
-          "national_caps": 7,
-          "national_goals": 0,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Gha",
-          "age": 21,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 10.90273668211857,
-          "national_caps": 4,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Gha",
-          "age": 22,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 51.16150601573005,
           "national_caps": 17,
-          "national_goals": 5,
-          "tournaments": []
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P8_Gha",
-          "age": 22,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 18.665573363181778,
-          "national_caps": 10,
-          "national_goals": 3,
-          "tournaments": []
-        },
-        {
-          "name": "P9_Gha",
+          "name": "Thomas Partey",
           "age": 32,
+          "position": "MF",
+          "club": "Arsenal",
+          "market_value": 18.0,
+          "national_goals": 13,
+          "national_caps": 49,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Jordan Ayew",
+          "age": 34,
+          "position": "FW",
+          "club": "Crystal Palace",
+          "market_value": 4.0,
+          "national_goals": 28,
+          "national_caps": 104,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Lawrence Ati-Zigi",
+          "age": 29,
           "position": "GK",
-          "club": "Club",
-          "market_value": 16.11875820845223,
-          "national_caps": 1,
+          "club": "St. Gallen",
+          "market_value": 2.0,
           "national_goals": 0,
-          "tournaments": []
+          "national_caps": 24,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P10_Gha",
-          "age": 22,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 6.993397608268705,
-          "national_caps": 11,
-          "national_goals": 1,
-          "tournaments": []
+          "name": "Alexander Djiku",
+          "age": 31,
+          "position": "DF",
+          "club": "Fenerbahçe",
+          "market_value": 10.0,
+          "national_goals": 2,
+          "national_caps": 29,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P11_Gha",
-          "age": 24,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 49.32165361227339,
-          "national_caps": 4,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P12_Gha",
-          "age": 27,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 24.443201606469753,
-          "national_caps": 5,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P13_Gha",
-          "age": 33,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 28.542368166295944,
-          "national_caps": 5,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P14_Gha",
+          "name": "Salis Abdul Samed",
           "age": 26,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 34.68550341101847,
-          "national_caps": 7,
-          "national_goals": 1,
-          "tournaments": []
+          "position": "MF",
+          "club": "Lens",
+          "market_value": 10.0,
+          "national_goals": 0,
+          "national_caps": 19,
+          "tournaments": [
+            "2022"
+          ]
         },
         {
-          "name": "P15_Gha",
-          "age": 30,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 21.55630520849725,
-          "national_caps": 2,
+          "name": "Tariq Lamptey",
+          "age": 25,
+          "position": "DF",
+          "club": "Brighton",
+          "market_value": 12.0,
           "national_goals": 0,
-          "tournaments": []
+          "national_caps": 10,
+          "tournaments": [
+            "2022"
+          ]
         }
       ]
     },
@@ -9983,165 +9051,95 @@
       "ci_high": 0.10170763391316037,
       "players": [
         {
-          "name": "P1_Sau",
+          "name": "Salem Al-Dawsari",
           "age": 34,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 22.065164591904036,
-          "national_caps": 34,
-          "national_goals": 9,
+          "position": "FW",
+          "club": "Al-Hilal",
+          "market_value": 1.8,
+          "national_goals": 22,
+          "national_caps": 84,
           "tournaments": [
             "2022"
           ]
         },
         {
-          "name": "P2_Sau",
-          "age": 27,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 44.92385028572171,
-          "national_caps": 49,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P3_Sau",
-          "age": 25,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 12.21665680068757,
-          "national_caps": 9,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P4_Sau",
-          "age": 27,
-          "position": "RB",
-          "club": "Club",
-          "market_value": 19.489403483575853,
-          "national_caps": 7,
-          "national_goals": 1,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P5_Sau",
-          "age": 23,
-          "position": "GK",
-          "club": "Club",
-          "market_value": 50.634034252635935,
-          "national_caps": 20,
-          "national_goals": 4,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P6_Sau",
-          "age": 20,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 37.28431714401479,
-          "national_caps": 11,
-          "national_goals": 2,
-          "tournaments": [
-            "2022"
-          ]
-        },
-        {
-          "name": "P7_Sau",
-          "age": 21,
-          "position": "DM",
-          "club": "Club",
-          "market_value": 16.274409595460654,
-          "national_caps": 10,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P8_Sau",
-          "age": 27,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 17.52668350928125,
-          "national_caps": 19,
-          "national_goals": 4,
-          "tournaments": []
-        },
-        {
-          "name": "P9_Sau",
-          "age": 34,
-          "position": "AM",
-          "club": "Club",
-          "market_value": 9.827909559688742,
-          "national_caps": 19,
-          "national_goals": 5,
-          "tournaments": []
-        },
-        {
-          "name": "P10_Sau",
-          "age": 31,
-          "position": "ST",
-          "club": "Club",
-          "market_value": 22.6385259495579,
-          "national_caps": 8,
-          "national_goals": 1,
-          "tournaments": []
-        },
-        {
-          "name": "P11_Sau",
-          "age": 24,
-          "position": "CB",
-          "club": "Club",
-          "market_value": 47.72668195928723,
-          "national_caps": 5,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P12_Sau",
-          "age": 30,
-          "position": "CM",
-          "club": "Club",
-          "market_value": 7.444260928657624,
-          "national_caps": 0,
-          "national_goals": 0,
-          "tournaments": []
-        },
-        {
-          "name": "P13_Sau",
+          "name": "Firas Al-Buraikan",
           "age": 26,
-          "position": "RW",
-          "club": "Club",
-          "market_value": 16.37319085482638,
-          "national_caps": 7,
+          "position": "FW",
+          "club": "Al-Ahli",
+          "market_value": 6.0,
+          "national_goals": 10,
+          "national_caps": 41,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Saud Abdulhamid",
+          "age": 26,
+          "position": "DF",
+          "club": "Al-Hilal",
+          "market_value": 4.0,
+          "national_goals": 1,
+          "national_caps": 34,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Mohamed Kanno",
+          "age": 31,
+          "position": "MF",
+          "club": "Al-Hilal",
+          "market_value": 1.2,
+          "national_goals": 3,
+          "national_caps": 52,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Mohammed Al-Owais",
+          "age": 34,
+          "position": "GK",
+          "club": "Al-Hilal",
+          "market_value": 0.5,
           "national_goals": 0,
+          "national_caps": 45,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Ali Al-Bulaihi",
+          "age": 36,
+          "position": "DF",
+          "club": "Al-Hilal",
+          "market_value": 0.3,
+          "national_goals": 2,
+          "national_caps": 53,
+          "tournaments": [
+            "2022"
+          ]
+        },
+        {
+          "name": "Sultan Al-Ghannam",
+          "age": 32,
+          "position": "DF",
+          "club": "Al-Nassr",
+          "market_value": 1.5,
+          "national_goals": 0,
+          "national_caps": 30,
           "tournaments": []
         },
         {
-          "name": "P14_Sau",
-          "age": 25,
-          "position": "LB",
-          "club": "Club",
-          "market_value": 57.48238382971895,
-          "national_caps": 51,
-          "national_goals": 15,
-          "tournaments": []
-        },
-        {
-          "name": "P15_Sau",
-          "age": 20,
-          "position": "LW",
-          "club": "Club",
-          "market_value": 20.368290182879004,
-          "national_caps": 60,
-          "national_goals": 15,
+          "name": "Abdulrahman Ghareeb",
+          "age": 29,
+          "position": "MF",
+          "club": "Al-Nassr",
+          "market_value": 2.5,
+          "national_goals": 3,
+          "national_caps": 28,
           "tournaments": []
         }
       ]
