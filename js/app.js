@@ -66,7 +66,6 @@
       label: '2026 世界杯',
       logo: ['世', '杯'],
       subtitle: '冠军概率与对战预测',
-      dataBadge: '53 支球队',
       updateTime: '数据日期 2026-05-30'
     }
   };
@@ -265,6 +264,9 @@
     appEl.classList.toggle('theme-worldcup', isWorldCup());
     appEl.classList.toggle('theme-dlt', state.currentLottery === 'dlt');
 
+    // Reset dataCount display state when switching
+    setDisplay('dataCount', '');
+
     setText('logoBallRed', cfg.logo[0]);
     setText('logoBallBlue', cfg.logo[1]);
     setText('logoTitle', cfg.label);
@@ -272,9 +274,8 @@
 
     if (isWorldCup()) {
       const metadata = window.WorldCup?.getMetadata?.();
-      const teamCount = metadata?.teamCount || 53;
       const sourceDate = metadata?.sourceDataDate || '2026-05-30';
-      document.getElementById('dataCount').innerHTML = `<span class="badge-dot"></span>${teamCount} 支球队`;
+      setDisplay('dataCount', 'none');
       document.getElementById('updateTime').textContent = `数据日期 ${sourceDate}`;
       setText('footerTitle', '世界杯预测工具 · 仅供学习参考');
       setText('footerSubtitle', '数据来源：2026-world-cup-predictor 静态导出 · 所有预测仅供概率研究参考');
