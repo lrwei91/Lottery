@@ -1104,11 +1104,13 @@
       delete stat.recentScores;
     });
 
+    const advice = buildEvolutionAdvice(stats);
     const evolution = {
       type: state.currentLottery,
       updatedAt: new Date().toISOString(),
       strategyStats: stats,
-      summary: buildEvolutionAdvice(stats)
+      summary: advice.summary,
+      mode: advice.mode
     };
     persistStrategyEvolution(evolution);
     return evolution;
@@ -1116,7 +1118,12 @@
 
   function buildEvolutionAdvice(stats) {
     const reviewed = Object.values(stats).filter(stat => stat.reviewCount > 0);
-    if (!reviewed.length) return '暂无已复盘记录，策略进化将在开奖后自动生成。';
+    if (!reviewed.length) {
+      return {
+        mode: 'pending',
+        summary: '暂无已复盘记录，策略进化将在开奖后自动生成。'
+      };
+    }
 
     const sorted = reviewed.slice().sort((a, b) => b.weightMultiplier - a.weightMultiplier);
     const top = sorted[0];
@@ -1125,13 +1132,20 @@
     const weakLabel = STRATEGY_LABELS[weak.strategy] || weak.strategy;
 
     if (top.strategy === weak.strategy || Math.abs(top.weightMultiplier - weak.weightMultiplier) < 0.08) {
-      return `各策略近期表现接近，下期维持均衡轮转，避免单期复盘过拟合。`;
+      return {
+        mode: 'balanced',
+        summary: '各策略近期表现接近，下期维持均衡轮转，避免单期复盘过拟合。'
+      };
     }
-    return `${topLabel}近期命中更稳，下期提高优先级；${weakLabel}连续表现偏弱，温和降低权重。`;
+    return {
+      mode: 'weighted',
+      summary: `${topLabel}近期命中更稳，下期提高优先级；${weakLabel}连续表现偏弱，温和降低权重。`
+    };
   }
 
-  function getStrategyEvolutionTag(strategy) {
-    const stat = state.strategyEvolution?.strategyStats?.[strategy];
+  function getStrategyEvolutionTag(strategy, evolution = state.strategyEvolution) {
+    if (evolution?.mode === 'balanced') return '策略权重稳定';
+    const stat = evolution?.strategyStats?.[strategy];
     if (!stat || !stat.reviewCount) return '策略待观察';
     if (stat.direction === 'up') return '策略加权上调';
     if (stat.direction === 'down') return '策略加权下调';
@@ -1179,7 +1193,7 @@
             : `${evaluation.frontMatches}+${evaluation.backMatches}${evaluation.prize ? ' · ' + evaluation.prize : ''}`;
         const reasonText = evaluation ? evaluation.reason : '等待开奖后自动生成复盘原因。';
         const resultTag = evaluation ? evaluation.tag : '待开奖';
-        const evolutionTag = getStrategyEvolutionTag(prediction.strategy);
+        const evolutionTag = getStrategyEvolutionTag(prediction.strategy, evolution);
 
         return `
           <div class="prediction-history-ticket">
