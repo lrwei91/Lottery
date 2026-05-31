@@ -20,7 +20,7 @@
     selectedA: '',
     selectedB: '',
     selectedSquad: '',
-    selectedGroup: 'ALL',
+    selectedGroup: 'TIME',
     countdownTimerId: null
   };
 
@@ -287,6 +287,49 @@
     return 'is-neutral';
   }
 
+  function getBeijingTimeInfo(date, time) {
+    try {
+      // Input time is in UTC (Z) timezone from the official ICS file
+      const d = new Date(date + 'T' + time + ':00Z');
+      
+      // Format parts in UTC+8 (Asia/Shanghai)
+      const formatter = new Intl.DateTimeFormat('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        weekday: 'short',
+        hour12: false
+      });
+      const parts = formatter.formatToParts(d);
+      const month = parts.find(p => p.type === 'month').value;
+      const day = parts.find(p => p.type === 'day').value;
+      const hour = parts.find(p => p.type === 'hour').value;
+      const minute = parts.find(p => p.type === 'minute').value;
+      let weekday = parts.find(p => p.type === 'weekday').value;
+      
+      if (weekday.length === 1) {
+        weekday = '周' + weekday;
+      }
+      
+      return {
+        date: month + '-' + day,
+        dateStr: month + '月' + day + '日',
+        time: hour + ':' + minute,
+        day: weekday
+      };
+    } catch (e) {
+      console.error("Time zone conversion failed:", e);
+      return {
+        date: date.slice(5),
+        dateStr: date.slice(5),
+        time: time,
+        day: ''
+      };
+    }
+  }
+
   function sortedTeams() {
     return state.teams.slice().sort((a, b) => (b.final_prob || 0) - (a.final_prob || 0));
   }
@@ -534,46 +577,7 @@
         scoreHtml = '<div class="wc-match-vs-badge">VS</div>';
       }
 
-      const timeInfo = (() => {
-        try {
-          // Input time is in UTC (Z) timezone from the official ICS file
-          const d = new Date(match.date + 'T' + match.time + ':00Z');
-          
-          // Format parts in UTC+8 (Asia/Shanghai)
-          const formatter = new Intl.DateTimeFormat('zh-CN', {
-            timeZone: 'Asia/Shanghai',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            weekday: 'short',
-            hour12: false
-          });
-          const parts = formatter.formatToParts(d);
-          const month = parts.find(p => p.type === 'month').value;
-          const day = parts.find(p => p.type === 'day').value;
-          const hour = parts.find(p => p.type === 'hour').value;
-          const minute = parts.find(p => p.type === 'minute').value;
-          let weekday = parts.find(p => p.type === 'weekday').value;
-          
-          if (weekday.length === 1) {
-            weekday = '周' + weekday;
-          }
-          
-          return {
-            date: month + '-' + day,
-            time: hour + ':' + minute,
-            day: weekday
-          };
-        } catch (e) {
-          console.error("Time zone conversion failed:", e);
-          return {
-            date: match.date.slice(5),
-            time: match.time,
-            day: ''
-          };
-        }
-      })();
+      const timeInfo = getBeijingTimeInfo(match.date, match.time);
 
       // Beautiful SVG Stadium Icon
       const stadiumIconSvg = '<svg class="wc-venue-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -621,7 +625,7 @@
       const hiddenClass = isSelected ? '' : ' is-hidden';
       const isOpen = (state.selectedGroup === label || state.selectedGroup === 'ALL') ? ' open' : '';
 
-      return '<details class="wc-match-group' + hiddenClass + '"' + isOpen + ' data-group="' + label + '">' +
+      return '<details class="wc-match-group letter-group-block' + hiddenClass + '"' + isOpen + ' data-group="' + label + '">' +
         '<summary>' +
           '<span class="wc-group-badge">' + label + ' 组</span>' +
           '<span class="wc-group-teams">' + teams.map(t => escapeHtml(countryName(t))).join(' · ') + '</span>' +
@@ -632,8 +636,62 @@
       '</details>';
     }
 
+    // Build Time-based blocks
+    const allMatches = [];
+    groupLabels.forEach(label => {
+      const g = md.groups[label];
+      if (g && g.matches) {
+        allMatches.push(...g.matches);
+      }
+    });
+
+    allMatches.sort((a, b) => {
+      const timeA = new Date(a.date + 'T' + a.time + ':00Z').getTime();
+      const timeB = new Date(b.date + 'T' + b.time + ':00Z').getTime();
+      return timeA - timeB;
+    });
+
+    const matchesByDate = {};
+    allMatches.forEach(match => {
+      const timeInfo = getBeijingTimeInfo(match.date, match.time);
+      const dateKey = timeInfo.date; // e.g. "06-11"
+      const dateStr = timeInfo.dateStr; // e.g. "6月11日"
+      const weekday = timeInfo.day; // e.g. "周四"
+      
+      if (!matchesByDate[dateKey]) {
+        matchesByDate[dateKey] = {
+          dateStr: dateStr,
+          weekday: weekday,
+          matches: []
+        };
+      }
+      matchesByDate[dateKey].matches.push(match);
+    });
+
+    const sortedDateKeys = Object.keys(matchesByDate).sort();
+
+    function timeGroupBlock(dateKey) {
+      const g = matchesByDate[dateKey];
+      const matches = g.matches;
+      
+      const isSelected = state.selectedGroup === 'TIME';
+      const hiddenClass = isSelected ? '' : ' is-hidden';
+      const isOpen = isSelected ? ' open' : '';
+
+      return '<details class="wc-match-group time-group-block' + hiddenClass + '"' + isOpen + ' data-group="TIME" data-date="' + dateKey + '">' +
+        '<summary>' +
+          '<span class="wc-group-badge">' + g.dateStr + ' ' + g.weekday + '</span>' +
+          '<span class="wc-group-teams">' + matches.length + ' 场比赛 · ' + matches.map(m => escapeHtml(countryName(m.home)) + ' vs ' + escapeHtml(countryName(m.away))).slice(0, 3).join(', ') + (matches.length > 3 ? '等' : '') + '</span>' +
+        '</summary>' +
+        '<div class="wc-match-grid">' +
+          matches.map(matchRow).join('') +
+        '</div>' +
+      '</details>';
+    }
+
     const groupTabsHtml = '<div class="wc-group-selector" id="wcGroupSelector">' +
-      '<button class="wc-group-tab active" data-group="ALL">全部小组</button>' +
+      '<button class="wc-group-tab" data-group="TIME">按时间</button>' +
+      '<button class="wc-group-tab" data-group="ALL">全部小组</button>' +
       groupLabels.map(label => '<button class="wc-group-tab" data-group="' + label + '">' + label + ' 组</button>').join('') +
       '</div>';
 
@@ -642,11 +700,13 @@
         '<div>' +
           '<h2>2026 世界杯 · 小组赛赛程</h2>' +
           '<p class="wc-desc">数据每日更新，展示各小组实时对战安排。共 12 组 72 场小组赛。</p>' +
+          '<span class="wc-desc" style="color: var(--accent); font-weight: 800; font-size: 0.8rem; margin-top: 4px; display: inline-block;">* 已适配标准北京时间 (+8时区) 展示</span>' +
         '</div>' +
         (lastUpdated ? '<span class="wc-update-badge">' + lastUpdated + '</span>' : '') +
       '</div>' +
       groupTabsHtml +
       '<div class="wc-match-board">' +
+        sortedDateKeys.map(timeGroupBlock).join('') +
         groupLabels.map(groupBlock).join('') +
       '</div>' +
     '</div>';
@@ -957,13 +1017,28 @@
 
         const groupsList = document.querySelectorAll('.wc-match-group');
         groupsList.forEach(details => {
+          const isTimeBlock = details.classList.contains('time-group-block');
           const label = details.dataset.group;
-          const isVisible = (group === 'ALL' || label === group);
-          details.classList.toggle('is-hidden', !isVisible);
-          if (group !== 'ALL' && label === group) {
-            details.setAttribute('open', '');
-          } else if (group === 'ALL') {
-            details.setAttribute('open', '');
+
+          if (group === 'TIME') {
+            if (isTimeBlock) {
+              details.classList.remove('is-hidden');
+              details.setAttribute('open', '');
+            } else {
+              details.classList.add('is-hidden');
+            }
+          } else {
+            if (isTimeBlock) {
+              details.classList.add('is-hidden');
+            } else {
+              const isVisible = (group === 'ALL' || label === group);
+              details.classList.toggle('is-hidden', !isVisible);
+              if (group !== 'ALL' && label === group) {
+                details.setAttribute('open', '');
+              } else if (group === 'ALL') {
+                details.setAttribute('open', '');
+              }
+            }
           }
         });
       });
