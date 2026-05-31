@@ -8,7 +8,7 @@
 
   // ==================== 应用状态 ====================
   const state = {
-    currentLottery: 'dlt', // 'dlt' (超级大乐透) 或 'pl3' (排列三)
+    currentLottery: '', // 'dlt' (超级大乐透), 'pl3' (排列三) 或 'worldcup' (世界杯)
     data: [],           // 所有开奖数据
     total: 0,           // 数据总量
     updateTime: '',     // 最后更新时间
@@ -1815,7 +1815,7 @@
       const tab = e.target.closest('.selector-tab');
       if (!tab) return;
       const lottery = tab.dataset.lottery;
-      switchLottery(lottery);
+      window.location.hash = lottery;
     });
 
     // 导航标签切换
@@ -2043,29 +2043,26 @@
     return { prize: null, fCount: 0, bCount: 0 };
   }
 
+  async function handleHashRoute() {
+    const hash = window.location.hash.substring(1);
+    const validRoutes = ['dlt', 'pl3', 'worldcup'];
+    if (!hash || !validRoutes.includes(hash)) {
+      window.location.hash = 'dlt';
+      return;
+    }
+    await switchLottery(hash);
+  }
+
   // ==================== 初始化 ====================
   async function init() {
-    applyLotteryCopy();
     resetStatsTabs();
     bindEvents();
     
-    const loadStart = Date.now();
-    const loaded = await loadData();
-    loadPredictionRecords();
-    loadStrategyEvolution();
-    renderPredictionHistory();
-
-    const elapsed = Date.now() - loadStart;
-    const minDisplay = 300;
-    if (elapsed < minDisplay) await new Promise(r => setTimeout(r, minDisplay - elapsed));
-
-    const overlay = document.getElementById('loadingOverlay');
-    overlay.classList.add('fade-out');
-    setTimeout(() => overlay.style.display = 'none', 500);
+    // 监听哈希路由变化
+    window.addEventListener('hashchange', handleHashRoute);
     
-    if (loaded) {
-      renderHome();
-    }
+    // 首次加载时处理路由
+    await handleHashRoute();
   }
 
   // 暴露全局接口
