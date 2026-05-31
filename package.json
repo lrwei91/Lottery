@@ -6,6 +6,7 @@
     "scrape": "node scripts/scraper.js",
     "scrape:pl3": "node scripts/scraper_pl3.js",
     "scrape:all": "node scripts/scraper.js && node scripts/scraper_pl3.js",
+    "sync:worldcup": "python3 scripts/sync_worldcup_upstream.py",
     "dev": "npx -y serve ."
   },
   "dependencies": {}
