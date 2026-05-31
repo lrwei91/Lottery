@@ -35,11 +35,11 @@ jobs:
               -m "Keep World Cup match data current" \
               -m "Refresh the static match snapshot from FIFA's public calendar API so GitHub Pages can show current group-stage fixtures without a runtime backend.
 
-Constraint: The web app is static and cannot call protected or server-side APIs at runtime
-Confidence: high
-Scope-risk: narrow
-Tested: python3 scripts/sync_worldcup_matches.py
-Not-tested: Browser rendering in scheduled workflow"
+              Constraint: The web app is static and cannot call protected or server-side APIs at runtime
+              Confidence: high
+              Scope-risk: narrow
+              Tested: python3 scripts/sync_worldcup_matches.py
+              Not-tested: Browser rendering in scheduled workflow"
             git push
           else
             echo "No World Cup match changes detected."
