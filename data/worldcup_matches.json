@@ -1,0 +1,1068 @@
+{
+  "metadata": {
+    "lastUpdated": "2026-05-31T05:46:34.600611+00:00",
+    "generatedBy": "scripts/generate_match_schedule.py",
+    "sourceDataDate": "2026-05-30",
+    "note": "2026 World Cup group stage match schedule",
+    "teamCount": 48,
+    "matchCount": 72
+  },
+  "groups": {
+    "A": {
+      "teams": [
+        "Brazil",
+        "Morocco",
+        "Panama",
+        "New Zealand"
+      ],
+      "matches": [
+        {
+          "id": "a-md1-1",
+          "group": "A",
+          "matchDay": 1,
+          "date": "2026-06-11",
+          "time": "13:00",
+          "venue": "MetLife Stadium (New York/New Jersey)",
+          "home": "Brazil",
+          "away": "Morocco",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "a-md1-2",
+          "group": "A",
+          "matchDay": 1,
+          "date": "2026-06-11",
+          "time": "16:00",
+          "venue": "SoFi Stadium (Los Angeles)",
+          "home": "Panama",
+          "away": "New Zealand",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "a-md2-1",
+          "group": "A",
+          "matchDay": 2,
+          "date": "2026-06-14",
+          "time": "13:00",
+          "venue": "Gillette Stadium (Boston)",
+          "home": "Panama",
+          "away": "Brazil",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "a-md2-2",
+          "group": "A",
+          "matchDay": 2,
+          "date": "2026-06-14",
+          "time": "16:00",
+          "venue": "Hard Rock Stadium (Miami)",
+          "home": "New Zealand",
+          "away": "Morocco",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "a-md3-1",
+          "group": "A",
+          "matchDay": 3,
+          "date": "2026-06-17",
+          "time": "13:00",
+          "venue": "MetLife Stadium (New York/New Jersey)",
+          "home": "Brazil",
+          "away": "New Zealand",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "a-md3-2",
+          "group": "A",
+          "matchDay": 3,
+          "date": "2026-06-17",
+          "time": "16:00",
+          "venue": "SoFi Stadium (Los Angeles)",
+          "home": "Panama",
+          "away": "Morocco",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        }
+      ]
+    },
+    "B": {
+      "teams": [
+        "Norway",
+        "Egypt",
+        "Japan",
+        "Ghana"
+      ],
+      "matches": [
+        {
+          "id": "b-md1-3",
+          "group": "B",
+          "matchDay": 1,
+          "date": "2026-06-11",
+          "time": "19:00",
+          "venue": "AT&T Stadium (Dallas)",
+          "home": "Norway",
+          "away": "Egypt",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "b-md1-4",
+          "group": "B",
+          "matchDay": 1,
+          "date": "2026-06-11",
+          "time": "22:00",
+          "venue": "Mercedes-Benz Stadium (Atlanta)",
+          "home": "Japan",
+          "away": "Ghana",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "b-md2-3",
+          "group": "B",
+          "matchDay": 2,
+          "date": "2026-06-14",
+          "time": "19:00",
+          "venue": "Lincoln Financial Field (Philadelphia)",
+          "home": "Japan",
+          "away": "Norway",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "b-md2-4",
+          "group": "B",
+          "matchDay": 2,
+          "date": "2026-06-14",
+          "time": "22:00",
+          "venue": "Estadio Azteca (Mexico City)",
+          "home": "Ghana",
+          "away": "Egypt",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "b-md3-3",
+          "group": "B",
+          "matchDay": 3,
+          "date": "2026-06-17",
+          "time": "19:00",
+          "venue": "AT&T Stadium (Dallas)",
+          "home": "Norway",
+          "away": "Ghana",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "b-md3-4",
+          "group": "B",
+          "matchDay": 3,
+          "date": "2026-06-17",
+          "time": "22:00",
+          "venue": "Mercedes-Benz Stadium (Atlanta)",
+          "home": "Japan",
+          "away": "Egypt",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        }
+      ]
+    },
+    "C": {
+      "teams": [
+        "France",
+        "Mexico",
+        "Ivory Coast",
+        "Iran"
+      ],
+      "matches": [
+        {
+          "id": "c-md1-5",
+          "group": "C",
+          "matchDay": 1,
+          "date": "2026-06-11",
+          "time": "13:00",
+          "venue": "NRG Stadium (Houston)",
+          "home": "France",
+          "away": "Mexico",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "c-md1-6",
+          "group": "C",
+          "matchDay": 1,
+          "date": "2026-06-11",
+          "time": "16:00",
+          "venue": "Arrowhead Stadium (Kansas City)",
+          "home": "Ivory Coast",
+          "away": "Iran",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "c-md2-5",
+          "group": "C",
+          "matchDay": 2,
+          "date": "2026-06-14",
+          "time": "13:00",
+          "venue": "Estadio BBVA (Monterrey)",
+          "home": "Ivory Coast",
+          "away": "France",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "c-md2-6",
+          "group": "C",
+          "matchDay": 2,
+          "date": "2026-06-14",
+          "time": "16:00",
+          "venue": "Estadio Akron (Guadalajara)",
+          "home": "Iran",
+          "away": "Mexico",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "c-md3-5",
+          "group": "C",
+          "matchDay": 3,
+          "date": "2026-06-17",
+          "time": "13:00",
+          "venue": "NRG Stadium (Houston)",
+          "home": "France",
+          "away": "Iran",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "c-md3-6",
+          "group": "C",
+          "matchDay": 3,
+          "date": "2026-06-17",
+          "time": "16:00",
+          "venue": "Arrowhead Stadium (Kansas City)",
+          "home": "Ivory Coast",
+          "away": "Mexico",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        }
+      ]
+    },
+    "D": {
+      "teams": [
+        "Argentina",
+        "Czech Republic",
+        "Senegal",
+        "Jordan"
+      ],
+      "matches": [
+        {
+          "id": "d-md1-7",
+          "group": "D",
+          "matchDay": 1,
+          "date": "2026-06-11",
+          "time": "19:00",
+          "venue": "Levi's Stadium (San Francisco)",
+          "home": "Argentina",
+          "away": "Czech Republic",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "d-md1-8",
+          "group": "D",
+          "matchDay": 1,
+          "date": "2026-06-11",
+          "time": "22:00",
+          "venue": "Lumen Field (Seattle)",
+          "home": "Senegal",
+          "away": "Jordan",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "d-md2-7",
+          "group": "D",
+          "matchDay": 2,
+          "date": "2026-06-14",
+          "time": "19:00",
+          "venue": "BC Place (Vancouver)",
+          "home": "Senegal",
+          "away": "Argentina",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "d-md2-8",
+          "group": "D",
+          "matchDay": 2,
+          "date": "2026-06-14",
+          "time": "22:00",
+          "venue": "BMO Field (Toronto)",
+          "home": "Jordan",
+          "away": "Czech Republic",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "d-md3-7",
+          "group": "D",
+          "matchDay": 3,
+          "date": "2026-06-17",
+          "time": "19:00",
+          "venue": "Levi's Stadium (San Francisco)",
+          "home": "Argentina",
+          "away": "Jordan",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "d-md3-8",
+          "group": "D",
+          "matchDay": 3,
+          "date": "2026-06-17",
+          "time": "22:00",
+          "venue": "Lumen Field (Seattle)",
+          "home": "Senegal",
+          "away": "Czech Republic",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        }
+      ]
+    },
+    "E": {
+      "teams": [
+        "England",
+        "Sweden",
+        "South Korea",
+        "Australia"
+      ],
+      "matches": [
+        {
+          "id": "e-md1-1",
+          "group": "E",
+          "matchDay": 1,
+          "date": "2026-06-12",
+          "time": "13:00",
+          "venue": "Gillette Stadium (Boston)",
+          "home": "England",
+          "away": "Sweden",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "e-md1-2",
+          "group": "E",
+          "matchDay": 1,
+          "date": "2026-06-12",
+          "time": "16:00",
+          "venue": "Hard Rock Stadium (Miami)",
+          "home": "South Korea",
+          "away": "Australia",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "e-md2-1",
+          "group": "E",
+          "matchDay": 2,
+          "date": "2026-06-15",
+          "time": "13:00",
+          "venue": "MetLife Stadium (New York/New Jersey)",
+          "home": "South Korea",
+          "away": "England",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "e-md2-2",
+          "group": "E",
+          "matchDay": 2,
+          "date": "2026-06-15",
+          "time": "16:00",
+          "venue": "SoFi Stadium (Los Angeles)",
+          "home": "Australia",
+          "away": "Sweden",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "e-md3-1",
+          "group": "E",
+          "matchDay": 3,
+          "date": "2026-06-18",
+          "time": "13:00",
+          "venue": "Gillette Stadium (Boston)",
+          "home": "England",
+          "away": "Australia",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "e-md3-2",
+          "group": "E",
+          "matchDay": 3,
+          "date": "2026-06-18",
+          "time": "16:00",
+          "venue": "Hard Rock Stadium (Miami)",
+          "home": "South Korea",
+          "away": "Sweden",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        }
+      ]
+    },
+    "F": {
+      "teams": [
+        "Switzerland",
+        "USA",
+        "Canada",
+        "Algeria"
+      ],
+      "matches": [
+        {
+          "id": "f-md1-3",
+          "group": "F",
+          "matchDay": 1,
+          "date": "2026-06-12",
+          "time": "19:00",
+          "venue": "Lincoln Financial Field (Philadelphia)",
+          "home": "Switzerland",
+          "away": "USA",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "f-md1-4",
+          "group": "F",
+          "matchDay": 1,
+          "date": "2026-06-12",
+          "time": "22:00",
+          "venue": "Estadio Azteca (Mexico City)",
+          "home": "Canada",
+          "away": "Algeria",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "f-md2-3",
+          "group": "F",
+          "matchDay": 2,
+          "date": "2026-06-15",
+          "time": "19:00",
+          "venue": "AT&T Stadium (Dallas)",
+          "home": "Canada",
+          "away": "Switzerland",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "f-md2-4",
+          "group": "F",
+          "matchDay": 2,
+          "date": "2026-06-15",
+          "time": "22:00",
+          "venue": "Mercedes-Benz Stadium (Atlanta)",
+          "home": "Algeria",
+          "away": "USA",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "f-md3-3",
+          "group": "F",
+          "matchDay": 3,
+          "date": "2026-06-18",
+          "time": "19:00",
+          "venue": "Lincoln Financial Field (Philadelphia)",
+          "home": "Switzerland",
+          "away": "Algeria",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "f-md3-4",
+          "group": "F",
+          "matchDay": 3,
+          "date": "2026-06-18",
+          "time": "22:00",
+          "venue": "Estadio Azteca (Mexico City)",
+          "home": "Canada",
+          "away": "USA",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        }
+      ]
+    },
+    "G": {
+      "teams": [
+        "Spain",
+        "Turkey",
+        "Uzbekistan",
+        "Tunisia"
+      ],
+      "matches": [
+        {
+          "id": "g-md1-5",
+          "group": "G",
+          "matchDay": 1,
+          "date": "2026-06-12",
+          "time": "13:00",
+          "venue": "Estadio BBVA (Monterrey)",
+          "home": "Spain",
+          "away": "Turkey",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "g-md1-6",
+          "group": "G",
+          "matchDay": 1,
+          "date": "2026-06-12",
+          "time": "16:00",
+          "venue": "Estadio Akron (Guadalajara)",
+          "home": "Uzbekistan",
+          "away": "Tunisia",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "g-md2-5",
+          "group": "G",
+          "matchDay": 2,
+          "date": "2026-06-15",
+          "time": "13:00",
+          "venue": "NRG Stadium (Houston)",
+          "home": "Uzbekistan",
+          "away": "Spain",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "g-md2-6",
+          "group": "G",
+          "matchDay": 2,
+          "date": "2026-06-15",
+          "time": "16:00",
+          "venue": "Arrowhead Stadium (Kansas City)",
+          "home": "Tunisia",
+          "away": "Turkey",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "g-md3-5",
+          "group": "G",
+          "matchDay": 3,
+          "date": "2026-06-18",
+          "time": "13:00",
+          "venue": "Estadio BBVA (Monterrey)",
+          "home": "Spain",
+          "away": "Tunisia",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "g-md3-6",
+          "group": "G",
+          "matchDay": 3,
+          "date": "2026-06-18",
+          "time": "16:00",
+          "venue": "Estadio Akron (Guadalajara)",
+          "home": "Uzbekistan",
+          "away": "Turkey",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        }
+      ]
+    },
+    "H": {
+      "teams": [
+        "Portugal",
+        "Paraguay",
+        "Nigeria",
+        "Romania"
+      ],
+      "matches": [
+        {
+          "id": "h-md1-7",
+          "group": "H",
+          "matchDay": 1,
+          "date": "2026-06-12",
+          "time": "19:00",
+          "venue": "BC Place (Vancouver)",
+          "home": "Portugal",
+          "away": "Paraguay",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "h-md1-8",
+          "group": "H",
+          "matchDay": 1,
+          "date": "2026-06-12",
+          "time": "22:00",
+          "venue": "BMO Field (Toronto)",
+          "home": "Nigeria",
+          "away": "Romania",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "h-md2-7",
+          "group": "H",
+          "matchDay": 2,
+          "date": "2026-06-15",
+          "time": "19:00",
+          "venue": "Levi's Stadium (San Francisco)",
+          "home": "Nigeria",
+          "away": "Portugal",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "h-md2-8",
+          "group": "H",
+          "matchDay": 2,
+          "date": "2026-06-15",
+          "time": "22:00",
+          "venue": "Lumen Field (Seattle)",
+          "home": "Romania",
+          "away": "Paraguay",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "h-md3-7",
+          "group": "H",
+          "matchDay": 3,
+          "date": "2026-06-18",
+          "time": "19:00",
+          "venue": "BC Place (Vancouver)",
+          "home": "Portugal",
+          "away": "Romania",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "h-md3-8",
+          "group": "H",
+          "matchDay": 3,
+          "date": "2026-06-18",
+          "time": "22:00",
+          "venue": "BMO Field (Toronto)",
+          "home": "Nigeria",
+          "away": "Paraguay",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        }
+      ]
+    },
+    "I": {
+      "teams": [
+        "Colombia",
+        "Austria",
+        "Serbia",
+        "Ukraine"
+      ],
+      "matches": [
+        {
+          "id": "i-md1-1",
+          "group": "I",
+          "matchDay": 1,
+          "date": "2026-06-13",
+          "time": "13:00",
+          "venue": "MetLife Stadium (New York/New Jersey)",
+          "home": "Colombia",
+          "away": "Austria",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "i-md1-2",
+          "group": "I",
+          "matchDay": 1,
+          "date": "2026-06-13",
+          "time": "16:00",
+          "venue": "SoFi Stadium (Los Angeles)",
+          "home": "Serbia",
+          "away": "Ukraine",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "i-md2-1",
+          "group": "I",
+          "matchDay": 2,
+          "date": "2026-06-16",
+          "time": "13:00",
+          "venue": "Gillette Stadium (Boston)",
+          "home": "Serbia",
+          "away": "Colombia",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "i-md2-2",
+          "group": "I",
+          "matchDay": 2,
+          "date": "2026-06-16",
+          "time": "16:00",
+          "venue": "Hard Rock Stadium (Miami)",
+          "home": "Ukraine",
+          "away": "Austria",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "i-md3-1",
+          "group": "I",
+          "matchDay": 3,
+          "date": "2026-06-19",
+          "time": "13:00",
+          "venue": "MetLife Stadium (New York/New Jersey)",
+          "home": "Colombia",
+          "away": "Ukraine",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "i-md3-2",
+          "group": "I",
+          "matchDay": 3,
+          "date": "2026-06-19",
+          "time": "16:00",
+          "venue": "SoFi Stadium (Los Angeles)",
+          "home": "Serbia",
+          "away": "Austria",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        }
+      ]
+    },
+    "J": {
+      "teams": [
+        "Germany",
+        "Uruguay",
+        "Honduras",
+        "Italy"
+      ],
+      "matches": [
+        {
+          "id": "j-md1-3",
+          "group": "J",
+          "matchDay": 1,
+          "date": "2026-06-13",
+          "time": "19:00",
+          "venue": "AT&T Stadium (Dallas)",
+          "home": "Germany",
+          "away": "Uruguay",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "j-md1-4",
+          "group": "J",
+          "matchDay": 1,
+          "date": "2026-06-13",
+          "time": "22:00",
+          "venue": "Mercedes-Benz Stadium (Atlanta)",
+          "home": "Honduras",
+          "away": "Italy",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "j-md2-3",
+          "group": "J",
+          "matchDay": 2,
+          "date": "2026-06-16",
+          "time": "19:00",
+          "venue": "Lincoln Financial Field (Philadelphia)",
+          "home": "Honduras",
+          "away": "Germany",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "j-md2-4",
+          "group": "J",
+          "matchDay": 2,
+          "date": "2026-06-16",
+          "time": "22:00",
+          "venue": "Estadio Azteca (Mexico City)",
+          "home": "Italy",
+          "away": "Uruguay",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "j-md3-3",
+          "group": "J",
+          "matchDay": 3,
+          "date": "2026-06-19",
+          "time": "19:00",
+          "venue": "AT&T Stadium (Dallas)",
+          "home": "Germany",
+          "away": "Italy",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "j-md3-4",
+          "group": "J",
+          "matchDay": 3,
+          "date": "2026-06-19",
+          "time": "22:00",
+          "venue": "Mercedes-Benz Stadium (Atlanta)",
+          "home": "Honduras",
+          "away": "Uruguay",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        }
+      ]
+    },
+    "K": {
+      "teams": [
+        "Ecuador",
+        "Croatia",
+        "Poland",
+        "Cameroon"
+      ],
+      "matches": [
+        {
+          "id": "k-md1-5",
+          "group": "K",
+          "matchDay": 1,
+          "date": "2026-06-13",
+          "time": "13:00",
+          "venue": "NRG Stadium (Houston)",
+          "home": "Ecuador",
+          "away": "Croatia",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "k-md1-6",
+          "group": "K",
+          "matchDay": 1,
+          "date": "2026-06-13",
+          "time": "16:00",
+          "venue": "Arrowhead Stadium (Kansas City)",
+          "home": "Poland",
+          "away": "Cameroon",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "k-md2-5",
+          "group": "K",
+          "matchDay": 2,
+          "date": "2026-06-16",
+          "time": "13:00",
+          "venue": "Estadio BBVA (Monterrey)",
+          "home": "Poland",
+          "away": "Ecuador",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "k-md2-6",
+          "group": "K",
+          "matchDay": 2,
+          "date": "2026-06-16",
+          "time": "16:00",
+          "venue": "Estadio Akron (Guadalajara)",
+          "home": "Cameroon",
+          "away": "Croatia",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "k-md3-5",
+          "group": "K",
+          "matchDay": 3,
+          "date": "2026-06-19",
+          "time": "13:00",
+          "venue": "NRG Stadium (Houston)",
+          "home": "Ecuador",
+          "away": "Cameroon",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "k-md3-6",
+          "group": "K",
+          "matchDay": 3,
+          "date": "2026-06-19",
+          "time": "16:00",
+          "venue": "Arrowhead Stadium (Kansas City)",
+          "home": "Poland",
+          "away": "Croatia",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        }
+      ]
+    },
+    "L": {
+      "teams": [
+        "Netherlands",
+        "Belgium",
+        "Jamaica",
+        "Costa Rica"
+      ],
+      "matches": [
+        {
+          "id": "l-md1-7",
+          "group": "L",
+          "matchDay": 1,
+          "date": "2026-06-13",
+          "time": "19:00",
+          "venue": "Levi's Stadium (San Francisco)",
+          "home": "Netherlands",
+          "away": "Belgium",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "l-md1-8",
+          "group": "L",
+          "matchDay": 1,
+          "date": "2026-06-13",
+          "time": "22:00",
+          "venue": "Lumen Field (Seattle)",
+          "home": "Jamaica",
+          "away": "Costa Rica",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "l-md2-7",
+          "group": "L",
+          "matchDay": 2,
+          "date": "2026-06-16",
+          "time": "19:00",
+          "venue": "BC Place (Vancouver)",
+          "home": "Jamaica",
+          "away": "Netherlands",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "l-md2-8",
+          "group": "L",
+          "matchDay": 2,
+          "date": "2026-06-16",
+          "time": "22:00",
+          "venue": "BMO Field (Toronto)",
+          "home": "Costa Rica",
+          "away": "Belgium",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "l-md3-7",
+          "group": "L",
+          "matchDay": 3,
+          "date": "2026-06-19",
+          "time": "19:00",
+          "venue": "Levi's Stadium (San Francisco)",
+          "home": "Netherlands",
+          "away": "Costa Rica",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        },
+        {
+          "id": "l-md3-8",
+          "group": "L",
+          "matchDay": 3,
+          "date": "2026-06-19",
+          "time": "22:00",
+          "venue": "Lumen Field (Seattle)",
+          "home": "Jamaica",
+          "away": "Belgium",
+          "homeScore": null,
+          "awayScore": null,
+          "status": "scheduled"
+        }
+      ]
+    }
+  }
+}

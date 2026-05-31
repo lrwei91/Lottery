@@ -6,6 +6,7 @@
   'use strict';
 
   const DATA_URL = 'data/worldcup_2026.json';
+  const MATCHES_URL = 'data/worldcup_matches.json';
 
   const state = {
     loaded: false,
@@ -13,7 +14,9 @@
     metadata: null,
     teams: [],
     ucl: {},
-    activeTab: 'champion',
+    matchesData: null,
+    matchesLoaded: false,
+    activeTab: 'matches',
     selectedA: '',
     selectedB: '',
     selectedSquad: '',
@@ -252,6 +255,8 @@
     await loadNames();
 
     try {
+      await loadMatches();
+
       const res = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-cache' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const payload = await res.json();
@@ -271,6 +276,20 @@
       }
     } finally {
       state.loading = false;
+    }
+  }
+
+  async function loadMatches() {
+    try {
+      const res = await fetch(MATCHES_URL + '?t=' + Date.now(), { cache: 'no-cache' });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const payload = await res.json();
+      state.matchesData = payload;
+      state.matchesLoaded = true;
+    } catch (error) {
+      console.error("Match schedule load failed:", error);
+      state.matchesData = null;
+      state.matchesLoaded = true;
     }
   }
 
@@ -319,7 +338,8 @@
       </div>
 
       <div class="wc-tabs" id="worldcupTabs">
-        <button class="wc-tab active" data-wc-tab="champion">冠军概率</button>
+        <button class="wc-tab active" data-wc-tab="matches">对战表</button>
+        <button class="wc-tab" data-wc-tab="champion">冠军概率</button>
         <button class="wc-tab" data-wc-tab="factor">因子拆解</button>
         <button class="wc-tab" data-wc-tab="mystic">玄学分析</button>
         <button class="wc-tab" data-wc-tab="h2h">对战预测</button>
@@ -328,7 +348,8 @@
         <button class="wc-tab" data-wc-tab="info">模型说明</button>
       </div>
 
-      <div class="wc-panel active" id="wcPanelChampion">${renderChampionPanel()}</div>
+      <div class="wc-panel active" id="wcPanelMatches">${renderMatchPanel()}</div>
+      <div class="wc-panel" id="wcPanelChampion">${renderChampionPanel()}</div>
       <div class="wc-panel" id="wcPanelFactor">${renderFactorPanel()}</div>
       <div class="wc-panel" id="wcPanelMystic">${renderMysticPanel()}</div>
       <div class="wc-panel" id="wcPanelH2h">${renderH2hPanel()}</div>
@@ -420,6 +441,101 @@
         <strong>${pct(team.final_prob, 2)}</strong>
       </div>
     `).join('');
+  }
+
+  function renderMatchPanel() {
+    const md = state.matchesData;
+    if (!md || !md.groups) {
+      return '<div class="card"><div class="empty-state">暂无比赛数据。</div></div>';
+    }
+
+    const lastUpdated = md.metadata?.lastUpdated ? (() => {
+      try {
+        const d = new Date(md.metadata.lastUpdated);
+        if (Number.isNaN(d.getTime())) return '';
+        return '数据更新于 ' + d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      } catch { return ''; }
+    })() : '';
+
+    const groupLabels = Object.keys(md.groups).sort();
+
+    function matchRow(match) {
+      const homeCn = countryName(match.home);
+      const awayCn = countryName(match.away);
+      const homeCode = code(match.home);
+      const awayCode = code(match.away);
+      const isScheduled = match.status === 'scheduled';
+      const isCompleted = match.status === 'completed';
+
+      let scoreHtml;
+      if (isCompleted && match.homeScore != null) {
+        scoreHtml = '<strong class="wc-match-score is-final">' + match.homeScore + ' - ' + match.awayScore + '</strong>';
+      } else {
+        scoreHtml = '<span class="wc-match-vs">vs</span>';
+      }
+
+      const dayName = (() => {
+        try {
+          const d = new Date(match.date + 'T' + match.time + ':00-06:00');
+          const names = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+          return names[d.getDay()];
+        } catch { return ''; }
+      })();
+
+      return '<div class="wc-match-row">' +
+        '<div class="wc-match-datetime">' +
+          '<span class="wc-match-date">' + match.date.slice(5) + '</span>' +
+          '<span class="wc-match-day">' + dayName + '</span>' +
+          '<span class="wc-match-time">' + match.time + '</span>' +
+        '</div>' +
+        '<div class="wc-match-teams">' +
+          '<span class="wc-match-team is-home">' +
+            '<span class="wc-match-code">' + homeCode + '</span>' +
+            '<span class="wc-match-name">' + escapeHtml(homeCn) + '</span>' +
+          '</span>' +
+          scoreHtml +
+          '<span class="wc-match-team is-away">' +
+            '<span class="wc-match-name">' + escapeHtml(awayCn) + '</span>' +
+            '<span class="wc-match-code">' + awayCode + '</span>' +
+          '</span>' +
+        '</div>' +
+        '<div class="wc-match-meta">' +
+          '<span class="wc-match-venue">' + escapeHtml(match.venue) + '</span>' +
+          (isScheduled ? '<span class="wc-match-status is-scheduled">未开始</span>' : '') +
+          (isCompleted && match.homeScore != null ? '<span class="wc-match-status is-final">已结束</span>' : '') +
+        '</div>' +
+      '</div>';
+    }
+
+    function groupBlock(label) {
+      const g = md.groups[label];
+      if (!g) return '';
+      const teams = g.teams || [];
+      const matches = g.matches || [];
+
+      return '<details class="wc-match-group" open>' +
+        '<summary>' +
+          '<span class="wc-group-badge">' + label + ' 组</span>' +
+          '<span class="wc-group-teams">' + teams.map(t => escapeHtml(countryName(t))).join(' · ') + '</span>' +
+        '</summary>' +
+        '<div class="wc-match-list">' +
+          matches.map(matchRow).join('') +
+        '</div>' +
+      '</details>';
+    }
+
+    return '<div class="card">' +
+      '<div class="card-header">' +
+        '<div>' +
+          '<h2>2026 世界杯 · 小组赛赛程</h2>' +
+          '<p class="wc-desc">数据每日更新，展示各小组实时对战安排。共 12 组 72 场小组赛。</p>' +
+        '</div>' +
+        (lastUpdated ? '<span class="wc-update-badge">' + lastUpdated + '</span>' : '') +
+      '</div>' +
+      '<div class="wc-match-board">' +
+        groupLabels.map(groupBlock).join('') +
+      '</div>' +
+    '</div>';
   }
 
   function renderChampionPanel() {
