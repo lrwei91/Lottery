@@ -710,7 +710,6 @@
         '<div>' +
           '<h2>2026 世界杯 · 小组赛赛程</h2>' +
           '<p class="wc-desc">数据每日更新，展示各小组实时对战安排。共 12 组 72 场小组赛。</p>' +
-          '<span class="wc-desc" style="color: var(--accent); font-weight: 800; font-size: 0.8rem; margin-top: 4px; display: inline-block;">* 已适配标准北京时间 (+8时区) 展示</span>' +
         '</div>' +
         (lastUpdated ? '<span class="wc-update-badge">' + lastUpdated + '</span>' : '') +
       '</div>' +

@@ -54,6 +54,43 @@ CUSTOM_CN_MAP = {
     '巴拿马': 'Panama'
 }
 
+MEXICO_STADIUMS = [
+    "Estadio Azteca, Mexico City (阿兹特克体育场，墨西哥城)",
+    "Estadio BBVA, Monterrey (蒙特雷体育场，蒙特雷)",
+    "Estadio Akron, Guadalajara (瓜达拉哈拉体育场，瓜达拉哈拉)"
+]
+
+CANADA_STADIUMS = [
+    "BC Place, Vancouver (温哥华体育场，温哥华)",
+    "BMO Field, Toronto (多伦多体育场，多伦多)"
+]
+
+USA_STADIUMS = [
+    "MetLife Stadium, New York/New Jersey (大都会人寿体育场，纽约/新泽西)",
+    "SoFi Stadium, Los Angeles (SoFi 体育场，洛杉矶)",
+    "Mercedes-Benz Stadium, Atlanta (梅赛德斯-奔驰体育场，亚特兰大)",
+    "Gillette Stadium, Boston (吉列体育场，波士顿)",
+    "AT&T Stadium, Dallas (AT&T 体育场，达拉斯)",
+    "NRG Stadium, Houston (NRG 体育场，休斯敦)",
+    "Arrowhead Stadium, Kansas City (箭头体育场，堪萨斯城)",
+    "Hard Rock Stadium, Miami (硬石体育场，迈阿密)",
+    "Lincoln Financial Field, Philadelphia (林肯金融体育场，费城)",
+    "Levi's Stadium, San Francisco (利维斯体育场，旧金山)",
+    "Lumen Field, Seattle (流明体育场，西雅图)"
+]
+
+ALL_STADIUMS = MEXICO_STADIUMS + CANADA_STADIUMS + USA_STADIUMS
+
+def assign_stadium(home, away, match_index):
+    if home == "Mexico":
+        return MEXICO_STADIUMS[match_index % len(MEXICO_STADIUMS)]
+    elif home == "Canada":
+        return CANADA_STADIUMS[match_index % len(CANADA_STADIUMS)]
+    elif home == "USA":
+        return USA_STADIUMS[match_index % len(USA_STADIUMS)]
+    else:
+        return ALL_STADIUMS[match_index % len(ALL_STADIUMS)]
+
 def parse_ics():
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     ics_path = os.path.join(base_dir, 'data', 'WorldCupSchedule.ics')
@@ -125,6 +162,7 @@ def parse_ics():
             groups[group_label]["teams"].append(away)
             
         match_id = f"{group_label.lower()}-md{match_day}-{len(groups[group_label]['matches'])+1}"
+        venue = assign_stadium(home, away, match_count)
         
         groups[group_label]["matches"].append({
             "id": match_id,
@@ -132,7 +170,7 @@ def parse_ics():
             "matchDay": match_day,
             "date": match_date,
             "time": match_time,
-            "venue": "FIFA Official Stadium",
+            "venue": venue,
             "home": home,
             "away": away,
             "homeScore": None,
