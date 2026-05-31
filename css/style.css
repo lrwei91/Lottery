@@ -3600,7 +3600,10 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
+  min-width: 44px;
+  width: auto;
+  padding: 0 10px;
+  white-space: nowrap;
   height: 28px;
   border-radius: var(--radius-sm);
   background: linear-gradient(135deg, var(--front-start), var(--front-end));

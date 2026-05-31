@@ -79,7 +79,12 @@
     Uzbekistan: 'UZ',
     Jordan: 'JO',
     'Cape Verde': 'CV',
-    'DR Congo': 'CD'
+    'DR Congo': 'CD',
+    'South Africa': 'ZA',
+    'Bosnia-Herzegovina': 'BA',
+    'Scotland': 'SCT',
+    'Curaçao': 'CW',
+    'Iraq': 'IQ'
   };
 
   const COUNTRY_FLAGS = {
@@ -135,7 +140,12 @@
     'Uzbekistan': '🇺🇿',
     'Jordan': '🇯🇴',
     'Cape Verde': '🇨🇻',
-    'DR Congo': '🇨🇩'
+    'DR Congo': '🇨🇩',
+    'South Africa': '🇿🇦',
+    'Bosnia-Herzegovina': '🇧🇦',
+    'Scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+    'Curaçao': '🇨🇼',
+    'Iraq': '🇮🇶'
   };
 
   function flag(country) {
