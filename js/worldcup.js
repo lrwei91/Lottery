@@ -78,64 +78,16 @@
     'DR Congo': 'CD'
   };
 
-  const COUNTRY_CN = {
-    Argentina: '阿根廷',
-    Brazil: '巴西',
-    France: '法国',
-    Germany: '德国',
-    Spain: '西班牙',
-    England: '英格兰',
-    Portugal: '葡萄牙',
-    Netherlands: '荷兰',
-    Italy: '意大利',
-    Belgium: '比利时',
-    Croatia: '克罗地亚',
-    Switzerland: '瑞士',
-    Austria: '奥地利',
-    Poland: '波兰',
-    Ukraine: '乌克兰',
-    Romania: '罗马尼亚',
-    'Czech Republic': '捷克',
-    Turkey: '土耳其',
-    Serbia: '塞尔维亚',
-    Sweden: '瑞典',
-    Morocco: '摩洛哥',
-    Senegal: '塞内加尔',
-    Egypt: '埃及',
-    Cameroon: '喀麦隆',
-    Nigeria: '尼日利亚',
-    Algeria: '阿尔及利亚',
-    Ghana: '加纳',
-    'Ivory Coast': '科特迪瓦',
-    Tunisia: '突尼斯',
-    Japan: '日本',
-    'South Korea': '韩国',
-    Iran: '伊朗',
-    Qatar: '卡塔尔',
-    'Saudi Arabia': '沙特阿拉伯',
-    Australia: '澳大利亚',
-    USA: '美国',
-    Mexico: '墨西哥',
-    Canada: '加拿大',
-    Panama: '巴拿马',
-    'Costa Rica': '哥斯达黎加',
-    Honduras: '洪都拉斯',
-    Jamaica: '牙买加',
-    Haiti: '海地',
-    'New Zealand': '新西兰',
-    Ecuador: '厄瓜多尔',
-    Paraguay: '巴拉圭',
-    Colombia: '哥伦比亚',
-    Uruguay: '乌拉圭',
-    Norway: '挪威',
-    Uzbekistan: '乌兹别克斯坦',
-    Jordan: '约旦',
-    'Cape Verde': '佛得角',
-    'DR Congo': '刚果民主共和国'
-  };
+  // Translations loaded from data/worldcup_names.json
+  let COUNTRY_CN = {};
+  let PLAYER_CN = {};
 
   function countryName(english) {
     return COUNTRY_CN[english] || english;
+  }
+
+  function playerName(english) {
+    return PLAYER_CN[english] || english;
   }
 
   function translateText(text) {
@@ -279,11 +231,25 @@
     return state.teams.find(team => team.country === country);
   }
 
+  async function loadNames() {
+    try {
+      const res = await fetch('data/worldcup_names.json', { cache: 'no-cache' });
+      if (!res.ok) return;
+      const names = await res.json();
+      COUNTRY_CN = names.countryNames || {};
+      PLAYER_CN = names.playerNames || {};
+    } catch (e) {
+      console.warn('Failed to load name translations:', e);
+    }
+  }
+
   async function loadData() {
     if (state.loaded || state.loading) return;
     state.loading = true;
     const root = el('worldcupRoot');
     if (root) root.innerHTML = '<div class="card"><div class="empty-state">正在加载世界杯预测数据...</div></div>';
+
+    await loadNames();
 
     try {
       const res = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-cache' });
@@ -574,7 +540,7 @@
       const item = state.ucl[country] || {};
       const players = (item.players || []).map(player => `
         <div class="wc-ucl-player">
-          <span>${escapeHtml(player.name)}</span>
+          <span>${escapeHtml(playerName(player.name))}</span>
           <strong class="${clsByShift(player.mentality_signal)}">${(player.mentality_signal || 0).toFixed(2)}</strong>
         </div>
       `).join('');
@@ -891,9 +857,9 @@
         const playerB = playersB[index];
         rows.push(`
           <div class="wc-player-vs">
-            <span>${playerA ? `${escapeHtml(playerA.name)} <small>${(playerA.market_value || 0).toFixed(1)}M</small>` : '--'}</span>
+            <span>${playerA ? `${escapeHtml(playerName(playerA.name))} <small>${(playerA.market_value || 0).toFixed(1)}M</small>` : '--'}</span>
             <i>vs</i>
-            <span>${playerB ? `<small>${(playerB.market_value || 0).toFixed(1)}M</small> ${escapeHtml(playerB.name)}` : '--'}</span>
+            <span>${playerB ? `<small>${(playerB.market_value || 0).toFixed(1)}M</small> ${escapeHtml(playerName(playerB.name))}` : '--'}</span>
           </div>
         `);
       }
@@ -1021,7 +987,7 @@
                 <tr>
                   <td><span class="wc-pos">${escapeHtml(player.position || '--')}</span></td>
                   <td>
-                    <strong>${escapeHtml(player.name)}</strong>
+                    <strong>${escapeHtml(playerName(player.name))}</strong>
                     <span>${escapeHtml(player.club || '')}</span>
                   </td>
                   <td>${player.age || '--'}</td>
