@@ -375,7 +375,19 @@
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const payload = await res.json();
       state.metadata = payload.metadata || {};
-      state.teams = Array.isArray(payload.teams) ? payload.teams : [];
+      const rawTeams = Array.isArray(payload.teams) ? payload.teams : [];
+      if (state.matchesData && state.matchesData.groups) {
+        const participatingTeams = new Set();
+        Object.keys(state.matchesData.groups).forEach(groupKey => {
+          const g = state.matchesData.groups[groupKey];
+          if (g && g.teams) {
+            g.teams.forEach(team => participatingTeams.add(team));
+          }
+        });
+        state.teams = rawTeams.filter(team => participatingTeams.has(team.country));
+      } else {
+        state.teams = rawTeams;
+      }
       state.ucl = payload.ucl || {};
       const teams = sortedTeams();
       state.selectedA = teams[0]?.country || '';
