@@ -336,6 +336,26 @@ async function runDualSourceScrape(config) {
     try {
       const { latestIssue, records } = await source.fetchNewRecords(latestLocalIssue, needsRefresh);
 
+      // 主源补全模式下，如果 forceRefresh 触发的"老期补全 records" 全部 sales 仍缺失
+      // → throw 让副源接管（2026-06-02 新增）。
+      // 场景：JisuAPI 主源号码先出但 saleamount/totalmoney 延迟返回；
+      // 不抛错的话会写盘 sales=null，下一轮 forceRefresh 重抓仍然空，循环卡死。
+      if (
+        needsRefresh &&
+        primarySource &&
+        source.name === primarySource.name &&
+        records.length > 0 &&
+        latestLocalIssue > 0
+      ) {
+        const refreshRecords = records.filter(r => parseInt(r.issue, 10) <= latestLocalIssue);
+        if (
+          refreshRecords.length > 0 &&
+          refreshRecords.every(r => r.sales === null || r.sales === 0)
+        ) {
+          throw new Error('主源 forceRefresh 后 sales 数据仍缺失（API 延迟），切换副源');
+        }
+      }
+
       if (latestLocalIssue > 0 && latestIssue === latestLocalIssue && records.length === 0 && !needsRefresh) {
         console.log(`\n🎉 【数据状态: 最新】本地第 ${latestLocalIssue} 期已与 ${source.name} 同步，无需更新。`);
         return;
