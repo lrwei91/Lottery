@@ -2112,7 +2112,6 @@ body {
   .countdown-sep {
     font-size: 1.4rem;
   }
-  }
 
   .prediction-history-tickets {
     grid-template-columns: 1fr;
@@ -2126,6 +2125,19 @@ body {
 
   .checker-item {
     align-items: flex-start;
+  }
+
+  .data-table th.col-sales,
+  .data-table td.col-sales,
+  .data-table th.col-pool,
+  .data-table td.col-pool {
+    display: none;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 8px 6px;
+    font-size: 0.8rem;
   }
 }
 
@@ -3995,4 +4007,48 @@ body {
   .wc-modal-vs {
     font-size: 0.85rem;
   }
+}
+
+/* ========== A11y: visually hidden but accessible to screen readers ========== */
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* A11y: 球号视觉提示：角落小圆点区分前/后区，对色盲用户更友好 */
+.ball.front::after,
+.ball-dot.front {
+  /* 已有红色区分 */
+}
+
+.ball.back::after,
+.ball-dot.back {
+  /* 已有蓝色区分 */
+}
+
+/* A11y: 焦点态增强 - 模态框内元素 */
+.modal-card *:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+
+/* A11y: 让开奖记录行支持键盘聚焦 */
+.draw-item,
+.checker-item {
+  outline: none;
+}
+
+.draw-item:focus-visible,
+.checker-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: rgba(49, 217, 151, 0.04);
 }

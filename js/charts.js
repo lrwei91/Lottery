@@ -153,7 +153,7 @@
     _trackChart(canvasId, drawFrequencyChart, [canvasId, freqData, zone]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;
-    const { ctx, w, h } = setup;
+    const { ctx, w, h, canvas } = setup;
 
     const freqMap = zone === 'front' ? freqData.front : freqData.back;
     const keys = Array.from(freqMap.keys()).map(Number).sort((a, b) => a - b);
@@ -208,11 +208,16 @@
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // 平均值标签
+    // 平均值标签：右上角固定位置，避免与柱顶数值撞车
     ctx.fillStyle = COLORS.accent;
     ctx.font = '10px Outfit, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`平均: ${avgVal.toFixed(0)}`, w - padding.right - 60, avgY - 8);
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`平均 ${avgVal.toFixed(0)}`, w - padding.right, 6);
+
+    // 判断是否启用柱顶数值（数量过多时关闭，避免重叠）
+    // 经验值：barW < 24 时三位数 9px 字体宽度会挤，关掉
+    const showTopNumber = barW >= 24;
 
     // 绘制柱子
     for (let i = 0; i < count; i++) {
@@ -258,11 +263,12 @@
       ctx.textBaseline = 'top';
       ctx.fillText(padNum(minNum + i), x + barW / 2, padding.top + plotH + 6);
 
-      // 柱顶数值
-      if (barH > 15) {
+      // 柱顶数值：仅在柱子够宽时显示
+      if (showTopNumber && barH > 18) {
         ctx.fillStyle = '#fff';
         ctx.font = '9px Outfit, sans-serif';
         ctx.textBaseline = 'bottom';
+        ctx.textAlign = 'center';
         ctx.fillText(displayVal.toString(), x + barW / 2, y - 3);
       }
     }
@@ -273,6 +279,17 @@
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(zone === 'front' ? '前区号码 (1-35)' : '后区号码 (1-12)', padding.left, 6);
+
+    // 同步无障碍数据表：sibling <table class="sr-only">，每次重绘同步
+    if (canvas && canvas.parentElement) {
+      const table = canvas.parentElement.querySelector('table.sr-only[data-canvas-id="' + canvasId + '"]');
+      if (table) {
+        const thead = table.querySelector('thead') || table.createTHead();
+        const tbody = table.querySelector('tbody') || table.createTBody();
+        thead.innerHTML = '<tr><th>号码</th><th>出现次数</th></tr>';
+        tbody.innerHTML = values.map((v, i) => `<tr><td>${padNum(minNum + i)}</td><td>${Math.round(v)}</td></tr>`).join('');
+      }
+    }
   }
 
   // ============================================================
@@ -286,7 +303,7 @@
     _trackChart(canvasId, drawGapChart, [canvasId, gapData, zone]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;
-    const { ctx, w, h } = setup;
+    const { ctx, w, h, canvas } = setup;
 
     const gapMap = zone === 'front' ? gapData.front : gapData.back;
     const keys = Array.from(gapMap.keys()).map(Number).sort((a, b) => a - b);
@@ -373,6 +390,17 @@
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(`当前遗漏值 - ${zone === 'front' ? '前区' : '后区'}`, padding.left, 6);
+
+    // 同步 sr-only 数据表，供屏幕阅读器读取
+    if (canvas && canvas.parentElement) {
+      const table = canvas.parentElement.querySelector('table.sr-only[data-canvas-id="' + canvasId + '"]');
+      if (table) {
+        const thead = table.querySelector('thead') || table.createTHead();
+        const tbody = table.querySelector('tbody') || table.createTBody();
+        thead.innerHTML = '<tr><th>号码</th><th>当前遗漏</th><th>历史最大遗漏</th><th>平均遗漏</th></tr>';
+        tbody.innerHTML = items.map(it => `<tr><td>${padNum(it.num)}</td><td>${it.current}</td><td>${it.max}</td><td>${it.avg}</td></tr>`).join('');
+      }
+    }
   }
 
   // ============================================================
@@ -592,68 +620,9 @@
   }
 
   // ============================================================
-  // 5. 热力图
+  // 5. 饼图/环形图
   // ============================================================
 
-  /**
-   * 绘制号码热力图
-   */
-  function drawHeatmap(canvasId, data, zone = 'front') {
-    _trackChart(canvasId, drawHeatmap, [canvasId, data, zone]);
-    const setup = setupCanvas(canvasId);
-    if (!setup) return;
-    const { ctx, w, h } = setup;
-
-    const maxNum = zone === 'front' ? 35 : 12;
-    const minNum = 1;
-    const numCount = maxNum - minNum + 1;
-
-    // 按 10 期分组
-    const groupSize = 10;
-    const groups = [];
-    for (let i = 0; i < Math.min(data.length, 200); i += groupSize) {
-      const group = data.slice(i, i + groupSize);
-      groups.push(group);
-    }
-
-    const padding = { top: 30, right: 20, bottom: 20, left: 45 };
-    const plotW = w - padding.left - padding.right;
-    const plotH = h - padding.top - padding.bottom;
-    const cellW = plotW / numCount;
-    const cellH = Math.min(20, plotH / groups.length);
-
-    ctx.clearRect(0, 0, w, h);
-
-    for (let g = 0; g < groups.length; g++) {
-      const group = groups[g];
-      for (let n = minNum; n <= maxNum; n++) {
-        let count = 0;
-        for (const draw of group) {
-          const nums = zone === 'front' ? draw.front : draw.back;
-          if (nums.includes(n)) count++;
-        }
-
-        const x = padding.left + (n - minNum) * cellW;
-        const y = padding.top + g * cellH;
-
-        // 颜色强度
-        const intensity = count / groupSize;
-        const color = zone === 'front' ? COLORS.front : COLORS.back;
-        ctx.fillStyle = `rgba(${zone === 'front' ? '255, 71, 87' : '0, 210, 255'}, ${intensity * 0.8})`;
-        ctx.fillRect(x + 0.5, y + 0.5, cellW - 1, cellH - 1);
-      }
-    }
-
-    // 标题
-    ctx.fillStyle = COLORS.text;
-    ctx.font = '12px Outfit, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`号码热力图 - ${zone === 'front' ? '前区' : '后区'}`, padding.left, 12);
-  }
-
-  // ============================================================
-  // 6. 饼图/环形图
-  // ============================================================
 
   /**
    * 绘制环形图
@@ -750,7 +719,6 @@
     drawGapChart,
     drawTrendChart,
     drawSumDistribution,
-    drawHeatmap,
     drawPieChart
   };
 

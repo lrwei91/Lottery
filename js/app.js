@@ -54,8 +54,8 @@
       drawLabel: '最新开奖结果',
       frontLabel: '开奖号码',
       backLabel: '',
+      // PL3 没有后区，renderHistory 通过 colspan 隐藏后区列头，因此这里不再单独定义 historyBackHeader
       historyFrontHeader: '开奖号码',
-      historyBackHeader: '后区号码',
       rulesNote: '排列三直选、组三、组六中奖条件及奖金对照表',
       statsLabels: ['最热中奖号码', '最冷中奖号码', '最热后区号码', '最冷后区号码'],
       selectedTrendNumbers: [1, 3, 5],
@@ -75,7 +75,7 @@
     hot: '热号优先',
     balanced: '均衡推荐',
     gap: '遗漏回补',
-    random: '布林线策略'
+    random: '布林线策略' // 策略 key 沿用 'random'（与 predictor.js / localStorage 兼容），展示用 "布林线策略"
   };
 
   // ==================== 工具函数 ====================
@@ -199,15 +199,26 @@
     return String(Number(raw) + 1).padStart(raw.length, '0');
   }
 
+  function ballZoneLabel(zone) {
+    if (zone === 'front') return '前区';
+    if (zone === 'back') return '后区';
+    if (zone.startsWith('front ')) return '前区';
+    if (zone.startsWith('back ')) return '后区';
+    if (zone.includes('variant')) return '前区';
+    return zone;
+  }
+
   function createBall(num, zone) {
     const ball = document.createElement('div');
     ball.className = `ball ${zone}`;
     ball.textContent = padNum(num);
+    ball.setAttribute('role', 'img');
+    ball.setAttribute('aria-label', `${ballZoneLabel(zone)} ${padNum(num)} 号`);
     return ball;
   }
 
   function createBallHTML(num, zone) {
-    return `<div class="ball ${zone}">${padNum(num)}</div>`;
+    return `<div class="ball ${zone}" role="img" aria-label="${ballZoneLabel(zone)} ${padNum(num)} 号">${padNum(num)}</div>`;
   }
 
   function setText(id, text) {
@@ -450,7 +461,7 @@
     }
     
     list.innerHTML = recent.map(d => `
-      <div class="draw-item">
+      <div class="draw-item" tabindex="0" aria-label="第 ${d.issue} 期 ${d.date} 开奖记录">
         <div class="draw-item-info">
           <span class="draw-item-issue">第 ${d.issue} 期</span>
           <span class="draw-item-date">${d.date}</span>
@@ -486,21 +497,20 @@
     const drawDays = [1, 3, 6]; // 周一=1, 周三=3, 周六=6
     const drawHour = 21;
     const drawMinute = 25;
-    
-    let next = new Date(now);
-    
+
     for (let i = 0; i < 7; i++) {
-      next = new Date(now.getTime() + i * 86400000);
-      const day = next.getDay();
-      if (drawDays.includes(day)) {
-        next.setHours(drawHour, drawMinute, 0, 0);
-        if (next > now) return next;
+      const candidate = new Date(now.getTime() + i * 86400000);
+      if (drawDays.includes(candidate.getDay())) {
+        candidate.setHours(drawHour, drawMinute, 0, 0);
+        if (candidate > now) return candidate;
       }
     }
-    
-    // Fallback: next week
-    next = new Date(now.getTime() + 7 * 86400000);
-    return next;
+
+    // 7 天内必然命中一个开奖日，到这里说明时钟异常，安全返回
+    const fallback = new Date(now);
+    fallback.setDate(fallback.getDate() + 7);
+    fallback.setHours(drawHour, drawMinute, 0, 0);
+    return fallback;
   }
 
   function startCountdown() {
@@ -596,13 +606,13 @@
             ${d.front.map(n => createBallHTML(n, 'front mini')).join('')}
           </div>
         </td>
-        <td>
+        <td class="col-back">
           <div class="ball-row table-balls">
             ${showBack ? d.back.map(n => createBallHTML(n, 'back mini')).join('') : ''}
           </div>
         </td>
-        <td>${formatMoney(d.sales)}</td>
-        <td>${showBack ? formatMoney(d.pool) : '--'}</td>
+        <td class="col-sales">${formatMoney(d.sales)}</td>
+        <td class="col-pool">${showBack ? formatMoney(d.pool) : '--'}</td>
       </tr>
     `).join('');
     
@@ -851,11 +861,15 @@
   // ==================== 预测功能 ====================
   function generatePredictions() {
     if (state.data.length === 0) return;
-    
+
     const btn = document.getElementById('btnGenerate');
-    const originalHTML = btn.innerHTML;
+    if (btn.dataset.loading === '1') return; // 防重入
+    btn.dataset.loading = '1';
     btn.disabled = true;
-    btn.innerHTML = originalHTML.replace('生成预测号码', '生成中...');
+    const labelEl = btn.querySelector('.btn-label');
+    const originalLabel = labelEl ? labelEl.textContent : '生成预测号码';
+    if (labelEl) labelEl.textContent = '生成中...';
+    btn.setAttribute('aria-busy', 'true');
 
     try {
       const evolution = rebuildStrategyEvolution();
@@ -873,7 +887,9 @@
       document.getElementById('predictionsGrid').innerHTML = '<div class="error-state">预测生成失败，请稍后重试。</div>';
     } finally {
       btn.disabled = false;
-      btn.innerHTML = originalHTML;
+      btn.dataset.loading = '0';
+      btn.removeAttribute('aria-busy');
+      if (labelEl) labelEl.textContent = originalLabel;
     }
   }
 
@@ -1268,12 +1284,22 @@
     list.innerHTML = state.predictionRecords
       .map(record => renderPredictionRecordItem(record, isPl3, evolution))
       .join('');
+    _lastFocusedBeforeModal = document.activeElement;
     modal.style.display = 'flex';
+    requestAnimationFrame(() => {
+      const closeBtn = modal.querySelector('.modal-close');
+      if (closeBtn) closeBtn.focus();
+    });
   }
 
   function hidePredictionHistoryModal() {
     const modal = document.getElementById('predictionHistoryModal');
-    if (modal) modal.style.display = 'none';
+    if (!modal) return;
+    modal.style.display = 'none';
+    if (_lastFocusedBeforeModal && typeof _lastFocusedBeforeModal.focus === 'function') {
+      _lastFocusedBeforeModal.focus();
+    }
+    _lastFocusedBeforeModal = null;
   }
 
   function formatPredictionLines(predictions, isPl3) {
@@ -1380,24 +1406,36 @@
   }
 
   // ==================== 号码比对模块 ====================
+  let _lastFocusedBeforeModal = null;
+
   function showWinningChecker() {
     const modal = document.getElementById('winningCheckerModal');
     if (!modal) return;
     applyLotteryCopy();
-    
+
     // 清空上次的数据与结果
     document.getElementById('customNumbersInput').value = '';
     const resultsContainer = document.getElementById('checkerResults');
     resultsContainer.innerHTML = '';
     resultsContainer.style.display = 'none';
-    
+
+    _lastFocusedBeforeModal = document.activeElement;
     modal.style.display = 'flex';
+    // 下一帧再 focus，避免被 display 切换打断
+    requestAnimationFrame(() => {
+      const input = document.getElementById('customNumbersInput');
+      if (input) input.focus();
+    });
   }
 
   function hideWinningChecker() {
     const modal = document.getElementById('winningCheckerModal');
     if (modal) {
       modal.style.display = 'none';
+      if (_lastFocusedBeforeModal && typeof _lastFocusedBeforeModal.focus === 'function') {
+        _lastFocusedBeforeModal.focus();
+      }
+      _lastFocusedBeforeModal = null;
     }
   }
 
@@ -1474,11 +1512,11 @@
         const prizeName = checkResult.prize;
 
         html += `
-          <div class="checker-item ${prizeName ? 'win' : ''}">
+          <div class="checker-item ${prizeName ? 'win' : ''}" tabindex="0" aria-label="号码 ${digits.join(' ')}${prizeName ? '，命中' + prizeName : '，未中奖'}">
             <div class="checker-item-balls">
               ${digits.map((n, j) => {
                 const isMatch = (prizeName === '直选' && n === frontTarget[j]) || (prizeName && frontTarget.includes(n));
-                return `<span class="checker-ball front ${isMatch ? 'match' : ''}">${n}</span>`;
+                return `<span class="checker-ball front ${isMatch ? 'match' : ''}" role="img" aria-label="号码 ${n}${isMatch ? '，命中' : ''}">${n}</span>`;
               }).join('')}
             </div>
             <div class="checker-item-verdict">
@@ -1524,18 +1562,18 @@
         const prizeName = getPrizeTierName(fCount, bCount);
 
         html += `
-          <div class="checker-item ${prizeName ? 'win' : ''}">
+          <div class="checker-item ${prizeName ? 'win' : ''}" tabindex="0" aria-label="前区 ${front.map(padNum).join(' ')} 加 后区 ${back.map(padNum).join(' ')}，${prizeName ? '命中' + prizeName : '未中奖'}">
             <div class="checker-item-balls">
               ${front.map(n => {
                 const isMatch = frontTarget.includes(n);
-                return `<span class="checker-ball front ${isMatch ? 'match' : ''}">${padNum(n)}</span>`;
+                return `<span class="checker-ball front ${isMatch ? 'match' : ''}" role="img" aria-label="前区 ${padNum(n)}${isMatch ? '，命中' : ''}">${padNum(n)}</span>`;
               }).join('')}
-              
-              <span class="checker-ball plus">+</span>
-              
+
+              <span class="checker-ball plus" aria-hidden="true">+</span>
+
               ${back.map(n => {
                 const isMatch = backTarget.includes(n);
-                return `<span class="checker-ball back ${isMatch ? 'match' : ''}">${padNum(n)}</span>`;
+                return `<span class="checker-ball back ${isMatch ? 'match' : ''}" role="img" aria-label="后区 ${padNum(n)}${isMatch ? '，命中' : ''}">${padNum(n)}</span>`;
               }).join('')}
             </div>
             <div class="checker-item-verdict">
@@ -1810,11 +1848,13 @@
 
   // ==================== 事件绑定 ====================
   function bindEvents() {
-    // 顶级彩种切换
+    // 顶级彩种切换：先同步视觉反馈（active class），再走 hash 路由异步加载
     document.getElementById('lotterySelector').addEventListener('click', (e) => {
       const tab = e.target.closest('.selector-tab');
       if (!tab) return;
       const lottery = tab.dataset.lottery;
+      if (tab.classList.contains('active')) return;
+      document.querySelectorAll('.selector-tab').forEach(t => t.classList.toggle('active', t === tab));
       window.location.hash = lottery;
     });
 
@@ -2055,14 +2095,18 @@
 
   // ==================== 初始化 ====================
   async function init() {
-    resetStatsTabs();
-    bindEvents();
-    
-    // 监听哈希路由变化
-    window.addEventListener('hashchange', handleHashRoute);
-    
-    // 首次加载时处理路由
-    await handleHashRoute();
+    try {
+      resetStatsTabs();
+      bindEvents();
+
+      // 监听哈希路由变化
+      window.addEventListener('hashchange', handleHashRoute);
+
+      // 首次加载时处理路由
+      await handleHashRoute();
+    } catch (error) {
+      console.error('应用初始化失败:', error);
+    }
   }
 
   // 暴露全局接口

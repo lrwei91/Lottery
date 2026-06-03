@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=worldcup-fifa-data-20260531">
+  <link rel="stylesheet" href="css/style.css?v=lottery-a11y-fixes-20260603">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='11' cy='16' r='9' fill='%23ff2e63'/><circle cx='21' cy='16' r='9' fill='%233a7bd5' fill-opacity='0.9'/><text x='11' y='19.5' font-family='system-ui, sans-serif' font-size='9' font-weight='bold' fill='white' text-anchor='middle'>%E4%B9%90</text><text x='21' y='19.5' font-family='system-ui, sans-serif' font-size='9' font-weight='bold' fill='white' text-anchor='middle'>%E9%80%8F</text></svg>">
 </head>
 <body>
@@ -383,8 +383,8 @@
                 <th>开奖日期</th>
                 <th id="historyFrontHeader">前区号码</th>
                 <th id="historyBackHeader">后区号码</th>
-                <th>销售额</th>
-                <th>奖池</th>
+                <th class="col-sales">销售额</th>
+                <th class="col-pool">奖池</th>
               </tr>
             </thead>
             <tbody id="historyBody">
@@ -449,6 +449,7 @@
           <div class="frequency-summary" id="freqFrontSummary"></div>
           <div class="chart-container">
             <canvas id="chartFreqFront" width="800" height="350" role="img" aria-label="前区号码出现频率柱状图"></canvas>
+            <table class="sr-only" data-canvas-id="chartFreqFront" aria-label="前区号码出现频率数据"></table>
           </div>
         </div>
         <div class="card">
@@ -456,6 +457,7 @@
           <div class="frequency-summary" id="freqBackSummary"></div>
           <div class="chart-container">
             <canvas id="chartFreqBack" width="800" height="300" role="img" aria-label="后区号码出现频率柱状图"></canvas>
+            <table class="sr-only" data-canvas-id="chartFreqBack" aria-label="后区号码出现频率数据"></table>
           </div>
         </div>
       </div>
@@ -488,12 +490,14 @@
           <div class="card-header"><h3>前区号码遗漏值</h3></div>
           <div class="chart-container">
             <canvas id="chartGapFront" width="800" height="350" role="img" aria-label="前区号码遗漏值横向柱状图"></canvas>
+            <table class="sr-only" data-canvas-id="chartGapFront" aria-label="前区号码遗漏值数据"></table>
           </div>
         </div>
         <div class="card">
           <div class="card-header"><h3>后区号码遗漏值</h3></div>
           <div class="chart-container">
             <canvas id="chartGapBack" width="800" height="300" role="img" aria-label="后区号码遗漏值横向柱状图"></canvas>
+            <table class="sr-only" data-canvas-id="chartGapBack" aria-label="后区号码遗漏值数据"></table>
           </div>
         </div>
       </div>
@@ -553,12 +557,12 @@
         </div>
         <div class="predict-actions">
           <button class="btn btn-generate" id="btnGenerate" onclick="App.generatePredictions()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-            生成预测号码
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            <span class="btn-label">生成预测号码</span>
           </button>
           <button class="btn btn-secondary" id="btnCopyAll" onclick="App.copyAllPredictions()" style="display: none;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-            一键复制号码
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span class="btn-label">一键复制号码</span>
           </button>
         </div>
       </div>
@@ -619,11 +623,11 @@
     </footer>
   </div>
 
-  <!-- 号码核对模态框 -->
-  <div class="modal-overlay" id="winningCheckerModal" style="display: none;">
+    <!-- 号码核对模态框 -->
+  <div class="modal-overlay" id="winningCheckerModal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="checkerModalTitle">
     <div class="modal-card card">
       <div class="modal-header">
-        <h3>奖项智能核对</h3>
+        <h3 id="checkerModalTitle">奖项智能核对</h3>
         <button class="modal-close" onclick="App.hideWinningChecker()" aria-label="关闭核对窗口">×</button>
       </div>
       <div class="modal-body">
@@ -646,10 +650,10 @@
   </div>
 
   <!-- 预测历史弹窗 -->
-  <div class="modal-overlay" id="predictionHistoryModal" style="display: none;">
+  <div class="modal-overlay" id="predictionHistoryModal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="historyModalTitle">
     <div class="modal-card card history-modal-card">
       <div class="modal-header">
-        <h3>历史复盘记录</h3>
+        <h3 id="historyModalTitle">历史复盘记录</h3>
         <button class="modal-close" onclick="App.hidePredictionHistoryModal()" aria-label="关闭历史复盘窗口">×</button>
       </div>
       <div class="modal-body history-modal-body">
@@ -661,16 +665,16 @@
   </div>
 
   <!-- 加载遮罩 -->
-  <div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite" aria-busy="true">
     <div class="loading">
-      <div class="loading-spinner"></div>
+      <div class="loading-spinner" aria-hidden="true"></div>
       <p>正在加载数据...</p>
     </div>
   </div>
 
-  <script src="js/charts.js?v=worldcup-fifa-data-20260531"></script>
-  <script src="js/predictor.js?v=worldcup-fifa-data-20260531"></script>
-  <script src="js/worldcup.js?v=worldcup-fifa-data-20260531"></script>
-  <script src="js/app.js?v=worldcup-fifa-data-20260531"></script>
+  <script src="js/charts.js?v=lottery-a11y-fixes-20260603"></script>
+  <script src="js/predictor.js?v=lottery-a11y-fixes-20260603"></script>
+  <script src="js/worldcup.js?v=lottery-a11y-fixes-20260603"></script>
+  <script src="js/app.js?v=lottery-a11y-fixes-20260603"></script>
 </body>
 </html>
