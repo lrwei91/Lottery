@@ -27,18 +27,19 @@
   let FRONT_COUNT = 5; // 每期前区选号个数
   let BACK_COUNT = 2;  // 每期后区选号个数
 
-  const DEFAULT_STRATEGIES = ['cold', 'hot', 'balanced', 'gap', 'random'];
+  const DEFAULT_STRATEGIES = ['balanced', 'random', 'gap', 'hot', 'cold'];
 
   const STRATEGY_WEIGHTS = {
     cold:     { gap: 0.3, freqDev: 0.2, trend: 0.1, statusBonus: { cold: 2.0, warm: 0.5, hot: 0.1 } },
     hot:      { gap: 0.1, freqDev: 0.2, trend: 0.4, statusBonus: { cold: 0.1, warm: 0.5, hot: 2.0 } },
-    balanced: { gap: 0.3, freqDev: 0.3, trend: 0.3, statusBonus: { cold: 1.0, warm: 1.0, hot: 1.0 } },
+    balanced: { gap: 0.35, freqDev: 0.24, trend: 0.18, statusBonus: { cold: 1.0, warm: 1.0, hot: 1.0 } },
     gap:      { gap: 0.6, freqDev: 0.1, trend: 0.1, statusBonus: { cold: 1.2, warm: 1.0, hot: 0.8 } },
     random:   { gap: 0.33, freqDev: 0.33, trend: 0.33, statusBonus: { cold: 1.0, warm: 1.0, hot: 1.0 } }
   };
 
   const DEFAULT_BACKTEST_PERIODS = 500;
   const DEFAULT_BACKTEST_WINDOWS = [500, 1000];
+  const BACKTEST_HISTORY_OFFSET = 300;
   function getDefaultBacktestSeeds() {
     const base = new Date();
     const fmt = d => parseInt(`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`);
@@ -1113,10 +1114,10 @@
 
   function defaultFrontConstraints() {
     return {
-      sumMin: 70,
-      sumMax: 125,
-      allowedOddEven: new Set(['4:1', '3:2', '2:3', '1:4']),
-      allowedBigSmall: new Set(['4:1', '3:2', '2:3', '1:4']),
+      sumMin: 63,
+      sumMax: 107,
+      allowedOddEven: new Set(['3:2', '2:3', '4:1', '1:4']),
+      allowedBigSmall: new Set(['3:2', '2:3', '1:4', '4:1', '0:5']),
       maxConsecutive: 2,
       minAC: 4,
       minZonesCovered: 3,
@@ -1133,14 +1134,14 @@
       shapes.push(analyzeFrontShape(data[i].front));
     }
     const constraints = {
-      sumMin: roundPercentile(shapes.map(shape => shape.sum), 0.1),
-      sumMax: roundPercentile(shapes.map(shape => shape.sum), 0.9),
-      allowedOddEven: topGroupsCovering(shapes.map(shape => shape.oddEven), 0.95),
-      allowedBigSmall: topGroupsCovering(shapes.map(shape => shape.bigSmall), 0.95),
-      maxConsecutive: Math.max(2, roundPercentile(shapes.map(shape => shape.maxConsecutive), 0.95)),
-      minAC: Math.max(0, Math.floor(percentile(shapes.map(shape => shape.ac), 0.08))),
-      minZonesCovered: Math.max(1, Math.floor(percentile(shapes.map(shape => shape.zonesCovered), 0.08))),
-      maxTailPairs: Math.max(2, roundPercentile(shapes.map(shape => shape.tailPairsCount), 0.99))
+      sumMin: roundPercentile(shapes.map(shape => shape.sum), 0.15),
+      sumMax: roundPercentile(shapes.map(shape => shape.sum), 0.85),
+      allowedOddEven: topGroupsCovering(shapes.map(shape => shape.oddEven), 0.9),
+      allowedBigSmall: topGroupsCovering(shapes.map(shape => shape.bigSmall), 0.9),
+      maxConsecutive: Math.max(2, roundPercentile(shapes.map(shape => shape.maxConsecutive), 0.9)),
+      minAC: Math.max(0, Math.floor(percentile(shapes.map(shape => shape.ac), 0.1))),
+      minZonesCovered: Math.max(1, Math.floor(percentile(shapes.map(shape => shape.zonesCovered), 0.1))),
+      maxTailPairs: Math.max(1, roundPercentile(shapes.map(shape => shape.tailPairsCount), 0.95))
     };
 
     if (constraints.sumMin > constraints.sumMax) {
@@ -1152,10 +1153,10 @@
 
   function defaultBackConstraints() {
     return {
-      sumMin: 6,
+      sumMin: 7,
       sumMax: 19,
       diffMin: 1,
-      diffMax: 9
+      diffMax: 8
     };
   }
 
@@ -1175,10 +1176,10 @@
     if (sums.length === 0) return defaultBackConstraints();
 
     return {
-      sumMin: roundPercentile(sums, 0.1),
-      sumMax: roundPercentile(sums, 0.9),
-      diffMin: Math.max(1, Math.floor(percentile(diffs, 0.05))),
-      diffMax: Math.max(1, Math.ceil(percentile(diffs, 0.95)))
+      sumMin: roundPercentile(sums, 0.15),
+      sumMax: roundPercentile(sums, 0.85),
+      diffMin: Math.max(1, Math.floor(percentile(diffs, 0.1))),
+      diffMax: Math.max(1, Math.ceil(percentile(diffs, 0.9)))
     };
   }
 
@@ -1742,7 +1743,7 @@
   }
 
   function resolveBacktestWindows(data, requestedWindows) {
-    const maxAvailable = Math.max(0, data.length - 300);
+    const maxAvailable = Math.max(0, data.length - BACKTEST_HISTORY_OFFSET);
     const windowList = Array.isArray(requestedWindows) ? requestedWindows : [requestedWindows];
     const windows = Array.from(new Set(windowList
       .map(Number)
@@ -1922,7 +1923,7 @@
     const isPl3 = detectLotteryType(data) === 'pl3';
     updateLotteryParams(isPl3 ? 'pl3' : 'dlt');
 
-    const actualTests = Math.min(testPeriods, data.length - 300); // 确保有足够历史数据
+    const actualTests = Math.min(testPeriods, data.length - BACKTEST_HISTORY_OFFSET); // 确保有足够历史数据
     if (actualTests <= 0) {
       return {
         totalTests: 0,
@@ -1947,9 +1948,10 @@
     }
 
     for (let i = 0; i < actualTests; i++) {
-      const targetDraw = data[i];
-      const context = createPredictionContext(data, i + 1);
-      recordBacktestPeriod([runState], strategies, targetDraw, data, i + 1, context, isPl3);
+      const targetIndex = BACKTEST_HISTORY_OFFSET + i;
+      const targetDraw = data[targetIndex];
+      const context = createPredictionContext(data, targetIndex);
+      recordBacktestPeriod([runState], strategies, targetDraw, data, targetIndex, context, isPl3);
     }
 
     return finalizeBacktestRun(runState, strategies, isPl3);
@@ -1969,9 +1971,10 @@
     const seedRunsByWindow = new Map();
 
     for (let i = 0; i < maxWindow; i++) {
-      const targetDraw = data[i];
-      const context = createPredictionContext(data, i + 1);
-      recordBacktestPeriod(runStates, strategies, targetDraw, data, i + 1, context, isPl3);
+      const targetIndex = BACKTEST_HISTORY_OFFSET + i;
+      const targetDraw = data[targetIndex];
+      const context = createPredictionContext(data, targetIndex);
+      recordBacktestPeriod(runStates, strategies, targetDraw, data, targetIndex, context, isPl3);
 
       const completedWindow = i + 1;
       if (checkpoints.has(completedWindow)) {
@@ -2001,9 +2004,10 @@
     const seedRunsByWindow = new Map();
 
     for (let i = 0; i < maxWindow; i++) {
-      const targetDraw = data[i];
-      const context = createPredictionContext(data, i + 1);
-      recordBacktestPeriod(runStates, strategies, targetDraw, data, i + 1, context, isPl3);
+      const targetIndex = BACKTEST_HISTORY_OFFSET + i;
+      const targetDraw = data[targetIndex];
+      const context = createPredictionContext(data, targetIndex);
+      recordBacktestPeriod(runStates, strategies, targetDraw, data, targetIndex, context, isPl3);
 
       const completedWindow = i + 1;
       if (checkpoints.has(completedWindow)) {
