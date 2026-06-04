@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-03T22:05:39.990015+00:00",
+    "lastUpdated": "2026-06-04T21:03:44.482916+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-03",
+    "sourceDataDate": "2026-06-04",
     "note": "Official FIFA World Cup 2026 group-stage fixtures and score status.",
     "teamCount": 48,
     "matchCount": 72
@@ -224,7 +224,7 @@
     "B": {
       "teams": [
         "Canada",
-        "Bosnia and Herzegovina",
+        "Bosnia-Herzegovina",
         "Qatar",
         "Switzerland"
       ],
@@ -238,7 +238,7 @@
           "time": "19:00",
           "venue": "Toronto Stadium, Toronto",
           "home": "Canada",
-          "away": "Bosnia and Herzegovina",
+          "away": "Bosnia-Herzegovina",
           "homeId": "43899",
           "awayId": "44037",
           "homeScore": null,
@@ -274,7 +274,7 @@
           "time": "19:00",
           "venue": "Los Angeles Stadium, Los Angeles",
           "home": "Switzerland",
-          "away": "Bosnia and Herzegovina",
+          "away": "Bosnia-Herzegovina",
           "homeId": "43971",
           "awayId": "44037",
           "homeScore": null,
@@ -346,7 +346,7 @@
           "date": "2026-06-24",
           "time": "19:00",
           "venue": "Seattle Stadium, Seattle",
-          "home": "Bosnia and Herzegovina",
+          "home": "Bosnia-Herzegovina",
           "away": "Qatar",
           "homeId": "44037",
           "awayId": "43834",
