@@ -286,7 +286,9 @@
     if (isWorldCup()) {
       const metadata = window.WorldCup?.getMetadata?.();
       const sourceDate = metadata?.sourceDataDate || '2026-05-30';
-      setDisplay('dataCount', 'none');
+      const teamCount = metadata?.teamCount || 48;
+      document.getElementById('dataCount').innerHTML =
+        `<span class="badge-dot"></span>${teamCount} 支球队`;
       document.getElementById('updateTime').textContent = `数据日期 ${sourceDate}`;
       setText('footerTitle', '世界杯预测工具 · 仅供学习参考');
       setText('footerSubtitle', '数据来源：2026-world-cup-predictor 静态导出 · 所有预测仅供概率研究参考');
