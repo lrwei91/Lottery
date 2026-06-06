@@ -2128,6 +2128,36 @@ body.theme-worldcup .app-toast {
     align-items: flex-start;
   }
 
+  .latest-draw .card-header,
+  .countdown .card-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: var(--space-sm);
+  }
+
+  .latest-draw .card-header h2,
+  .countdown .card-header h2 {
+    font-size: 1.05rem;
+    white-space: nowrap;
+  }
+
+  .latest-draw .draw-info {
+    font-size: 0.75rem;
+    gap: 8px;
+  }
+
+  .latest-draw .draw-issue {
+    font-size: 0.8rem;
+  }
+
+  .countdown-label {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    white-space: nowrap;
+  }
+
   .predict-actions {
     flex-direction: column;
     align-items: stretch;
