@@ -1388,17 +1388,92 @@
     `;
   }
 
+  function renderPL3CheckerLine(nums, lineIndex, frontTarget) {
+    if (!nums || nums.length < 3) {
+      return invalidCheckerItem(`第 ${lineIndex + 1} 行格式有误，请确保包含 3 位排列三号码（例如：4 4 3）`);
+    }
+
+    const digits = nums.slice(0, 3).map(Number);
+    if (!digits.every(n => n >= 0 && n <= 9)) {
+      return invalidCheckerItem(`第 ${lineIndex + 1} 行号码范围超出限制（每位数字 0-9）`);
+    }
+
+    const prizeName = checkPL3Winning(digits, frontTarget).prize;
+
+    return `
+      <div class="checker-item ${prizeName ? 'win' : ''}" tabindex="0" aria-label="号码 ${digits.join(' ')}${prizeName ? '，命中' + prizeName : '，未中奖'}">
+        <div class="checker-item-balls">
+          ${digits.map((n, j) => {
+            const isMatch = (prizeName === '直选' && n === frontTarget[j]) || (prizeName && frontTarget.includes(n));
+            return `<span class="checker-ball front ${isMatch ? 'match' : ''}" role="img" aria-label="号码 ${n}${isMatch ? '，命中' : ''}">${n}</span>`;
+          }).join('')}
+        </div>
+        <div class="checker-item-verdict">
+          <span class="match-count">${prizeName ? '匹配成功' : '未中奖'}</span>
+          <span class="prize-result-badge ${prizeName ? 'win' : 'lose'}">
+            ${prizeName ? '恭喜中 ' + prizeName : '未中奖'}
+          </span>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderDLTCheckerLine(nums, lineIndex, frontTarget, backTarget) {
+    if (!nums || nums.length < 7) {
+      return invalidCheckerItem(`第 ${lineIndex + 1} 行格式有误，请确保包含 5 个前区 + 2 个后区号码`);
+    }
+
+    const front = nums.slice(0, 5).map(Number).sort((a, b) => a - b);
+    const back = nums.slice(5, 7).map(Number).sort((a, b) => a - b);
+
+    if (!front.every(n => n >= 1 && n <= 35) || !back.every(n => n >= 1 && n <= 12)) {
+      return invalidCheckerItem(`第 ${lineIndex + 1} 行号码范围超出限制（前区 1-35，后区 1-12）`);
+    }
+
+    if (new Set(front).size !== 5 || new Set(back).size !== 2) {
+      return invalidCheckerItem(`第 ${lineIndex + 1} 行包含重复号码，前区 5 个和后区 2 个号码均不能重复`);
+    }
+
+    const fCount = front.filter(n => frontTarget.includes(n)).length;
+    const bCount = back.filter(n => backTarget.includes(n)).length;
+    const prizeName = getPrizeTierName(fCount, bCount);
+
+    return `
+      <div class="checker-item ${prizeName ? 'win' : ''}" tabindex="0" aria-label="前区 ${front.map(padNum).join(' ')} 加 后区 ${back.map(padNum).join(' ')}，${prizeName ? '命中' + prizeName : '，未中奖'}">
+        <div class="checker-item-balls">
+          ${front.map(n => {
+            const isMatch = frontTarget.includes(n);
+            return `<span class="checker-ball front ${isMatch ? 'match' : ''}" role="img" aria-label="前区 ${padNum(n)}${isMatch ? '，命中' : ''}">${padNum(n)}</span>`;
+          }).join('')}
+
+          <span class="checker-ball plus" aria-hidden="true">+</span>
+
+          ${back.map(n => {
+            const isMatch = backTarget.includes(n);
+            return `<span class="checker-ball back ${isMatch ? 'match' : ''}" role="img" aria-label="后区 ${padNum(n)}${isMatch ? '，命中' : ''}">${padNum(n)}</span>`;
+          }).join('')}
+        </div>
+        <div class="checker-item-verdict">
+          <span class="match-count">中 ${fCount} + ${bCount}</span>
+          <span class="prize-result-badge ${prizeName ? 'win' : 'lose'}">
+            ${prizeName ? '恭喜中 ' + prizeName : '未中奖'}
+          </span>
+        </div>
+      </div>
+    `;
+  }
+
   function checkCustomNumbers() {
     const inputVal = document.getElementById('customNumbersInput').value.trim();
     const resultsContainer = document.getElementById('checkerResults');
-    
+
     if (!inputVal) {
-      showToast('请输入要比对的号码');
+      alert('请输入要比对的号码');
       return;
     }
 
     if (state.data.length === 0) {
-      showToast('开奖数据尚未加载成功，请稍后再试');
+      alert('开奖数据尚未加载成功，请稍后再试');
       return;
     }
 
@@ -1407,114 +1482,21 @@
     const backTarget = latestDraw.back;
     const isPl3 = isPL3();
 
-    const lines = inputVal.split('\n');
     let html = '<h4>核对结果对比（对比最新第 ' + escapeHtml(latestDraw.issue) + ' 期）</h4>';
-    let hasValidLines = false;
-
-    lines.forEach((line, index) => {
+    inputVal.split('\n').forEach((line, index) => {
       const trimmed = line.trim();
       if (!trimmed) return;
-
       const nums = trimmed.match(/\d+/g);
-
       if (isPl3) {
-        if (!nums || nums.length < 3) {
-          html += invalidCheckerItem(`第 ${index + 1} 行格式有误，请确保包含 3 位排列三号码（例如：4 4 3）`);
-          return;
-        }
-
-        const digits = nums.slice(0, 3).map(Number);
-        const isRangeValid = digits.every(n => n >= 0 && n <= 9);
-
-        if (!isRangeValid) {
-          html += invalidCheckerItem(`第 ${index + 1} 行号码范围超出限制（每位数字 0-9）`);
-          return;
-        }
-
-        hasValidLines = true;
-        const checkResult = checkPL3Winning(digits, frontTarget);
-        const prizeName = checkResult.prize;
-
-        html += `
-          <div class="checker-item ${prizeName ? 'win' : ''}" tabindex="0" aria-label="号码 ${digits.join(' ')}${prizeName ? '，命中' + prizeName : '，未中奖'}">
-            <div class="checker-item-balls">
-              ${digits.map((n, j) => {
-                const isMatch = (prizeName === '直选' && n === frontTarget[j]) || (prizeName && frontTarget.includes(n));
-                return `<span class="checker-ball front ${isMatch ? 'match' : ''}" role="img" aria-label="号码 ${n}${isMatch ? '，命中' : ''}">${n}</span>`;
-              }).join('')}
-            </div>
-            <div class="checker-item-verdict">
-              <span class="match-count">${prizeName ? '匹配成功' : '未中奖'}</span>
-              <span class="prize-result-badge ${prizeName ? 'win' : 'lose'}">
-                ${prizeName ? '恭喜中 ' + prizeName : '未中奖'}
-              </span>
-            </div>
-          </div>
-        `;
+        html += renderPL3CheckerLine(nums, index, frontTarget);
       } else {
-        if (!nums || nums.length < 7) {
-          html += invalidCheckerItem(`第 ${index + 1} 行格式有误，请确保包含 5 个前区 + 2 个后区号码`);
-          return;
-        }
-
-        const front = nums.slice(0, 5).map(Number).sort((a, b) => a - b);
-        const back = nums.slice(5, 7).map(Number).sort((a, b) => a - b);
-
-        // 验证范围
-        const isFrontValid = front.every(n => n >= 1 && n <= 35);
-        const isBackValid = back.every(n => n >= 1 && n <= 12);
-
-        if (!isFrontValid || !isBackValid) {
-          html += invalidCheckerItem(`第 ${index + 1} 行号码范围超出限制（前区 1-35，后区 1-12）`);
-          return;
-        }
-
-        const frontSet = new Set(front);
-        const backSet = new Set(back);
-        if (frontSet.size !== 5 || backSet.size !== 2) {
-          html += invalidCheckerItem(`第 ${index + 1} 行包含重复号码，前区 5 个和后区 2 个号码均不能重复`);
-          return;
-        }
-
-        hasValidLines = true;
-
-        const matchedFront = front.filter(n => frontTarget.includes(n));
-        const matchedBack = back.filter(n => backTarget.includes(n));
-        const fCount = matchedFront.length;
-        const bCount = matchedBack.length;
-
-        const prizeName = getPrizeTierName(fCount, bCount);
-
-        html += `
-          <div class="checker-item ${prizeName ? 'win' : ''}" tabindex="0" aria-label="前区 ${front.map(padNum).join(' ')} 加 后区 ${back.map(padNum).join(' ')}，${prizeName ? '命中' + prizeName : '未中奖'}">
-            <div class="checker-item-balls">
-              ${front.map(n => {
-                const isMatch = frontTarget.includes(n);
-                return `<span class="checker-ball front ${isMatch ? 'match' : ''}" role="img" aria-label="前区 ${padNum(n)}${isMatch ? '，命中' : ''}">${padNum(n)}</span>`;
-              }).join('')}
-
-              <span class="checker-ball plus" aria-hidden="true">+</span>
-
-              ${back.map(n => {
-                const isMatch = backTarget.includes(n);
-                return `<span class="checker-ball back ${isMatch ? 'match' : ''}" role="img" aria-label="后区 ${padNum(n)}${isMatch ? '，命中' : ''}">${padNum(n)}</span>`;
-              }).join('')}
-            </div>
-            <div class="checker-item-verdict">
-              <span class="match-count">中 ${fCount} + ${bCount}</span>
-              <span class="prize-result-badge ${prizeName ? 'win' : 'lose'}">
-                ${prizeName ? '恭喜中 ' + prizeName : '未中奖'}
-              </span>
-            </div>
-          </div>
-        `;
+        html += renderDLTCheckerLine(nums, index, frontTarget, backTarget);
       }
     });
 
     resultsContainer.innerHTML = html;
     resultsContainer.style.display = 'flex';
   }
-
 
 
   // ==================== 事件绑定 ====================

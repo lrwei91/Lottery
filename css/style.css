@@ -1660,6 +1660,7 @@ body.theme-worldcup .header {
   font-size: 0.76rem;
   line-height: 1.55;
   margin: 0;
+  margin-top: var(--space-sm);
 }
 
 .history-ticket-tags {
@@ -1682,9 +1683,6 @@ body.theme-worldcup .header {
   border-color: rgba(16, 185, 129, 0.32);
   color: var(--success);
   background: rgba(16, 185, 129, 0.08);
-}
-.history-ticket-reason {
-  margin-top: var(--space-sm);
 }
 
 /* ========== Buttons ========== */
