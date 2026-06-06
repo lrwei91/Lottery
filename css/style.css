@@ -2870,7 +2870,6 @@ body.theme-worldcup .app-toast {
 .theme-pl3 .pl3-rules-table { display: block !important; }
 
 /* ========== Display Adapters for PL3 ========== */
-.theme-pl3 .zone-divider,
 .theme-pl3 .zone-label,
 .theme-pl3 .back-row,
 .theme-pl3 #latestBack,
@@ -3631,7 +3630,6 @@ body.theme-worldcup .app-toast {
   }
 
   .wc-top-strip,
-  .wc-meta-grid,
   .wc-ucl-grid,
   .wc-value-grid {
     grid-template-columns: 1fr;
