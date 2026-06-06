@@ -24,13 +24,13 @@ let _redis = null;
 
 function getRedis() {
   if (_redis) return _redis;
-  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
-    throw new Error('Upstash Redis 环境变量未配置（请在 Vercel Dashboard → Storage 装 Upstash Redis integration）');
+  // 兼容 Vercel Marketplace Upstash Redis（新）和老的 Vercel KV（即将下线）两种环境变量名
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  if (!url || !token) {
+    throw new Error('Upstash Redis 环境变量未配置（请在 Vercel Dashboard → Storage 装/连 Upstash Redis）');
   }
-  _redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-  });
+  _redis = new Redis({ url, token });
   return _redis;
 }
 
