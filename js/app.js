@@ -1122,7 +1122,7 @@
             ? (evaluation.prize ? `命中 ${evaluation.prize}` : `位置命中 ${evaluation.frontMatches}/3`)
             : `${evaluation.frontMatches}+${evaluation.backMatches}${evaluation.prize ? ' · ' + evaluation.prize : ''}`;
         const reasonText = evaluation ? evaluation.reason : '';
-        const resultTag = evaluation ? evaluation.tag : '待开奖';
+        const resultTag = evaluation ? evaluation.tag : null;
 
         return `
           <div class="prediction-history-ticket">
@@ -1135,9 +1135,7 @@
               ${isPl3 ? '' : '<span class="history-plus">+</span>'}
               ${isPl3 ? '' : renderMiniBalls(prediction.back, 'back', evaluation ? evaluation.matchedBack : [])}
             </div>
-            <div class="history-ticket-tags">
-              <span class="review-tag ${evaluation && evaluation.prize ? 'win' : ''}">${escapeHtml(resultTag)}</span>
-            </div>
+            ${resultTag ? `<div class="history-ticket-tags"><span class="review-tag ${evaluation.prize ? 'win' : ''}">${escapeHtml(resultTag)}</span></div>` : ''}
             ${reasonText ? `<p class="history-ticket-reason">${escapeHtml(reasonText)}</p>` : ''}
           </div>
         `;
