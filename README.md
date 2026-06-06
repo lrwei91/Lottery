@@ -95,17 +95,21 @@ Lottery/
 
 ---
 
-## ☁️ 跨端预测同步（Vercel KV）
+## ☁️ 跨端预测同步（Upstash Redis via Vercel Marketplace）
 
 为了让"每周比对预测 vs 实际开奖"有完整样本，预测记录和复盘结果可以同步到云端。
 任意浏览器、任意设备，只要使用同一个 **设备 ID**，数据就会自动聚合。
+
+### 为什么是 Upstash Redis
+
+Vercel KV 已被官方 deprecated（[迁移公告](https://vercel.com/changelog/vercel-kv-is-being-deprecated-in-favor-of-upstash-redis)），新项目必须通过 **Vercel Marketplace** 装 **Upstash Redis** integration，接口和 KV 几乎一致。
 
 ### 工作原理
 
 | 端 | 存储 |
 |----|------|
 | 本机 | `localStorage`（最近 20 条预测 + 策略缓存，永远是真相的子集） |
-| 云端 | Vercel KV（每个 deviceId 下最近 200 条预测 + 1000 条复盘） |
+| 云端 | Upstash Redis（每个 deviceId 下最近 200 条预测 + 1000 条复盘） |
 
 - 本地写入后**异步**推到云端（fire-and-forget，不阻塞 UI）
 - 启动时从云端**拉取并 merge** 增量到本地
@@ -114,10 +118,11 @@ Lottery/
 
 ### 一键配置（Vercel Dashboard）
 
-1. 进入 Vercel 项目 → **Storage** → **Create Database** → 选 **KV**
-2. 命名为 `ticai-kv`（或任意名），关联到本项目
-3. Vercel 会自动注入 `KV_*` 环境变量，无需手动配置
-4. 重新部署（push 一次代码 / 触发 deploy hook 即可）
+1. 进入 Vercel 项目 → **Storage** → **Marketplace** → 搜索 **Upstash Redis** → **Add Integration**
+2. 选本项目并授权，Vercel 会自动注入两个环境变量：
+   - `UPSTASH_REDIS_REST_URL`
+   - `UPSTASH_REDIS_REST_TOKEN`
+3. 重新部署（push 一次代码 / 触发 deploy hook 即可）
 
 ### 跨端绑定
 
@@ -135,11 +140,11 @@ Lottery/
 | `GET`  | `/api/reviews?deviceId=xxx`  | 拉取该设备的复盘结果 |
 | `POST` | `/api/reviews`  `{ deviceId, review }` | 写入一条复盘 |
 
-### 离线/未接 KV 时的行为
+### 离线/未接 Upstash 时的行为
 
 - 按钮仍可点，所有本地功能（生成预测、回测、复盘、策略进化）正常
-- 控制台会看到 `[cloud] 拉取预测记录异常（KV 未接或网络问题，本地数据不受影响）` 提示
-- 一旦 KV 接好，下一次刷新自动生效
+- 控制台会看到 `[cloud] 拉取预测记录异常（Upstash 未接或网络问题，本地数据不受影响）` 提示
+- 一旦 Upstash 接好，下一次刷新自动生效
 
 ### 不做什么
 

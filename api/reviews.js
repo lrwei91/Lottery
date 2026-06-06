@@ -12,13 +12,25 @@
  *   review:{recordId}:{strategy}:{issue}  → JSON(review)
  *   reviews:byDevice:{deviceId}           → SET<reviewKey>
  *
- * reviewKey 形如 `${recordId}::${strategy}::${issue}`，
- * 天然去重，POST 重复写入覆盖即可。
+ * reviewKey 形如 `${recordId}::${strategy}::${issue}`，天然去重。
  */
 
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
 
 const REVIEW_LIMIT = 1000;
+let _redis = null;
+
+function getRedis() {
+  if (_redis) return _redis;
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    throw new Error('Upstash Redis 环境变量未配置（请在 Vercel Dashboard → Storage 装 Upstash Redis integration）');
+  }
+  _redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+  return _redis;
+}
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -39,18 +51,20 @@ export default async function handler(req, res) {
   }
 
   try {
+    const redis = getRedis();
+
     if (req.method === 'GET') {
       const deviceId = String(req.query.deviceId || '').trim();
       if (!deviceId) {
         return res.status(400).json({ error: 'deviceId required' });
       }
 
-      const keys = (await kv.smembers(`reviews:byDevice:${deviceId}`)) || [];
+      const keys = (await redis.smembers(`reviews:byDevice:${deviceId}`)) || [];
       if (!keys.length) {
         return res.status(200).json({ reviews: [] });
       }
 
-      const reviews = await kv.mget(...keys.map((k) => `review:${k}`));
+      const reviews = await redis.mget(...keys.map((k) => `review:${k}`));
       return res.status(200).json({
         reviews: reviews.filter(Boolean),
       });
@@ -74,17 +88,21 @@ export default async function handler(req, res) {
         syncedAt: new Date().toISOString(),
       };
 
-      await kv.set(`review:${key}`, enriched);
-      await kv.sadd(`reviews:byDevice:${cleanDeviceId}`, key);
-      // 限制 set 体积，防止长期膨胀（粗略估算，超过限制就随机裁剪）
-      const size = await kv.scard(`reviews:byDevice:${cleanDeviceId}`);
+      const pipeline = redis.pipeline();
+      pipeline.set(`review:${key}`, enriched);
+      pipeline.sadd(`reviews:byDevice:${cleanDeviceId}`, key);
+      await pipeline.exec();
+
+      // 溢出保护（set 长期膨胀时裁剪最旧项）
+      const size = await redis.scard(`reviews:byDevice:${cleanDeviceId}`);
       if (size > REVIEW_LIMIT) {
-        // 溢出保护：超出时不再限制，去重 + 主动裁剪最旧的
-        const allKeys = await kv.smembers(`reviews:byDevice:${cleanDeviceId}`);
+        const allKeys = await redis.smembers(`reviews:byDevice:${cleanDeviceId}`);
         const overflow = allKeys.slice(REVIEW_LIMIT);
         if (overflow.length) {
-          await kv.srem(`reviews:byDevice:${cleanDeviceId}`, ...overflow);
-          await kv.del(...overflow.map((k) => `review:${k}`));
+          const cleanup = redis.pipeline();
+          cleanup.srem(`reviews:byDevice:${cleanDeviceId}`, ...overflow);
+          cleanup.del(...overflow.map((k) => `review:${k}`));
+          await cleanup.exec();
         }
       }
 

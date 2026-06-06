@@ -8,14 +8,31 @@
  *   body: { deviceId, record }
  *   → { ok: true, id }
  *
- * 存储结构（Vercel KV / Upstash Redis）：
+ * 存储结构（Upstash Redis / Vercel Marketplace Upstash Redis integration）：
  *   record:{recordId}              → JSON(record)
- *   records:byDevice:{deviceId}    → LIST<recordId>  (ltrim 200)
+ *   records:byDevice:{deviceId}    → LIST<recordId>  (LTRIM 200)
+ *
+ * 环境变量（Vercel Marketplace 装 Upstash Redis 后自动注入）：
+ *   UPSTASH_REDIS_REST_URL
+ *   UPSTASH_REDIS_REST_TOKEN
  */
 
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
 
 const RECORD_LIMIT = 200;
+let _redis = null;
+
+function getRedis() {
+  if (_redis) return _redis;
+  if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) {
+    throw new Error('Upstash Redis 环境变量未配置（请在 Vercel Dashboard → Storage 装 Upstash Redis integration）');
+  }
+  _redis = new Redis({
+    url: process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.UPSTASH_REDIS_REST_TOKEN,
+  });
+  return _redis;
+}
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -31,18 +48,20 @@ export default async function handler(req, res) {
   }
 
   try {
+    const redis = getRedis();
+
     if (req.method === 'GET') {
       const deviceId = String(req.query.deviceId || '').trim();
       if (!deviceId) {
         return res.status(400).json({ error: 'deviceId required' });
       }
 
-      const ids = (await kv.lrange(`records:byDevice:${deviceId}`, 0, RECORD_LIMIT - 1)) || [];
+      const ids = (await redis.lrange(`records:byDevice:${deviceId}`, 0, RECORD_LIMIT - 1)) || [];
       if (!ids.length) {
         return res.status(200).json({ records: [] });
       }
 
-      const records = await kv.mget(...ids.map((id) => `record:${id}`));
+      const records = await redis.mget(...ids.map((id) => `record:${id}`));
       return res.status(200).json({
         records: records.filter(Boolean),
       });
@@ -61,9 +80,12 @@ export default async function handler(req, res) {
         syncedAt: new Date().toISOString(),
       };
 
-      await kv.set(`record:${record.id}`, enriched);
-      await kv.lpush(`records:byDevice:${cleanDeviceId}`, record.id);
-      await kv.ltrim(`records:byDevice:${cleanDeviceId}`, 0, RECORD_LIMIT - 1);
+      // pipeline：减少一次 round-trip
+      const pipeline = redis.pipeline();
+      pipeline.set(`record:${record.id}`, enriched);
+      pipeline.lpush(`records:byDevice:${cleanDeviceId}`, record.id);
+      pipeline.ltrim(`records:byDevice:${cleanDeviceId}`, 0, RECORD_LIMIT - 1);
+      await pipeline.exec();
 
       return res.status(200).json({ ok: true, id: record.id });
     }

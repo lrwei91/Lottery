@@ -29,7 +29,7 @@
       const data = await res.json();
       return Array.isArray(data.records) ? data.records : [];
     } catch (err) {
-      console.warn('[cloud] 拉取预测记录异常（KV 未接或网络问题，本地数据不受影响）:', err);
+      console.warn('[cloud] 拉取预测记录异常（Upstash 未接或网络问题，本地数据不受影响）:', err);
       return [];
     }
   }
