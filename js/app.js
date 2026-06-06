@@ -21,7 +21,6 @@
     selectedTrendNumbers: [1, 5, 10],
     predictions: [],
     predictionRecords: [],
-    strategyEvolution: null,
     countdownTimerId: null
   };
 
@@ -148,10 +147,6 @@
     return `ticai_prediction_records_v1_${type}`;
   }
 
-  function getEvolutionStorageKey(type = state.currentLottery) {
-    return `ticai_strategy_evolution_v1_${type}`;
-  }
-
   function loadPredictionRecords() {
     try {
       const raw = localStorage.getItem(getPredictionStorageKey());
@@ -171,25 +166,6 @@
       );
     } catch (error) {
       console.warn('预测记录保存失败:', error);
-    }
-  }
-
-  function loadStrategyEvolution() {
-    try {
-      const raw = localStorage.getItem(getEvolutionStorageKey());
-      state.strategyEvolution = raw ? JSON.parse(raw) : null;
-    } catch (error) {
-      console.warn('策略进化读取失败:', error);
-      state.strategyEvolution = null;
-    }
-  }
-
-  function persistStrategyEvolution(evolution) {
-    state.strategyEvolution = evolution;
-    try {
-      localStorage.setItem(getEvolutionStorageKey(), JSON.stringify(evolution));
-    } catch (error) {
-      console.warn('策略进化保存失败:', error);
     }
   }
 
@@ -948,8 +924,7 @@
     btn.setAttribute('aria-busy', 'true');
 
     try {
-      const evolution = rebuildStrategyEvolution();
-      const predictions = Predictor.generateMultiplePredictions(state.data, 5, { evolution });
+      const predictions = Predictor.generateMultiplePredictions(state.data, 5);
       state.predictions = predictions;
       savePredictionRecord(predictions);
 
@@ -1124,127 +1099,11 @@
     `;
   }
 
-  function createEmptyStrategyStat(strategy) {
-    return {
-      strategy,
-      reviewCount: 0,
-      winCount: 0,
-      totalFrontMatches: 0,
-      totalBackMatches: 0,
-      totalScore: 0,
-      averageMatch: 0,
-      recentPerformance: 0,
-      weightMultiplier: 1,
-      lastReviewIssue: '',
-      direction: 'stable'
-    };
-  }
-
   function clamp(num, min, max) {
     return Math.max(min, Math.min(max, num));
   }
 
-  function rebuildStrategyEvolution() {
-    const isPl3 = isPL3();
-    const stats = {};
-    Object.keys(STRATEGY_LABELS).forEach(strategy => {
-      stats[strategy] = createEmptyStrategyStat(strategy);
-      stats[strategy].recentScores = [];
-    });
-
-    state.predictionRecords.slice().reverse().forEach(record => {
-      const reviewDraw = resolveReviewDraw(record);
-      if (!reviewDraw) return;
-
-      (record.predictions || []).forEach(prediction => {
-        const strategy = prediction.strategy || 'balanced';
-        if (!stats[strategy]) stats[strategy] = createEmptyStrategyStat(strategy);
-        if (!stats[strategy].recentScores) stats[strategy].recentScores = [];
-
-        const evaluation = evaluatePrediction(prediction, reviewDraw, isPl3);
-        if (!evaluation) return;
-
-        stats[strategy].reviewCount += 1;
-        stats[strategy].winCount += evaluation.prize ? 1 : 0;
-        stats[strategy].totalFrontMatches += evaluation.frontMatches || 0;
-        stats[strategy].totalBackMatches += evaluation.backMatches || 0;
-        stats[strategy].totalScore += evaluation.score || 0;
-        stats[strategy].lastReviewIssue = String(reviewDraw.issue || '');
-        stats[strategy].recentScores.push(evaluation.score || 0);
-        stats[strategy].recentScores = stats[strategy].recentScores.slice(-6);
-      });
-    });
-
-    Object.values(stats).forEach(stat => {
-      if (!stat.reviewCount) {
-        stat.recentPerformance = 0;
-        stat.weightMultiplier = 1;
-        stat.direction = 'stable';
-        delete stat.recentScores;
-        return;
-      }
-
-      const baseDivisor = isPl3 ? stat.reviewCount : stat.reviewCount;
-      stat.averageMatch = Math.round(((stat.totalFrontMatches + stat.totalBackMatches) / baseDivisor) * 100) / 100;
-      stat.recentPerformance = Math.round((stat.recentScores.reduce((sum, score) => sum + score, 0) / stat.recentScores.length) * 100) / 100;
-
-      const baseline = isPl3 ? 1.05 : 2.15;
-      const winLift = stat.winCount > 0 ? Math.min(0.12, stat.winCount / stat.reviewCount * 0.18) : 0;
-      const performanceDelta = clamp((stat.recentPerformance - baseline) / baseline, -0.3, 0.3);
-      stat.weightMultiplier = Math.round(clamp(1 + performanceDelta * 0.45 + winLift, 0.75, 1.25) * 100) / 100;
-      stat.direction = stat.weightMultiplier >= 1.06 ? 'up' : stat.weightMultiplier <= 0.94 ? 'down' : 'stable';
-      delete stat.recentScores;
-    });
-
-    const advice = buildEvolutionAdvice(stats);
-    const evolution = {
-      type: state.currentLottery,
-      updatedAt: new Date().toISOString(),
-      strategyStats: stats,
-      summary: advice.summary,
-      mode: advice.mode
-    };
-    persistStrategyEvolution(evolution);
-    return evolution;
-  }
-
-  function buildEvolutionAdvice(stats) {
-    const reviewed = Object.values(stats).filter(stat => stat.reviewCount > 0);
-    if (!reviewed.length) {
-      return {
-        mode: 'pending',
-        summary: '暂无已复盘记录，策略进化将在开奖后自动生成。'
-      };
-    }
-
-    const sorted = reviewed.slice().sort((a, b) => b.weightMultiplier - a.weightMultiplier);
-    const top = sorted[0];
-    const weak = sorted[sorted.length - 1];
-    const topLabel = STRATEGY_LABELS[top.strategy] || top.strategy;
-    const weakLabel = STRATEGY_LABELS[weak.strategy] || weak.strategy;
-
-    if (top.strategy === weak.strategy || Math.abs(top.weightMultiplier - weak.weightMultiplier) < 0.08) {
-      return {
-        mode: 'balanced',
-        summary: '各策略近期表现接近，下期维持均衡轮转，避免单期复盘过拟合。'
-      };
-    }
-    return {
-      mode: 'weighted',
-      summary: `${topLabel}近期命中更稳，下期提高优先级；${weakLabel}连续表现偏弱，温和降低权重。`
-    };
-  }
-
-  function getStrategyEvolutionTag(strategy, evolution = state.strategyEvolution) {
-    if (evolution?.mode === 'balanced') return '策略权重稳定';
-    const stat = evolution?.strategyStats?.[strategy];
-    if (!stat || !stat.reviewCount) return '策略待观察';
-    if (stat.direction === 'up') return '策略加权上调';
-    if (stat.direction === 'down') return '策略加权下调';
-    return '策略权重稳定';
-  }
-
-  function renderPredictionRecordItem(record, isPl3, evolution) {
+  function renderPredictionRecordItem(record, isPl3) {
     const reviewDraw = resolveReviewDraw(record);
     const statusText = reviewDraw
       ? `已按第 ${escapeHtml(reviewDraw.issue)} 期复盘`
@@ -1264,7 +1123,6 @@
             : `${evaluation.frontMatches}+${evaluation.backMatches}${evaluation.prize ? ' · ' + evaluation.prize : ''}`;
         const reasonText = evaluation ? evaluation.reason : '等待开奖后自动生成复盘原因。';
         const resultTag = evaluation ? evaluation.tag : '待开奖';
-        const evolutionTag = getStrategyEvolutionTag(prediction.strategy, evolution);
 
         return `
           <div class="prediction-history-ticket">
@@ -1279,7 +1137,6 @@
             </div>
             <div class="history-ticket-tags">
               <span class="review-tag ${evaluation && evaluation.prize ? 'win' : ''}">${escapeHtml(resultTag)}</span>
-              <span class="review-tag evolution">${escapeHtml(evolutionTag)}</span>
             </div>
             <p class="history-ticket-reason">${escapeHtml(reasonText)}</p>
           </div>
@@ -1295,17 +1152,8 @@
             </div>
             ${renderDrawBalls(reviewDraw, isPl3)}
           </div>
-          <div class="history-evolution-advice">
-            <span>策略进化建议</span>
-            <p>${escapeHtml(evolution.summary)}</p>
-          </div>
         `
-        : `
-          <div class="history-evolution-advice pending">
-            <span>策略进化建议</span>
-            <p>等待第 ${escapeHtml(record.targetIssue)} 期开奖后生成复盘结论，并反哺下一轮预测权重。</p>
-          </div>
-        `;
+      : '';
 
     return `
         <article class="prediction-history-item">
@@ -1341,7 +1189,6 @@
     }
 
     const isPl3 = isPL3();
-    const evolution = rebuildStrategyEvolution();
     const historyBtn = document.getElementById('btnShowPredictionHistory');
     const visibleRecords = state.predictionRecords.slice(0, PREDICTION_HISTORY_VISIBLE_LIMIT);
 
@@ -1350,7 +1197,7 @@
     }
 
     section.style.display = 'block';
-    list.innerHTML = visibleRecords.map(record => renderPredictionRecordItem(record, isPl3, evolution)).join('');
+    list.innerHTML = visibleRecords.map(record => renderPredictionRecordItem(record, isPl3)).join('');
   }
 
   function showPredictionHistoryModal() {
@@ -1361,9 +1208,8 @@
     if (!modal || !list) return;
 
     const isPl3 = isPL3();
-    const evolution = rebuildStrategyEvolution();
     list.innerHTML = state.predictionRecords
-      .map(record => renderPredictionRecordItem(record, isPl3, evolution))
+      .map(record => renderPredictionRecordItem(record, isPl3))
       .join('');
     _lastFocusedBeforeModal = document.activeElement;
     modal.style.display = 'flex';
@@ -2125,7 +1971,6 @@
     const loadStart = Date.now();
     const loaded = await loadData();
     loadPredictionRecords();
-    loadStrategyEvolution();
     renderPredictionHistory();
 
     const elapsed = Date.now() - loadStart;

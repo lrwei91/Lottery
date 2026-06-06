@@ -180,10 +180,7 @@
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
       if (!k) continue;
-      if (
-        k.startsWith('ticai_prediction_records_v1_') ||
-        k.startsWith('ticai_strategy_evolution_v1_')
-      ) {
+      if (k.startsWith('ticai_prediction_records_v1_')) {
         keysToRemove.push(k);
       }
     }

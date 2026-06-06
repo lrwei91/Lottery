@@ -1372,16 +1372,12 @@ body {
   margin: 0 2px;
 }
 
-.history-review-summary,
-.history-evolution-advice {
+.history-review-summary {
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-sm);
   background: rgba(10, 14, 26, 0.28);
   margin-bottom: var(--space-sm);
   padding: var(--space-sm);
-}
-
-.history-review-summary {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1394,8 +1390,7 @@ body {
   font-size: 0.86rem;
 }
 
-.review-kicker,
-.history-evolution-advice span {
+.review-kicker {
   color: var(--text-muted);
   display: block;
   font-size: 0.72rem;
@@ -1409,15 +1404,6 @@ body {
   flex-wrap: wrap;
 }
 
-.history-evolution-advice {
-  border-color: rgba(59, 130, 246, 0.18);
-}
-
-.history-evolution-advice.pending {
-  border-color: rgba(255, 255, 255, 0.06);
-}
-
-.history-evolution-advice p,
 .history-ticket-reason {
   color: var(--text-secondary);
   font-size: 0.76rem;
@@ -1446,13 +1432,6 @@ body {
   color: var(--success);
   background: rgba(16, 185, 129, 0.08);
 }
-
-.review-tag.evolution {
-  border-color: rgba(59, 130, 246, 0.22);
-  color: var(--accent);
-  background: var(--accent-dim);
-}
-
 .history-ticket-reason {
   margin-top: var(--space-sm);
 }
