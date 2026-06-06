@@ -112,22 +112,6 @@
     return selected.sort((a, b) => a - b);
   }
 
-  function createSeededRandom(seed) {
-    let state = (seed || 1) >>> 0;
-    return function seededRandom() {
-      state = (state * 1664525 + 1013904223) >>> 0;
-      return state / 4294967296;
-    };
-  }
-
-  function deriveSeed(seed, label) {
-    let state = (seed || 1) >>> 0;
-    for (let i = 0; i < label.length; i++) {
-      state = Math.imul(state ^ label.charCodeAt(i), 2654435761) >>> 0;
-    }
-    return state || 1;
-  }
-
   function gaussianRandom(rng = Math.random) {
     let u = 0;
     let v = 0;
@@ -525,29 +509,6 @@
    * @param {Array} data - 开奖数据
    * @returns {{ 0: count, 1: count, 2: count, '3+': count }}
    */
-  function consecutiveAnalysis(data) {
-    const result = { 0: 0, 1: 0, 2: 0, '3+': 0 };
-
-    for (const draw of data) {
-      const sorted = draw.front.slice().sort((a, b) => a - b);
-      let pairs = 0;
-
-      // 计算相邻号码对数
-      for (let i = 1; i < sorted.length; i++) {
-        if (sorted[i] - sorted[i - 1] === 1) {
-          pairs++;
-        }
-      }
-
-      if (pairs === 0) result[0]++;
-      else if (pairs === 1) result[1]++;
-      else if (pairs === 2) result[2]++;
-      else result['3+']++;
-    }
-
-    return result;
-  }
-
   // ============================================================
   // 8. 生成单注预测
   // ============================================================
@@ -1530,7 +1491,6 @@
     oddEvenAnalysis,
     sumAnalysis,
     bigSmallAnalysis,
-    consecutiveAnalysis,
 
     // 预测函数
     generatePrediction,

@@ -729,10 +729,6 @@ body.theme-worldcup .header {
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
-.zone-divider {
-  display: none;
-}
-
 .draw-info {
   display: flex;
   align-items: center;
@@ -1387,14 +1383,6 @@ body.theme-worldcup .header {
   flex-wrap: wrap;
 }
 
-.strategy-selector {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
 .predictions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
@@ -1784,23 +1772,6 @@ body.theme-worldcup .header {
 
 .btn-generate:active {
   transform: translateY(0);
-}
-
-/* ========== Progress Bar ========== */
-.progress-bar {
-  height: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 4px;
-  overflow: hidden;
-  flex: 1;
-  min-width: 80px;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--accent), #36c5f0);
-  border-radius: 4px;
-  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 
@@ -2970,13 +2941,6 @@ body.theme-worldcup .app-toast {
   margin-top: var(--space-lg);
 }
 
-.wc-meta-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-sm);
-}
-
-.wc-meta-item,
 .wc-top-card,
 .wc-h2h-metrics > div,
 .wc-mystic-grid > div,
@@ -2987,12 +2951,6 @@ body.theme-worldcup .app-toast {
   border-radius: var(--radius-md);
 }
 
-.wc-meta-item {
-  padding: var(--space-md);
-  min-width: 0;
-}
-
-.wc-meta-item span,
 .wc-h2h-metrics span,
 .wc-mystic-grid span,
 .wc-value-card small {
@@ -3002,7 +2960,6 @@ body.theme-worldcup .app-toast {
   margin-bottom: 4px;
 }
 
-.wc-meta-item strong,
 .wc-h2h-metrics strong,
 .wc-mystic-grid strong {
   color: var(--text-primary);

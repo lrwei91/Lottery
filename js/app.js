@@ -1102,10 +1102,6 @@
     `;
   }
 
-  function clamp(num, min, max) {
-    return Math.max(min, Math.min(max, num));
-  }
-
   function renderPredictionRecordItem(record, isPl3) {
     const reviewDraw = resolveReviewDraw(record);
     const statusText = reviewDraw
