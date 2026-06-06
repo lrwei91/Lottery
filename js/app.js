@@ -1121,7 +1121,7 @@
           : isPl3
             ? (evaluation.prize ? `命中 ${evaluation.prize}` : `位置命中 ${evaluation.frontMatches}/3`)
             : `${evaluation.frontMatches}+${evaluation.backMatches}${evaluation.prize ? ' · ' + evaluation.prize : ''}`;
-        const reasonText = evaluation ? evaluation.reason : '等待开奖后自动生成复盘原因。';
+        const reasonText = evaluation ? evaluation.reason : '';
         const resultTag = evaluation ? evaluation.tag : '待开奖';
 
         return `
@@ -1138,7 +1138,7 @@
             <div class="history-ticket-tags">
               <span class="review-tag ${evaluation && evaluation.prize ? 'win' : ''}">${escapeHtml(resultTag)}</span>
             </div>
-            <p class="history-ticket-reason">${escapeHtml(reasonText)}</p>
+            ${reasonText ? `<p class="history-ticket-reason">${escapeHtml(reasonText)}</p>` : ''}
           </div>
         `;
       }).join('');
