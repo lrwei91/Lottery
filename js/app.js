@@ -193,6 +193,80 @@
     }
   }
 
+  // ==================== 云端同步（依赖 window.TicaiDevice / window.TicaiCloud）===================
+  // 设计原则：
+  //   1. 本地 localStorage 永远是真相的子集，云端是「补全」
+  //   2. 写云端是 fire-and-forget，失败只 warn，绝不阻塞 UI
+  //   3. 复盘结果用 recordId::strategy::issue 当 key 天然去重
+  //   4. 启动时从云端拉全量，按 id merge 增量
+  function syncRecordToCloud(record) {
+    if (!record || !record.id) return;
+    if (!window.TicaiCloud) return;
+    try {
+      window.TicaiCloud.syncRecord(record);
+    } catch (error) {
+      console.warn('[cloud] 预测记录同步失败:', error);
+    }
+  }
+
+  function syncReviewToCloud(record, prediction, evaluation, reviewDraw) {
+    if (!record || !prediction || !evaluation || !reviewDraw) return;
+    if (!window.TicaiCloud) return;
+    try {
+      window.TicaiCloud.syncReview({
+        recordId: record.id,
+        type: record.type,
+        strategy: prediction.strategy,
+        issue: String(reviewDraw.issue || ''),
+        baseIssue: record.baseIssue,
+        targetIssue: record.targetIssue,
+        prize: evaluation.prize || null,
+        frontMatches: evaluation.frontMatches || 0,
+        backMatches: evaluation.backMatches || 0,
+        score: evaluation.score || 0,
+        tag: evaluation.tag || '',
+        reason: evaluation.reason || '',
+        createdAt: record.createdAt
+      });
+    } catch (error) {
+      console.warn('[cloud] 复盘同步失败:', error);
+    }
+  }
+
+  async function bootstrapFromCloud() {
+    if (!window.TicaiCloud) return;
+    if (!window.TicaiDevice) return;
+    try {
+      // 1. 拉取云端 records，merge 到本地
+      const remoteRecords = await window.TicaiCloud.pullRecords();
+      if (remoteRecords.length) {
+        const localIds = new Set(state.predictionRecords.map((r) => r.id));
+        let added = 0;
+        const merged = state.predictionRecords.slice();
+        remoteRecords.forEach((r) => {
+          if (r && r.id && !localIds.has(r.id)) {
+            merged.push(r);
+            added += 1;
+          }
+        });
+        if (added > 0) {
+          merged.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+          state.predictionRecords = merged.slice(0, PREDICTION_HISTORY_LIMIT);
+          persistPredictionRecords();
+          renderPredictionHistory();
+          console.info(`[cloud] 从云端合并 ${added} 条新预测记录`);
+        }
+      }
+      // 2. 拉取云端 reviews（暂不直接合入本地决策，仅供未来策略深度分析）
+      const remoteReviews = await window.TicaiCloud.pullReviews();
+      if (remoteReviews.length) {
+        console.info(`[cloud] 远端已有 ${remoteReviews.length} 条复盘记录`);
+      }
+    } catch (error) {
+      console.warn('[cloud] 启动时云端拉取失败:', error);
+    }
+  }
+
   function inferNextIssue(issue) {
     const raw = String(issue || '');
     if (!/^\d+$/.test(raw)) return '下一期';
@@ -913,6 +987,7 @@
 
     state.predictionRecords = [record, ...state.predictionRecords].slice(0, PREDICTION_HISTORY_LIMIT);
     persistPredictionRecords();
+    syncRecordToCloud(record);
   }
 
   function formatRecordTime(iso) {
@@ -1178,6 +1253,10 @@
 
     const tickets = record.predictions.map((prediction, index) => {
         const evaluation = evaluatePrediction(prediction, reviewDraw, isPl3);
+        // 复盘数据 fire-and-forget 同步到云端（依赖 recordId::strategy::issue 天然去重）
+        if (evaluation && reviewDraw) {
+          syncReviewToCloud(record, prediction, evaluation, reviewDraw);
+        }
         const resultText = !evaluation
           ? '待开奖'
           : isPl3
@@ -2100,14 +2179,25 @@
     try {
       resetStatsTabs();
       bindEvents();
+      bindCloudSyncUI();
 
       // 监听哈希路由变化
       window.addEventListener('hashchange', handleHashRoute);
 
       // 首次加载时处理路由
       await handleHashRoute();
+
+      // 从云端拉取并 merge（fire-and-forget，失败不影响主流程）
+      bootstrapFromCloud();
     } catch (error) {
       console.error('应用初始化失败:', error);
+    }
+  }
+
+  function bindCloudSyncUI() {
+    const btn = document.getElementById('devicePanelBtn');
+    if (btn && window.TicaiDevicePanel) {
+      btn.addEventListener('click', function () { window.TicaiDevicePanel.show(); });
     }
   }
 

@@ -11,5 +11,7 @@
     "sync:worldcup:all": "python3 scripts/sync_worldcup_upstream.py && python3 scripts/sync_worldcup_matches.py",
     "dev": "npx -y serve ."
   },
-  "dependencies": {}
+  "dependencies": {
+    "@vercel/kv": "^3.0.0"
+  }
 }
