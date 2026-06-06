@@ -13,7 +13,7 @@
   'use strict';
 
   // ============================================================
-  // 配色常量
+  // 配色与主题同步系统
   // ============================================================
   const COLORS = {
     grid: 'rgba(255, 255, 255, 0.06)',
@@ -35,6 +35,31 @@
 
   // 用于多线条的颜色组
   const LINE_COLORS = ['#ff4757', '#00d2ff', '#31d997', '#36c5f0', '#f59e0b'];
+
+  function updateColors() {
+    try {
+      const appEl = document.getElementById('app') || document.body;
+      const style = window.getComputedStyle(appEl);
+      const getVal = (varName, fallback) => {
+        const v = style.getPropertyValue(varName).trim();
+        return v || fallback;
+      };
+
+      COLORS.accent = getVal('--accent', '#31d997');
+      COLORS.front = getVal('--front-start', '#ff4757');
+      COLORS.back = getVal('--back-start', '#00d2ff');
+      COLORS.hot = getVal('--hot', '#ef4444');
+      COLORS.cold = getVal('--cold', '#3b82f6');
+      COLORS.warm = getVal('--warm', '#f59e0b');
+      COLORS.green = getVal('--success', '#10b981');
+
+      LINE_COLORS[0] = COLORS.front;
+      LINE_COLORS[1] = COLORS.back;
+      LINE_COLORS[2] = COLORS.accent;
+    } catch (e) {
+      console.warn('Failed to dynamically update chart colors:', e);
+    }
+  }
 
   // ============================================================
   // 工具函数
@@ -150,6 +175,7 @@
    * @param {string} zone - 'front' 或 'back'
    */
   function drawFrequencyChart(canvasId, freqData, zone = 'front') {
+    updateColors();
     _trackChart(canvasId, drawFrequencyChart, [canvasId, freqData, zone]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;
@@ -300,6 +326,7 @@
    * 绘制当前遗漏值横向柱状图
    */
   function drawGapChart(canvasId, gapData, zone = 'front') {
+    updateColors();
     _trackChart(canvasId, drawGapChart, [canvasId, gapData, zone]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;
@@ -414,6 +441,7 @@
    * @param {number[]} selectedNumbers - 选中要查看的号码
    */
   function drawTrendChart(canvasId, data, selectedNumbers = []) {
+    updateColors();
     _trackChart(canvasId, drawTrendChart, [canvasId, data, selectedNumbers]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;
@@ -507,6 +535,7 @@
    * 绘制和值分布直方图
    */
   function drawSumDistribution(canvasId, sumData) {
+    updateColors();
     _trackChart(canvasId, drawSumDistribution, [canvasId, sumData]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;
@@ -631,6 +660,7 @@
    * @param {string} title - 图表标题
    */
   function drawPieChart(canvasId, ratioData, title) {
+    updateColors();
     _trackChart(canvasId, drawPieChart, [canvasId, ratioData, title]);
     const setup = setupCanvas(canvasId);
     if (!setup) return;

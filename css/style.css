@@ -5,36 +5,6 @@
 
 /* ========== CSS Variables ========== */
 :root {
-  /* Colors */
-  --bg-primary: #0d1010;
-  --bg-secondary: #151917;
-  --bg-tertiary: #1d2421;
-  --card-bg: rgba(255, 255, 255, 0.045);
-  --card-bg-hover: rgba(255, 255, 255, 0.075);
-  --card-border: rgba(238, 245, 239, 0.1);
-  --card-border-hover: rgba(238, 245, 239, 0.18);
-
-  --text-primary: #edf3ef;
-  --text-secondary: #a7b3ad;
-  --text-muted: #829089;
-
-  --accent: #31d997;
-  --accent-dim: rgba(49, 217, 151, 0.14);
-
-  --front-start: #ff7a45;
-  --front-end: #e7354f;
-  --front-glow: rgba(231, 53, 79, 0.32);
-  --back-start: #36c5f0;
-  --back-end: #2776c7;
-  --back-glow: rgba(54, 197, 240, 0.3);
-
-  --hot: #ef4444;
-  --cold: #3b82f6;
-  --warm: #f59e0b;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-
   /* Spacing */
   --space-xs: 4px;
   --space-sm: 8px;
@@ -45,8 +15,8 @@
 
   /* Radius */
   --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
   --radius-full: 50%;
 
   /* Transitions */
@@ -55,14 +25,122 @@
   --transition-slow: 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 
   /* Shadows */
-  --shadow-card: 0 10px 30px rgba(0, 0, 0, 0.28);
-  --shadow-ball: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-glow-front: 0 0 18px rgba(231, 53, 79, 0.26);
-  --shadow-glow-back: 0 0 18px rgba(54, 197, 240, 0.24);
+  --shadow-card: 0 12px 40px rgba(0, 0, 0, 0.35);
+  --shadow-ball: 0 6px 16px rgba(0, 0, 0, 0.35);
 
   /* Font */
   --font-heading: 'Outfit', sans-serif;
   --font-body: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* ========== Theme Configurations ========== */
+/* 1. Super Lotto Theme (Emerald Dark Green) */
+/* ========== Theme Configurations ========== */
+/* 1. Default & Super Lotto Theme (Emerald Dark Green) */
+:root,
+body,
+body.theme-dlt {
+  --bg-primary: #060a08;
+  --bg-secondary: #0c120f;
+  --bg-tertiary: #131d18;
+  --card-bg: rgba(12, 18, 15, 0.5);
+  --card-bg-hover: rgba(19, 29, 24, 0.65);
+  --card-border: rgba(0, 255, 157, 0.08);
+  --card-border-hover: rgba(0, 255, 157, 0.22);
+
+  --text-primary: #f0f7f4;
+  --text-secondary: #a4b8ad;
+  --text-muted: #728a7e;
+
+  --accent: #00ff9d;
+  --accent-dim: rgba(0, 255, 157, 0.12);
+
+  --front-start: #ff4d4f;
+  --front-end: #cf1322;
+  --front-glow: rgba(255, 77, 79, 0.3);
+  --back-start: #1890ff;
+  --back-end: #096dd9;
+  --back-glow: rgba(24, 144, 255, 0.3);
+
+  --hot: #ff4d4f;
+  --cold: #1890ff;
+  --warm: #faad14;
+  --success: #52c41a;
+  --warning: #faad14;
+  --danger: #ff4d4f;
+
+  --shadow-glow-front: 0 0 16px rgba(255, 77, 79, 0.22);
+  --shadow-glow-back: 0 0 16px rgba(24, 144, 255, 0.22);
+}
+
+/* 2. PL3 Theme (Amber Wealth Gold) */
+body.theme-pl3 {
+  --bg-primary: #0f0c08;
+  --bg-secondary: #17120c;
+  --bg-tertiary: #221a11;
+  --card-bg: rgba(23, 18, 12, 0.55);
+  --card-bg-hover: rgba(34, 26, 17, 0.7);
+  --card-border: rgba(251, 191, 36, 0.08);
+  --card-border-hover: rgba(251, 191, 36, 0.22);
+
+  --text-primary: #fbf9f5;
+  --text-secondary: #c9bfb1;
+  --text-muted: #8c8273;
+
+  --accent: #ffb700;
+  --accent-dim: rgba(255, 183, 0, 0.12);
+
+  --front-start: #ffb700;
+  --front-end: #e65c00;
+  --front-glow: rgba(255, 183, 0, 0.3);
+  --back-start: #facc15;
+  --back-end: #ca8a04;
+  --back-glow: rgba(250, 204, 21, 0.25);
+
+  --hot: #ff3b30;
+  --cold: #007aff;
+  --warm: #ffb700;
+  --success: #ffacc8;
+  --warning: #ffb700;
+  --danger: #ff3b30;
+
+  --shadow-glow-front: 0 0 16px rgba(255, 183, 0, 0.22);
+  --shadow-glow-back: 0 0 16px rgba(250, 204, 21, 0.2);
+}
+
+/* 3. World Cup Theme (Tri-Nation Fusion - US Blue, Canada Red, Mexico Green) */
+body.theme-worldcup {
+  --bg-primary: #070b14;
+  --bg-secondary: #0d1222;
+  --bg-tertiary: #141b33;
+  --card-bg: rgba(13, 18, 34, 0.5);
+  --card-bg-hover: rgba(20, 27, 51, 0.65);
+  --card-border: rgba(255, 71, 87, 0.12);
+  --card-border-hover: rgba(255, 71, 87, 0.28);
+
+  --text-primary: #f2f5fa;
+  --text-secondary: #a8b3cc;
+  --text-muted: #737f99;
+
+  --accent: #ff4757; /* Canada Red */
+  --accent-dim: rgba(255, 71, 87, 0.15);
+
+  --front-start: #00a86b; /* Mexico Green */
+  --front-end: #05c46b;
+  --front-glow: rgba(0, 168, 107, 0.25);
+  --back-start: #2f80ed; /* USA Blue */
+  --back-end: #00d2ff;
+  --back-glow: rgba(47, 128, 237, 0.25);
+
+  --hot: #ff4757;
+  --cold: #2f80ed;
+  --warm: #f1c40f;
+  --success: #00a86b;
+  --warning: #ffb700;
+  --danger: #ff4757;
+
+  --shadow-glow-front: 0 0 18px rgba(0, 168, 107, 0.22);
+  --shadow-glow-back: 0 0 18px rgba(47, 128, 237, 0.22);
 }
 
 /* ========== Reset & Base ========== */
@@ -81,48 +159,92 @@ html {
 
 body {
   font-family: var(--font-body);
-  background:
-    linear-gradient(180deg, rgba(49, 217, 151, 0.05), transparent 280px),
-    var(--bg-primary);
+  background: var(--bg-primary); /* Use theme-specific bg-primary by default */
   color: var(--text-primary);
   line-height: 1.6;
-  min-height: 100dvh;
+  min-height: 100vh;
   overflow-x: hidden;
+  transition: background var(--transition-slow);
+}
+
+body.theme-dlt {
+  background:
+    linear-gradient(180deg, rgba(0, 255, 157, 0.04), transparent 400px),
+    var(--bg-primary);
+}
+
+body.theme-pl3 {
+  background:
+    linear-gradient(180deg, rgba(255, 183, 0, 0.03), transparent 400px),
+    var(--bg-primary);
+}
+
+body.theme-worldcup {
+  background:
+    radial-gradient(circle at 10% 20%, rgba(0, 168, 107, 0.06), transparent 50%),
+    radial-gradient(circle at 90% 10%, rgba(255, 71, 87, 0.06), transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(47, 128, 237, 0.05), transparent 60%),
+    var(--bg-primary);
 }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: rgba(0, 0, 0, 0.2);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.16);
 }
 
 /* ========== App Container ========== */
 .app {
   position: relative;
   z-index: 1;
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 0 var(--space-md);
+  padding: 0 var(--space-md) var(--space-2xl) var(--space-md);
+  min-height: 100vh;
+  background: transparent; /* Inherits body background */
 }
 
 /* ========== Header ========== */
 .header {
-  padding: var(--space-lg) 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(6, 10, 8, 0.65);
   border-bottom: 1px solid var(--card-border);
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding: var(--space-md) 0;
+  transition: background var(--transition-slow), border-color var(--transition-slow);
+  width: 100%;
+}
+
+body.theme-dlt .header {
+  background: rgba(6, 10, 8, 0.65);
+}
+
+body.theme-pl3 .header {
+  background: rgba(15, 12, 8, 0.65);
+}
+
+body.theme-worldcup .header {
+  background: rgba(7, 11, 20, 0.65);
 }
 
 .header-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -229,17 +351,6 @@ body {
   color: var(--text-muted);
 }
 
-/* ========== Data Lag Tip ========== */
-.data-lag-tip {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-  opacity: 0.7;
-  text-align: center;
-  padding-top: var(--space-xs);
-  width: 100%;
-  user-select: none;
-  pointer-events: none;
-}
 
 /* ========== Navigation Tabs ========== */
 .nav-tabs {
@@ -297,21 +408,68 @@ body {
   display: block;
 }
 
+/* Home Section Column Layouts */
+.home-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.home-left-col .card {
+  margin-bottom: 0;
+}
+
+/* Desktop Grid Layout for Home Section */
+@media (min-width: 1024px) {
+  #sectionHome.section.active {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: var(--space-lg);
+    align-items: stretch;
+  }
+
+  .home-left-col {
+    grid-column: 1;
+    height: 100%;
+    justify-content: space-between;
+  }
+
+  #sectionHome.section.active .recent-draws.card {
+    grid-column: 2;
+    height: 100%;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #sectionHome.section.active .recent-draws.card .draws-list {
+    flex-grow: 1;
+    justify-content: space-between;
+  }
+
+  #sectionHome.section.active .prize-rules.card {
+    grid-column: 1 / span 2;
+    margin-bottom: 0;
+  }
+}
+
 /* ========== Cards ========== */
 .card {
-  background: var(--card-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   margin-bottom: var(--space-lg);
-  transition: border-color var(--transition-normal), box-shadow var(--transition-normal);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 8px 32px rgba(0, 0, 0, 0.24);
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal), background var(--transition-normal);
 }
 
 .card:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
   border-color: var(--card-border-hover);
-  box-shadow: var(--shadow-card);
+  box-shadow: inset 0 1px 1.5px rgba(255, 255, 255, 0.08), var(--shadow-card);
 }
 
 .empty-state,
@@ -363,39 +521,57 @@ body {
   border-radius: var(--radius-full);
   font-family: var(--font-heading);
   font-size: 1.2rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #fff;
-  animation: ballBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   position: relative;
-  cursor: default;
+  cursor: pointer;
   user-select: none;
+  border: none;
+  transition: box-shadow var(--transition-fast), filter var(--transition-fast);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
 }
 
 .ball.front {
-  background: linear-gradient(145deg, var(--front-start), var(--front-end));
+  background: radial-gradient(circle at 35% 35%, var(--front-start) 4%, var(--front-end) 85%);
   box-shadow:
-    inset 0 -3px 6px rgba(0, 0, 0, 0.2),
-    inset 0 3px 6px rgba(255, 255, 255, 0.15),
+    inset -3px -3px 8px rgba(0, 0, 0, 0.4),
+    inset 3px 3px 8px rgba(255, 255, 255, 0.25),
     var(--shadow-glow-front);
 }
 
-.ball.back {
-  background: linear-gradient(145deg, var(--back-start), var(--back-end));
+.ball.front:hover {
   box-shadow:
-    inset 0 -3px 6px rgba(0, 0, 0, 0.2),
-    inset 0 3px 6px rgba(255, 255, 255, 0.15),
+    inset -3px -3px 8px rgba(0, 0, 0, 0.4),
+    inset 3px 3px 8px rgba(255, 255, 255, 0.35),
+    0 0 20px var(--front-start);
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
+}
+
+.ball.back {
+  background: radial-gradient(circle at 35% 35%, var(--back-start) 4%, var(--back-end) 85%);
+  box-shadow:
+    inset -3px -3px 8px rgba(0, 0, 0, 0.4),
+    inset 3px 3px 8px rgba(255, 255, 255, 0.25),
     var(--shadow-glow-back);
+}
+
+.ball.back:hover {
+  box-shadow:
+    inset -3px -3px 8px rgba(0, 0, 0, 0.4),
+    inset 3px 3px 8px rgba(255, 255, 255, 0.35),
+    0 0 20px var(--back-start);
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.45));
 }
 
 /* 3D highlight */
 .ball::before {
   content: '';
   position: absolute;
-  top: 6px;
-  left: 12px;
-  width: 16px;
-  height: 10px;
-  background: radial-gradient(ellipse, rgba(255,255,255,0.45), transparent);
+  top: 5px;
+  left: 10px;
+  width: 14px;
+  height: 8px;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.05) 80%);
   border-radius: 50%;
 }
 
@@ -439,35 +615,120 @@ body {
 
 /* ========== Latest Draw (Hero) ========== */
 .latest-draw {
-  background: linear-gradient(135deg, rgba(255, 122, 69, 0.08), rgba(49, 217, 151, 0.05));
-  border: 1px solid rgba(255, 122, 69, 0.16);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border: 1px solid var(--card-border);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    inset 0 1px 1px rgba(255, 255, 255, 0.05),
+    0 8px 32px rgba(0, 0, 0, 0.24);
+  transition: all var(--transition-normal);
+}
+
+.latest-draw::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, var(--accent-dim) 0%, transparent 70%);
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.8;
+  transition: opacity var(--transition-normal);
+}
+
+.latest-draw:hover::before {
+  opacity: 1.0;
 }
 
 .draw-result {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   gap: var(--space-md);
-  flex-wrap: wrap;
-  padding: var(--space-xl) 0;
+  padding: var(--space-lg) 0;
+  position: relative;
+  z-index: 1;
+}
+
+.draw-result-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+  padding: 16px 24px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.015);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: border-color var(--transition-normal), box-shadow var(--transition-normal), background var(--transition-normal);
+}
+
+.draw-result-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.draw-result-row.front-row {
+  border-left: 4px solid var(--front-start);
+  background: linear-gradient(90deg, rgba(255, 77, 79, 0.04) 0%, rgba(255, 77, 79, 0.005) 100%);
+  border-color: rgba(255, 77, 79, 0.1) rgba(255, 77, 79, 0.06) rgba(255, 77, 79, 0.06) var(--front-start);
+}
+
+.draw-result-row.front-row:hover {
+  border-color: rgba(255, 77, 79, 0.22) rgba(255, 77, 79, 0.12) rgba(255, 77, 79, 0.12) var(--front-start);
+  box-shadow: 0 6px 16px rgba(255, 77, 79, 0.08);
+}
+
+.draw-result-row.back-row {
+  border-left: 4px solid var(--back-start);
+  background: linear-gradient(90deg, rgba(24, 144, 255, 0.04) 0%, rgba(24, 144, 255, 0.005) 100%);
+  border-color: rgba(24, 144, 255, 0.1) rgba(24, 144, 255, 0.06) rgba(24, 144, 255, 0.06) var(--back-start);
+}
+
+.draw-result-row.back-row:hover {
+  border-color: rgba(24, 144, 255, 0.22) rgba(24, 144, 255, 0.12) rgba(24, 144, 255, 0.12) var(--back-start);
+  box-shadow: 0 6px 16px rgba(24, 144, 255, 0.08);
+}
+
+.theme-pl3 .draw-result-row.front-row {
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(90deg, rgba(255, 183, 0, 0.04) 0%, rgba(255, 183, 0, 0.005) 100%);
+  border-color: rgba(255, 183, 0, 0.1) rgba(255, 183, 0, 0.06) rgba(255, 183, 0, 0.06) var(--accent);
+}
+
+.theme-pl3 .draw-result-row.front-row:hover {
+  border-color: rgba(255, 183, 0, 0.22) rgba(255, 183, 0, 0.12) rgba(255, 183, 0, 0.12) var(--accent);
+  box-shadow: 0 6px 16px rgba(255, 183, 0, 0.08);
 }
 
 .zone-label {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  font-weight: 500;
-  letter-spacing: 0;
+  font-family: var(--font-heading);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  min-width: 60px;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+.zone-label.front-zone {
+  color: #fff;
+  background: rgba(255, 77, 79, 0.18);
+  border: 1px solid rgba(255, 77, 79, 0.35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.zone-label.back-zone {
+  color: #fff;
+  background: rgba(24, 144, 255, 0.18);
+  border: 1px solid rgba(24, 144, 255, 0.35);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .zone-divider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  color: var(--text-muted);
-  font-size: 1.2rem;
-  font-weight: 300;
+  display: none;
 }
 
 .draw-info {
@@ -1540,92 +1801,6 @@ body {
   transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ========== Backtest ========== */
-.backtest-summary {
-  font-size: 0.9rem;
-}
-
-.backtest-summary p {
-  margin-bottom: var(--space-md);
-  color: var(--text-secondary);
-}
-
-.backtest-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--space-md);
-  margin-bottom: var(--space-xl);
-}
-
-.backtest-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: var(--space-md);
-  background: rgba(255,255,255,0.03);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--card-border);
-}
-
-.bt-label {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-.bt-value {
-  font-family: var(--font-heading);
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--accent);
-}
-
-.backtest-detail h4 {
-  font-family: var(--font-heading);
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: var(--space-md);
-}
-
-.backtest-bars {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-  margin-bottom: var(--space-lg);
-}
-
-.bt-bar-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  min-width: 0;
-}
-
-.bt-bar-label {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  min-width: 70px;
-}
-
-.bt-bar-value {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  min-width: 180px;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-
-.bt-seed {
-  margin-left: var(--space-xs);
-  color: var(--text-muted);
-  font-size: 0.75rem;
-  font-weight: 400;
-}
-
-.bt-seed-list {
-  font-size: 0.76rem;
-  overflow-wrap: anywhere;
-}
 
 /* ========== Disclaimer ========== */
 .disclaimer {
@@ -1664,8 +1839,10 @@ body {
   top: 0;
   left: 0;
   width: 100%;
-  height: 100dvh;
-  background: var(--bg-primary);
+  height: 100vh;
+  background: rgba(6, 10, 8, 0.85);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1698,21 +1875,57 @@ body {
   margin: 0 auto;
 }
 
+/* ========== App Toast ========== */
+.app-toast {
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-15px);
+  z-index: 9999;
+  padding: 12px 28px;
+  background: rgba(13, 18, 34, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: var(--text-primary);
+  border: 1px solid var(--accent);
+  border-radius: 99px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  box-shadow: 
+    0 12px 36px rgba(0, 0, 0, 0.4), 
+    0 0 20px var(--accent-dim);
+  opacity: 0;
+  pointer-events: none;
+  transition: 
+    opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), 
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.theme-dlt .app-toast {
+  background: rgba(12, 18, 15, 0.88);
+}
+
+body.theme-pl3 .app-toast {
+  background: rgba(23, 18, 12, 0.88);
+}
+
+body.theme-worldcup .app-toast {
+  background: rgba(13, 18, 34, 0.88);
+}
+
+.app-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
 /* ========== Animations ========== */
-@keyframes ballBounce {
+@keyframes ballFadeIn {
   0% {
-    transform: scale(0) translateY(40px);
+    transform: translateY(8px);
     opacity: 0;
   }
-  60% {
-    transform: scale(1.15) translateY(-5px);
-    opacity: 1;
-  }
-  80% {
-    transform: scale(0.95) translateY(2px);
-  }
   100% {
-    transform: scale(1) translateY(0);
+    transform: translateY(0);
     opacity: 1;
   }
 }
@@ -1820,28 +2033,28 @@ body {
   }
 
   .draw-result {
-    display: grid;
-    grid-template-columns: auto 1fr;
-    align-items: center;
-    gap: var(--space-sm) var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     padding: var(--space-md) 0;
-    justify-content: start;
+  }
+
+  .draw-result-row {
+    padding: 10px 14px;
+    gap: var(--space-md);
+  }
+
+  .draw-result-row:hover {
+    transform: none;
   }
 
   .draw-result .zone-label {
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: var(--text-muted);
-    min-width: 32px;
-  }
-
-  .draw-result .zone-divider {
-    display: none;
+    min-width: 50px;
+    font-size: 0.72rem;
+    padding: 3px 6px;
   }
 
   .draw-result .ball-row {
-    justify-content: flex-start;
-    flex-wrap: wrap;
     gap: 6px;
   }
 
@@ -2519,57 +2732,36 @@ body {
 }
 
 /* ========== PL3 Theme & Dynamic Display Adaptations ========== */
-.theme-pl3 {
-  --front-start: #f59e0b;
-  --front-end: #ef4444;
-  --front-glow: rgba(245, 158, 11, 0.36);
-  --shadow-glow-front: 0 0 18px rgba(245, 158, 11, 0.26);
-  --accent: #fbbf24;
-  --accent-dim: rgba(251, 191, 36, 0.14);
-  --success: #fbbf24;
-}
-
 .theme-pl3 .logo-ball-red {
-  background: linear-gradient(135deg, #f59e0b, #ef4444);
-  box-shadow: 0 0 18px rgba(245, 158, 11, 0.28), 0 3px 6px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #ffb700, #e65c00);
+  box-shadow: 0 0 18px rgba(255, 183, 0, 0.28), 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
 .theme-pl3 .logo-ball-blue {
-  background: linear-gradient(135deg, #facc15, #fb923c);
+  background: linear-gradient(135deg, #facc15, #ca8a04);
   box-shadow: 0 0 18px rgba(250, 204, 21, 0.24), 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
-.theme-worldcup {
-  --front-start: #31d997;
-  --front-end: #36c5f0;
-  --front-glow: rgba(49, 217, 151, 0.34);
-  --shadow-glow-front: 0 0 18px rgba(49, 217, 151, 0.26);
-  --back-start: #36c5f0;
-  --back-end: #31d997;
-  --accent: #31d997;
-  --accent-dim: rgba(49, 217, 151, 0.14);
-}
-
 .theme-worldcup .logo-ball-red {
-  background: linear-gradient(135deg, #31d997, #36c5f0);
-  box-shadow: 0 0 18px rgba(49, 217, 151, 0.28), 0 3px 6px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #00a86b, #05c46b);
+  box-shadow: 0 0 18px rgba(0, 168, 107, 0.28), 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
 .theme-worldcup .logo-ball-blue {
-  background: linear-gradient(135deg, #36c5f0, #31d997);
-  box-shadow: 0 0 18px rgba(54, 197, 240, 0.24), 0 3px 6px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #2f80ed, #00d2ff);
+  box-shadow: 0 0 18px rgba(47, 128, 237, 0.24), 0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
 /* ========== Lottery Switcher ========== */
 .lottery-selector {
   display: flex;
   position: relative;
-  width: min(100%, 430px);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--radius-md);
-  padding: 3px;
-  gap: 2px;
+  width: min(100%, 460px);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
+  padding: 4px;
+  gap: 4px;
   z-index: 5;
   margin: 0 auto;
 }
@@ -2589,22 +2781,29 @@ body {
   background: transparent;
   color: var(--text-secondary);
   font-family: var(--font-heading);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 0.85rem;
-  padding: 8px 12px;
-  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  border-radius: 99px;
   cursor: pointer;
   z-index: 2;
-  transition: color var(--transition-normal), transform var(--transition-fast);
+  transition: color var(--transition-normal);
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+}
+
+.tab-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
 
 @media (max-width: 900px) {
   .selector-tab {
     flex: 1;
-    padding: 10px 0;
+    padding: 12px 0;
   }
 }
 
@@ -2618,14 +2817,14 @@ body {
 
 .selector-slider {
   position: absolute;
-  top: 3px;
-  left: 3px;
-  bottom: 3px;
-  width: calc((100% - 6px) / 3);
-  border-radius: var(--radius-sm);
+  top: 4px;
+  left: 4px;
+  bottom: 4px;
+  width: calc((100% - 8px) / 3);
+  border-radius: 99px;
   z-index: 1;
-  background: linear-gradient(135deg, #31d997, #36c5f0);
-  box-shadow: 0 2px 10px rgba(49, 217, 151, 0.28);
+  background: linear-gradient(135deg, #00ff9d, #1890ff);
+  box-shadow: 0 4px 15px rgba(0, 255, 157, 0.25);
   transition: transform var(--transition-normal), background var(--transition-normal), box-shadow var(--transition-normal);
 }
 
@@ -2634,19 +2833,19 @@ body {
 }
 
 .theme-pl3 .selector-slider {
-  transform: translateX(100%);
-  background: linear-gradient(135deg, #fbbf24, #ef4444);
-  box-shadow: 0 2px 10px rgba(251, 191, 36, 0.32);
+  transform: translateX(calc(100% + 4px));
+  background: linear-gradient(135deg, #ffb700, #ff4d4f);
+  box-shadow: 0 4px 15px rgba(255, 183, 0, 0.3);
 }
 
 .theme-worldcup .selector-tab.active {
-  color: #000;
+  color: #fff;
 }
 
 .theme-worldcup .selector-slider {
-  transform: translateX(200%);
-  background: linear-gradient(135deg, #31d997, #36c5f0);
-  box-shadow: 0 2px 10px rgba(49, 217, 151, 0.28);
+  transform: translateX(calc(200% + 8px));
+  background: linear-gradient(135deg, #ff4757, #2f80ed);
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.35);
 }
 
 .theme-worldcup .nav-tabs {
@@ -2662,6 +2861,7 @@ body {
 /* ========== Display Adapters for PL3 ========== */
 .theme-pl3 .zone-divider,
 .theme-pl3 .zone-label,
+.theme-pl3 .back-row,
 .theme-pl3 #latestBack,
 .theme-pl3 .draw-extra .extra-item:nth-child(2) {
   display: none !important;
@@ -4296,4 +4496,51 @@ body {
   color: var(--accent);
   text-align: center;
   transition: color var(--transition-normal);
+}
+
+/* ========== World Cup Theme Option 3 Overrides ========== */
+.theme-worldcup h2,
+.theme-worldcup h3,
+.theme-worldcup .wc-kicker,
+.theme-worldcup .logo-text h1,
+.theme-worldcup .selector-tab {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.theme-worldcup .wc-hero {
+  border: 1px solid rgba(255, 71, 87, 0.22) !important;
+  background: linear-gradient(135deg, rgba(255, 71, 87, 0.04), rgba(47, 128, 237, 0.04)) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.03), 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.theme-worldcup .wc-match-card {
+  border-left: 3px solid var(--front-start); /* Mexico Green */
+  border-right: 3px solid var(--back-start); /* USA Blue */
+  background: rgba(13, 18, 34, 0.45);
+}
+
+.theme-worldcup .wc-match-card:hover {
+  border-left-color: var(--front-end);
+  border-right-color: var(--back-end);
+  background: rgba(20, 27, 51, 0.6);
+  box-shadow: 
+    0 12px 30px rgba(0, 0, 0, 0.4), 
+    0 0 15px rgba(255, 71, 87, 0.15);
+}
+
+.theme-worldcup .wc-group-badge {
+  background: linear-gradient(135deg, var(--accent), #ff7a7a) !important; /* Canadian Red Gradient */
+  box-shadow: 0 4px 12px rgba(255, 71, 87, 0.25);
+}
+
+.theme-worldcup .wc-top-card {
+  border-top: 2px solid var(--accent);
+}
+
+.theme-worldcup .wc-group-tab.active {
+  background: var(--accent-dim) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+  box-shadow: 0 0 12px rgba(255, 71, 87, 0.25) !important;
 }

@@ -119,18 +119,18 @@
     }
   }
 
-  function showToast(message, duration = 2000) {
+  function showToast(message, duration = 2200) {
     let toast = document.getElementById('appToast');
     if (!toast) {
       toast = document.createElement('div');
       toast.id = 'appToast';
-      toast.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:9999;padding:8px 20px;background:var(--bg-tertiary);color:var(--accent);border:1px solid var(--accent);border-radius:var(--radius-md);font-size:0.85rem;opacity:0;transition:opacity 0.3s;pointer-events:none;';
+      toast.className = 'app-toast';
       document.body.appendChild(toast);
     }
     toast.textContent = message;
-    toast.style.opacity = '1';
+    toast.classList.add('visible');
     clearTimeout(toast._hideTimer);
-    toast._hideTimer = setTimeout(() => { toast.style.opacity = '0'; }, duration);
+    toast._hideTimer = setTimeout(() => { toast.classList.remove('visible'); }, duration);
   }
   function formatMoney(num) {
     if (!num) return '--';
@@ -321,9 +321,15 @@
   function applyLotteryCopy() {
     const cfg = getLotteryConfig();
     const appEl = document.getElementById('app');
-    appEl.classList.toggle('theme-pl3', state.currentLottery === 'pl3');
-    appEl.classList.toggle('theme-worldcup', isWorldCup());
-    appEl.classList.toggle('theme-dlt', state.currentLottery === 'dlt');
+    const bodyEl = document.body;
+    
+    [appEl, bodyEl].forEach(el => {
+      if (el) {
+        el.classList.toggle('theme-pl3', state.currentLottery === 'pl3');
+        el.classList.toggle('theme-worldcup', isWorldCup());
+        el.classList.toggle('theme-dlt', state.currentLottery === 'dlt');
+      }
+    });
 
     // Reset dataCount display state when switching
     setDisplay('dataCount', '');
@@ -378,7 +384,6 @@
     document.getElementById('historyBody').innerHTML = '';
     document.getElementById('historyPagination').innerHTML = '';
     document.getElementById('predictionsGrid').innerHTML = '';
-    document.getElementById('backtestResults').innerHTML = '';
     document.getElementById('trendSelector').innerHTML = '';
     document.getElementById('freqFrontSummary').innerHTML = '';
     document.getElementById('freqBackSummary').innerHTML = '';
@@ -386,7 +391,6 @@
     document.getElementById('hotcoldBackGrid').innerHTML = '';
     document.getElementById('sumStats').innerHTML = '';
     setDisplay('btnCopyAll', 'none');
-    setDisplay('backtestSection', 'none');
     resetStatsTabs();
   }
 
@@ -505,7 +509,7 @@
 
   function renderRecentDraws() {
     const list = document.getElementById('recentDrawsList');
-    const recent = state.data.slice(1, 11); // 最近10期（排除最新一期）
+    const recent = state.data.slice(1, 7); // 最近6期（排除最新一期）
     const showBack = !isPL3();
     if (recent.length === 0) {
       list.innerHTML = '<div class="empty-state">暂无近期开奖记录</div>';
@@ -932,7 +936,6 @@
       renderPredictionHistory();
 
       document.getElementById('btnCopyAll').style.display = 'inline-flex';
-      document.getElementById('backtestSection').style.display = 'block';
     } catch (error) {
       console.error('预测生成失败:', error);
       document.getElementById('predictionsGrid').innerHTML = '<div class="error-state">预测生成失败，请稍后重试。</div>';
@@ -1256,7 +1259,7 @@
       }
     } catch (err) {
       console.error('Fallback copy failed:', err);
-      alert('复制失败，请手动选择复制');
+      showToast('复制失败，请手动选择复制');
     }
   }
 
@@ -1394,12 +1397,12 @@
     const resultsContainer = document.getElementById('checkerResults');
     
     if (!inputVal) {
-      alert('请输入要比对的号码');
+      showToast('请输入要比对的号码');
       return;
     }
 
     if (state.data.length === 0) {
-      alert('开奖数据尚未加载成功，请稍后再试');
+      showToast('开奖数据尚未加载成功，请稍后再试');
       return;
     }
 
@@ -1516,260 +1519,7 @@
     resultsContainer.style.display = 'flex';
   }
 
-  async function runBacktest() {
-    if (state.data.length < 100) {
-      alert('数据量不足，需要至少 100 期数据进行回测');
-      return;
-    }
 
-    const btn = document.getElementById('btnBacktest');
-    const originalText = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = '多窗口回测中...';
-    document.getElementById('backtestResults').innerHTML = `
-      <div class="backtest-summary">
-        <p>正在进行 500/1000 期 × 5 seeds 滚动回测，请稍候...</p>
-      </div>
-    `;
-
-    await new Promise(resolve => setTimeout(resolve, 30));
-
-    try {
-      const results = Predictor.backtestSummaryReportAsync
-        ? await Predictor.backtestSummaryReportAsync(state.data, {
-            chunkSize: 10,
-            onProgress(progress) {
-              document.getElementById('backtestResults').innerHTML = `
-                <div class="backtest-summary">
-                  <p>正在进行 500/1000 期 × 5 seeds 滚动回测，已完成 ${progress.completed} / ${progress.total} 期 (${progress.percent}%)...</p>
-                </div>
-              `;
-            }
-          })
-        : Predictor.backtestSummaryReport(state.data);
-      renderBacktestResults(results);
-    } catch (error) {
-      console.error('回测失败:', error);
-      document.getElementById('backtestResults').innerHTML = `
-        <div class="backtest-summary">
-          <p>回测运行失败，请稍后重试。</p>
-        </div>
-      `;
-    } finally {
-      btn.disabled = false;
-      btn.textContent = originalText;
-    }
-  }
-
-  function renderBacktestComparison(results, isPl3) {
-    if (!results.strategyStats && !results.baselineStats) return '';
-
-    const baselineLabels = {
-      random: '纯随机基线',
-      constrainedRandom: '约束随机基线'
-    };
-    const denom = isPl3 ? 3 : 5;
-
-    function row(label, stat, type) {
-      if (!stat) return '';
-      const frontPct = Math.min(100, (stat.avgFrontMatch / denom) * 100).toFixed(1);
-      const value = isPl3
-        ? `${stat.avgFrontMatch.toFixed(3)} / 3`
-        : `${stat.avgFrontMatch.toFixed(3)} / 5 · ${stat.avgBackMatch.toFixed(3)} / 2`;
-      return `<div class="bt-bar-row ${type}">
-        <span class="bt-bar-label">${label}</span>
-        <div class="progress-bar"><div class="progress-fill" style="width: ${frontPct}%"></div></div>
-        <span class="bt-bar-value">${value}</span>
-      </div>`;
-    }
-
-    const strategyRows = Object.entries(results.strategyStats || {})
-      .map(([name, stat]) => row(STRATEGY_LABELS[name] || name, stat, 'strategy'))
-      .join('');
-    const baselineRows = Object.entries(results.baselineStats || {})
-      .map(([name, stat]) => row(baselineLabels[name] || name, stat, 'baseline'))
-      .join('');
-
-    return `
-      <div class="backtest-detail">
-        <h4>策略与基线对比 <span class="bt-seed">seed ${results.seed || '-'}</span></h4>
-        <div class="backtest-bars">
-          ${strategyRows}
-          ${baselineRows}
-        </div>
-      </div>
-    `;
-  }
-
-  function renderBacktestAggregateReport(report, isPl3) {
-    if (!report.windowReports || report.windowReports.length === 0) {
-      return `
-        <div class="backtest-summary">
-          <p>当前数据量不足，无法生成多窗口回测报告。</p>
-        </div>
-      `;
-    }
-
-    const baselineLabels = {
-      random: '纯随机基线',
-      constrainedRandom: '约束随机基线'
-    };
-    const strategyOrder = ['cold', 'hot', 'balanced', 'gap', 'random'];
-    const baselineOrder = ['random', 'constrainedRandom'];
-    const denom = isPl3 ? 3 : 5;
-
-    function fmt(value) {
-      return Number(value || 0).toFixed(3);
-    }
-
-    function row(label, stat, type) {
-      if (!stat) return '';
-      const frontPct = Math.min(100, (stat.avgFrontMatch / denom) * 100).toFixed(1);
-      const range = isPl3
-        ? `范围 ${fmt(stat.frontMin)}-${fmt(stat.frontMax)}`
-        : `前区范围 ${fmt(stat.frontMin)}-${fmt(stat.frontMax)}，后区范围 ${fmt(stat.backMin)}-${fmt(stat.backMax)}`;
-      const value = isPl3
-        ? `${fmt(stat.avgFrontMatch)} ± ${fmt(stat.frontStd)} / 3`
-        : `前 ${fmt(stat.avgFrontMatch)} ± ${fmt(stat.frontStd)} / 5 · 后 ${fmt(stat.avgBackMatch)} ± ${fmt(stat.backStd)} / 2`;
-
-      return `<div class="bt-bar-row ${type}">
-        <span class="bt-bar-label">${label}</span>
-        <div class="progress-bar"><div class="progress-fill" style="width: ${frontPct}%"></div></div>
-        <span class="bt-bar-value" title="${range}">${value}</span>
-      </div>`;
-    }
-
-    const windowsText = report.windows.join(' / ');
-    const seedsText = report.seeds.join(', ');
-    const windowHtml = report.windowReports.map(windowReport => {
-      const strategyStats = windowReport.summary.strategyStats || {};
-      const baselineStats = windowReport.summary.baselineStats || {};
-      const strategyRows = strategyOrder
-        .map(name => row(STRATEGY_LABELS[name] || name, strategyStats[name], 'strategy'))
-        .join('');
-      const baselineRows = baselineOrder
-        .map(name => row(baselineLabels[name] || name, baselineStats[name], 'baseline'))
-        .join('');
-
-      return `
-        <div class="backtest-detail">
-          <h4>${windowReport.window} 期窗口 <span class="bt-seed">${windowReport.seedCount} seeds</span></h4>
-          <div class="backtest-bars">
-            ${strategyRows}
-            ${baselineRows}
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    return `
-      <div class="backtest-summary">
-        <p>多 seed、多窗口汇总：窗口 <strong>${windowsText}</strong> 期，<strong>${report.seedCount}</strong> 个 seeds。</p>
-        <div class="backtest-grid">
-          <div class="backtest-item">
-            <span class="bt-label">回测窗口</span>
-            <span class="bt-value">${windowsText}</span>
-          </div>
-          <div class="backtest-item">
-            <span class="bt-label">随机种子</span>
-            <span class="bt-value">${report.seedCount}</span>
-          </div>
-        </div>
-        <p class="bt-seed-list">seeds: ${seedsText}</p>
-        ${windowHtml}
-      </div>
-    `;
-  }
-
-  function renderBacktestResults(results) {
-    const container = document.getElementById('backtestResults');
-    const isPl3 = isPL3();
-
-    if (results && results.reportType === 'multiSeedWindow') {
-      container.innerHTML = renderBacktestAggregateReport(results, isPl3);
-      return;
-    }
-
-    const comparisonHtml = renderBacktestComparison(results, isPl3);
-    
-    if (isPl3) {
-      container.innerHTML = `
-        <div class="backtest-summary">
-          <p>在最近 <strong>${results.totalTests}</strong> 期中进行位置命中回测验证：</p>
-          <div class="backtest-grid">
-            <div class="backtest-item">
-              <span class="bt-label">平均直选位置命中</span>
-              <span class="bt-value">${results.avgFrontMatch.toFixed(2)} / 3</span>
-            </div>
-          </div>
-          ${comparisonHtml}
-          <div class="backtest-detail">
-            <h4>直选命中位置数分布</h4>
-            <div class="backtest-bars">
-              ${Object.entries(results.matchStats)
-                .filter(([k]) => k.startsWith('front'))
-                .map(([k, v]) => {
-                  const n = k.replace('front', '');
-                  const pct = ((v / results.totalTests) * 100).toFixed(1);
-                  return `<div class="bt-bar-row">
-                    <span class="bt-bar-label">精准命中 ${n} 位</span>
-                    <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%"></div></div>
-                    <span class="bt-bar-value">${v} 次 (${pct}%)</span>
-                  </div>`;
-                }).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-    } else {
-      container.innerHTML = `
-        <div class="backtest-summary">
-          <p>在最近 <strong>${results.totalTests}</strong> 期中进行回测验证：</p>
-          <div class="backtest-grid">
-            <div class="backtest-item">
-              <span class="bt-label">平均前区命中</span>
-              <span class="bt-value">${results.avgFrontMatch.toFixed(2)} / 5</span>
-            </div>
-            <div class="backtest-item">
-              <span class="bt-label">平均后区命中</span>
-              <span class="bt-value">${results.avgBackMatch.toFixed(2)} / 2</span>
-            </div>
-          </div>
-          ${comparisonHtml}
-          <div class="backtest-detail">
-            <h4>前区命中分布</h4>
-            <div class="backtest-bars">
-              ${Object.entries(results.matchStats)
-                .filter(([k]) => k.startsWith('front'))
-                .map(([k, v]) => {
-                  const n = k.replace('front', '');
-                  const pct = ((v / results.totalTests) * 100).toFixed(1);
-                  return `<div class="bt-bar-row">
-                    <span class="bt-bar-label">命中 ${n} 个</span>
-                    <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%"></div></div>
-                    <span class="bt-bar-value">${v} 次 (${pct}%)</span>
-                  </div>`;
-                }).join('')}
-            </div>
-            <h4>后区命中分布</h4>
-            <div class="backtest-bars">
-              ${Object.entries(results.matchStats)
-                .filter(([k]) => k.startsWith('back'))
-                .map(([k, v]) => {
-                  const n = k.replace('back', '');
-                  const pct = ((v / results.totalTests) * 100).toFixed(1);
-                  return `<div class="bt-bar-row">
-                    <span class="bt-bar-label">命中 ${n} 个</span>
-                    <div class="progress-bar"><div class="progress-fill" style="width: ${pct}%"></div></div>
-                    <span class="bt-bar-value">${v} 次 (${pct}%)</span>
-                  </div>`;
-                }).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-    }
-  }
 
   // ==================== 事件绑定 ====================
   function bindEvents() {
@@ -2054,7 +1804,6 @@
     showWinningChecker,
     hideWinningChecker,
     checkCustomNumbers,
-    runBacktest,
     switchSection,
     switchLottery
   };
