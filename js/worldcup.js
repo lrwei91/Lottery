@@ -994,7 +994,7 @@
 
   function renderSquadPanel() {
     const options = sortedTeams().map(team => (
-      `<option value="${escapeHtml(team.country)}">${code(team.country)} ${escapeHtml(countryName(team.country))} · ${pct(team.final_prob, 1)}</option>`
+      `<option value="${escapeHtml(team.country)}">${code(team.country)} ${escapeHtml(countryName(team.country))}</option>`
     )).join('');
 
     return `
@@ -1002,7 +1002,6 @@
         <div class="card-header">
           <div>
             <h2>球队阵容</h2>
-            <p class="wc-desc">上游数据来自 Wikipedia 处理结果；无完整名单的球队使用源模型的样本阵容。</p>
           </div>
           <select class="wc-select" id="wcSquadSelect">${options}</select>
         </div>
@@ -1038,13 +1037,14 @@
     }
 
     // 2) 只统计双方都有数据的国家（live 模式下 POLY 覆盖广，static 模式下可能缺一些）
+    //    先按上游模型粗排（保证 fusedMap 算完后 rank 稳定），fusedMap 算完再切到按融合概率排
     const candidateTeams = sortedTeams().filter(team => marketMap[team.country] != null);
     if (!candidateTeams.length) {
     return `
       <div class="card">
         <div class="card-header">
           <div>
-            <h2>冠军概率 · 双源融合</h2>
+            <h2>冠军概率</h2>
             <p class="wc-desc">Polymarket outright 数据尚未同步，先看上游模型。</p>
           </div>
         </div>
@@ -1067,8 +1067,11 @@
       });
     }
 
-    // 4) 渲染每队行（3 柱条：模型 / Polymarket / 融合）
-    const rows = candidateTeams.map(team => {
+    // 4) 排名 + 渲染每队行（按融合概率降序，3 柱条：模型 / Polymarket / 融合）
+    const ranked = candidateTeams
+      .map(team => ({ team, fused: fusedMap[team.country] || 0 }))
+      .sort((a, b) => b.fused - a.fused);
+    const rows = ranked.map(({ team }, idx) => {
       const model = team.final_prob || 0;
       const market = marketMap[team.country];
       const fused = fusedMap[team.country] || 0;
@@ -1076,8 +1079,10 @@
       const fusionShift = fused - market;                     // 融合 vs 市场
       const ev = OddsUtils.ev.expectedValue(1 / market, model);
       const max = Math.max(model, market, fused, 0.001);
+      const rank = idx + 1;
       return `
         <div class="wc-market-row has-fused">
+          <span class="wc-rank ${idx < 3 ? 'top' : ''}" title="按融合概率排名">#${rank}</span>
           <span class="wc-code">${code(team.country)}</span>
           <span class="wc-team-name">${escapeHtml(countryName(team.country))}</span>
           <div class="wc-market-bars is-triple" title="上：上游模型 / 中：Polymarket / 下：双源融合">
@@ -1114,8 +1119,8 @@
       <div class="card">
         <div class="card-header">
           <div>
-            <h2>冠军概率 · 双源融合</h2>
-            <p class="wc-desc">上游模型（${(WEIGHT_MODEL * 100).toFixed(0)}%）+ Polymarket 冠军 outright 市场（${(WEIGHT_MARKET * 100).toFixed(0)}%）按权重加权后重新归一化。Polymarket 数据源：<b>${escapeHtml(marketSource)}</b>。Yes 价格 = 该国夺冠市场隐含概率（独立二元市场 Yes+No=1，无需去水）。EV = 融合概率 × (赔率 - 1) - (1 - 融合概率)，Kelly 按 1/4 仓位建议。</p>
+            <h2>冠军概率</h2>
+            <p class="wc-desc">上游模型（${(WEIGHT_MODEL * 100).toFixed(0)}%）+ Polymarket 冠军 outright 市场（${(WEIGHT_MARKET * 100).toFixed(0)}%）按权重加权后归一化。</p>
           </div>
         </div>
         <div class="wc-value-grid">
@@ -1872,7 +1877,6 @@
           <h3>${escapeHtml(countryName(team.country))}</h3>
           <p>Elo ${(team.elo || 0).toFixed(0)} · 修正 Elo ${(team.mod_elo || team.elo || 0).toFixed(0)} · ${players.length} players</p>
         </div>
-        <strong>${pct(team.final_prob, 2)}</strong>
       </div>
       ${players.length ? `
         <div class="table-wrapper">
