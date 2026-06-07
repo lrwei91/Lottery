@@ -322,20 +322,13 @@
   function findTeam(country) {
     const found = state.teams.find(team => team.country === country);
     if (found) return found;
-    // Alias fallback: try common variant names
+    // Alias fallback for name variants across data sources
     const aliases = {
       'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
       'Cabo Verde': 'Cape Verde',
     };
     const alias = aliases[country];
-    if (alias) {
-      const aliased = state.teams.find(team => team.country === alias);
-      if (aliased) return aliased;
-    }
-    // Fallback: partial match (e.g. "Bosnia" in name)
-    const fuzzy = state.teams.find(team => team.country.includes(country) || country.includes(team.country));
-    if (fuzzy) return fuzzy;
-    console.warn('[findTeam] not found:', country, '| available:', state.teams.map(t => t.country));
+    if (alias) return state.teams.find(team => team.country === alias) || null;
     return null;
   }
 
@@ -1694,7 +1687,9 @@
     return groups || '<div class="empty-state">暂无可比对球员数据。</div>';
   }
 
-  function showMatchPredictionModal(home, away, matchId = '') {
+  async function showMatchPredictionModal(home, away, matchId = '') {
+    // Load teams on demand if not yet loaded
+    if (state.teams.length === 0) await loadTeams();
     const teamA = findTeam(home);
     const teamB = findTeam(away);
     const scheduleMatch = findScheduleMatch(matchId, home, away);
