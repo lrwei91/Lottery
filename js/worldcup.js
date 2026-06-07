@@ -485,7 +485,6 @@
           <div>
             <span class="wc-kicker">2026 FIFA World Cup</span>
             <h2>世界杯预测中心</h2>
-            <p>整合 Elo 修正冠军概率、玄学因子、H2H 胜平负与 Poisson 比分矩阵，面向赛前推演和概率对照。</p>
           </div>
         </div>
         <div class="wc-top-strip" id="wcTopStrip"></div>
@@ -525,17 +524,13 @@
         <button class="wc-tab" data-wc-tab="factor">因子拆解</button>
         <button class="wc-tab" data-wc-tab="mystic">玄学分析</button>
         <button class="wc-tab" data-wc-tab="squad">球队阵容</button>
-        <button class="wc-tab" data-wc-tab="market">市场博弈</button>
-        <button class="wc-tab" data-wc-tab="info">模型说明</button>
       </div>
 
       <div class="wc-panel active" id="wcPanelMatches">${renderMatchPanel()}</div>
-      <div class="wc-panel" id="wcPanelChampion">${renderChampionPanel()}</div>
+      <div class="wc-panel" id="wcPanelChampion">${renderMarketPanel()}</div>
       <div class="wc-panel" id="wcPanelFactor">${renderFactorPanel()}</div>
       <div class="wc-panel" id="wcPanelMystic">${renderMysticPanel()}</div>
       <div class="wc-panel" id="wcPanelSquad">${renderSquadPanel()}</div>
-      <div class="wc-panel" id="wcPanelMarket">${renderMarketPanel()}</div>
-      <div class="wc-panel" id="wcPanelInfo">${renderInfoPanel()}</div>
     `;
 
     bindPanelEvents();
@@ -799,36 +794,9 @@
   }
 
   function renderChampionPanel() {
-    const rows = sortedTeams().map((team, index) => {
-      const probability = (team.final_prob || 0) * 100;
-      return `
-        <div class="wc-board-row">
-          <div class="wc-rank ${index < 3 ? `is-top-${index + 1}` : ''}">${index + 1}</div>
-          <div class="wc-code">${code(team.country)}</div>
-          <div class="wc-team-main">
-            <div class="wc-team-name">${escapeHtml(countryName(team.country))}</div>
-            <div class="wc-team-sub">Elo ${(team.elo || 0).toFixed(0)} · 修正 Elo ${(team.mod_elo || team.elo || 0).toFixed(0)}</div>
-            <div class="wc-progress"><span style="width:${Math.min(100, probability * 4).toFixed(1)}%"></span></div>
-          </div>
-          <div class="wc-prob">
-            <strong>${probability.toFixed(2)}%</strong>
-            <span class="${clsByShift(team.shift)}">${signedPct(team.shift)}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    return `
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2>冠军概率排行榜</h2>
-            <p class="wc-desc">上游模型将 Elo、年龄结构、大赛经验、近期状态、教练因素和玄学偏移合成为最终概率。</p>
-          </div>
-        </div>
-        <div class="wc-board">${rows}</div>
-      </div>
-    `;
+    // 整合自原「市场博弈」面板：双源融合 + 价值 picks + 完整排行榜
+    // （已删除独立的「冠军概率排行榜」和「市场博弈」两个 tab 重复）
+    return renderMarketPanel();
   }
 
   function renderFactorPanel() {
@@ -982,17 +950,17 @@
     // 2) 只统计双方都有数据的国家（live 模式下 POLY 覆盖广，static 模式下可能缺一些）
     const candidateTeams = sortedTeams().filter(team => marketMap[team.country] != null);
     if (!candidateTeams.length) {
-      return `
-        <div class="card">
-          <div class="card-header">
-            <div>
-              <h2>市场博弈 · 双源融合</h2>
-              <p class="wc-desc">Polymarket outright 数据尚未同步，先看上游模型。</p>
-            </div>
+    return `
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h2>冠军概率 · 双源融合</h2>
+            <p class="wc-desc">Polymarket outright 数据尚未同步，先看上游模型。</p>
           </div>
         </div>
-      `;
-    }
+      </div>
+    `;
+  }
 
     // 3) raw fusion + 归一化
     const rawFusion = {};
@@ -1056,7 +1024,7 @@
       <div class="card">
         <div class="card-header">
           <div>
-            <h2>市场博弈 · 双源融合</h2>
+            <h2>冠军概率 · 双源融合</h2>
             <p class="wc-desc">上游模型（${(WEIGHT_MODEL * 100).toFixed(0)}%）+ Polymarket 冠军 outright 市场（${(WEIGHT_MARKET * 100).toFixed(0)}%）按权重加权后重新归一化。Polymarket 数据源：<b>${escapeHtml(marketSource)}</b>。Yes 价格 = 该国夺冠市场隐含概率（独立二元市场 Yes+No=1，无需去水）。EV = 融合概率 × (赔率 - 1) - (1 - 融合概率)，Kelly 按 1/4 仓位建议。</p>
           </div>
         </div>
@@ -1071,49 +1039,6 @@
           `).join('') || '<div class="empty-state">当前没有超过 1% 的正向偏离。</div>'}
         </div>
         <div class="wc-market-list">${rows}</div>
-      </div>
-    `;
-  }
-
-  function renderInfoPanel() {
-    const matchMeta = state.matchesData?.metadata || {};
-    const scheduleSourceName = matchMeta.sourceName || 'FIFA public calendar API';
-    const scheduleUpdatedAt = formatDateTime(matchMeta.lastUpdated);
-    return `
-      <div class="card">
-        <div class="card-header">
-          <div>
-            <h2>模型说明</h2>
-            <p class="wc-desc">迁移自 mikobinbin/2026-world-cup-predictor，已适配 Lottery 的静态文件结构。</p>
-          </div>
-        </div>
-        <div class="wc-info-grid">
-          <div class="wc-info-block">
-            <h3>数据来源</h3>
-            <p>球队与概率基础数据来自源项目输出；小组赛赛程、场馆、比分状态和可用历史交锋来自 FIFA 官方公开接口。</p>
-          </div>
-          <div class="wc-info-block">
-            <h3>冠军概率</h3>
-            <p>使用修正 Elo、年龄结构、大赛经验、近期状态、教练因素和 Monte Carlo/Logistic 混合校准输出。</p>
-          </div>
-          <div class="wc-info-block">
-            <h3>对战预测</h3>
-            <p>胜平负基于修正 Elo 差值，比分矩阵基于 Poisson xG；这些是模型推演，不等同于官方赛果或赔率。</p>
-          </div>
-          <div class="wc-info-block">
-            <h3>赛程同步</h3>
-            <p>${escapeHtml(scheduleSourceName)} 每日同步到 <code>data/worldcup_matches.json</code>；最近同步：${scheduleUpdatedAt}。</p>
-          </div>
-          <div class="wc-info-block">
-            <h3>静态迁移</h3>
-            <p>Python 模型输出已固化为 <code>data/worldcup_2026.json</code>，前端不依赖 Streamlit、Gradio 或 Python 服务。</p>
-          </div>
-        </div>
-        <div class="wc-source-line">
-          <span>源仓库：<a href="${escapeHtml(state.metadata?.sourceRepo || '#')}" target="_blank" rel="noopener">2026-world-cup-predictor</a></span>
-          <span>源提交：${escapeHtml(state.metadata?.sourceCommit || '--')}</span>
-          <span>生成时间：${formatDateTime(state.metadata?.generatedAt)}</span>
-        </div>
       </div>
     `;
   }
