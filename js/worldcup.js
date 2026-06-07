@@ -1544,6 +1544,8 @@
       const ph = (p.probs.home * 100).toFixed(1);
       const pd = (p.probs.draw * 100).toFixed(1);
       const pa = (p.probs.away * 100).toFixed(1);
+      // 段太窄（<10%）不显示数字，避免溢出/截断
+      const showText = (n) => parseFloat(n) >= 10;
       return `<div class="wc-ensemble-source">
         <div class="wc-ensemble-source-head">
           <span class="wc-ensemble-icon">${p.icon}</span>
@@ -1551,11 +1553,10 @@
           <span class="wc-ensemble-weight">${actualWeight.toFixed(0)}% 权重</span>
         </div>
         <div class="wc-ensemble-bars">
-          <span style="width:${ph}%" title="主胜 ${ph}%"></span>
-          <i style="width:${pd}%" title="平 ${pd}%"></i>
-          <b style="width:${pa}%" title="客胜 ${pa}%"></b>
+          <span style="width:${ph}%" title="主胜 ${ph}%">${showText(ph) ? '主 ' + ph + '%' : ''}</span>
+          <i style="width:${pd}%" title="平 ${pd}%">${showText(pd) ? '平 ' + pd + '%' : ''}</i>
+          <b style="width:${pa}%" title="客胜 ${pa}%">${showText(pa) ? '客 ' + pa + '%' : ''}</b>
         </div>
-        <div class="wc-ensemble-detail">主 ${ph}% · 平 ${pd}% · 客 ${pa}%</div>
       </div>`;
     }).join('');
 
