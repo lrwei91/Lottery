@@ -1,0 +1,226 @@
+{
+  "generatedAt": "2026-06-07T13:50:43.033Z",
+  "provider": "xiaomi",
+  "model": "mimo-v2.5-pro",
+  "endpoint": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
+  "temperature": 0.3,
+  "matchCount": 24,
+  "predictions": [
+    {
+      "matchId": "400021443",
+      "homeWinProb": 0.45,
+      "drawProb": 0.25,
+      "awayWinProb": 0.3,
+      "predictedOutcome": "home",
+      "confidence": 0.65,
+      "reasoning": "墨西哥坐镇主场且Elo评分高于南非，具备一定优势，但世界杯首场比赛不确定性高，平局或客胜也需考虑。"
+    },
+    {
+      "matchId": "400021441",
+      "homeWinProb": 0.4,
+      "drawProb": 0.28,
+      "awayWinProb": 0.32,
+      "predictedOutcome": "home",
+      "confidence": 0.6,
+      "reasoning": "韩国Elo评分略高于捷克，且有丰富的世界杯经验，但在中立场地比赛，优势并不明显，比赛可能十分胶着。"
+    },
+    {
+      "matchId": "400021449",
+      "homeWinProb": 0.42,
+      "drawProb": 0.26,
+      "awayWinProb": 0.32,
+      "predictedOutcome": "home",
+      "confidence": 0.62,
+      "reasoning": "加拿大作为东道主之一，Elo评分与波黑接近。主场气氛会是助力，但波黑队实力不容小觑，比赛胜负难料。"
+    },
+    {
+      "matchId": "400021458",
+      "homeWinProb": 0.55,
+      "drawProb": 0.22,
+      "awayWinProb": 0.23,
+      "predictedOutcome": "home",
+      "confidence": 0.7,
+      "reasoning": "美国队Elo评分显著高于巴拉圭，且坐拥主场之利。球队实力和主场优势叠加，使其成为本场更被看好的一方。"
+    },
+    {
+      "matchId": "400021447",
+      "homeWinProb": 0.15,
+      "drawProb": 0.2,
+      "awayWinProb": 0.65,
+      "predictedOutcome": "away",
+      "confidence": 0.75,
+      "reasoning": "瑞士队Elo评分远高于卡塔尔，是公认的强队。尽管在中立场地，瑞士队的实力和经验仍使其占据压倒性优势。"
+    },
+    {
+      "matchId": "400021456",
+      "homeWinProb": 0.6,
+      "drawProb": 0.2,
+      "awayWinProb": 0.2,
+      "predictedOutcome": "home",
+      "confidence": 0.8,
+      "reasoning": "巴西队Elo评分和夺冠概率均位列榜首，实力远超摩洛哥。在中立场地，桑巴军团凭借个人能力有望轻松取胜。"
+    },
+    {
+      "matchId": "400021453",
+      "homeWinProb": 0.25,
+      "drawProb": 0.25,
+      "awayWinProb": 0.5,
+      "predictedOutcome": "away",
+      "confidence": 0.65,
+      "reasoning": "苏格兰Elo评分高于海地，整体实力和大赛经验更胜一筹。在中立场地，苏格兰有望占据优势并争取胜利。"
+    },
+    {
+      "matchId": "400021463",
+      "homeWinProb": 0.35,
+      "drawProb": 0.25,
+      "awayWinProb": 0.4,
+      "predictedOutcome": "away",
+      "confidence": 0.6,
+      "reasoning": "土耳其Elo评分略高于澳大利亚，但优势微弱。这是一场势均力敌的对决，土耳其在进攻端可能更具威胁。"
+    },
+    {
+      "matchId": "400021464",
+      "homeWinProb": 0.9,
+      "drawProb": 0.07,
+      "awayWinProb": 0.03,
+      "predictedOutcome": "home",
+      "confidence": 0.85,
+      "reasoning": "德国队作为传统强队，Elo评分远高于库拉索。双方实力差距巨大，德国队预计将轻松取得一场大胜。"
+    },
+    {
+      "matchId": "400021470",
+      "homeWinProb": 0.5,
+      "drawProb": 0.25,
+      "awayWinProb": 0.25,
+      "predictedOutcome": "home",
+      "confidence": 0.7,
+      "reasoning": "荷兰Elo评分高于日本，是传统劲旅。日本队技术细腻，但荷兰的整体实力和身体对抗可能使其略占上风。"
+    },
+    {
+      "matchId": "400021467",
+      "homeWinProb": 0.45,
+      "drawProb": 0.25,
+      "awayWinProb": 0.3,
+      "predictedOutcome": "home",
+      "confidence": 0.65,
+      "reasoning": "科特迪瓦与厄瓜多尔Elo评分接近，非洲球队身体出色，南美球队技术细腻。在中立场地，科特迪瓦可能稍占主动。"
+    },
+    {
+      "matchId": "400021474",
+      "homeWinProb": 0.48,
+      "drawProb": 0.26,
+      "awayWinProb": 0.26,
+      "predictedOutcome": "home",
+      "confidence": 0.68,
+      "reasoning": "瑞典Elo评分高于突尼斯，北欧球队战术纪律性强。但突尼斯队作风顽强，瑞典虽有优势，但比赛可能陷入苦战。"
+    },
+    {
+      "matchId": "400021482",
+      "homeWinProb": 0.92,
+      "drawProb": 0.05,
+      "awayWinProb": 0.03,
+      "predictedOutcome": "home",
+      "confidence": 0.88,
+      "reasoning": "西班牙是顶级强队，Elo评分远高于佛得角。双方实力不在一个层面，西班牙预计将主导比赛并轻松获胜。"
+    },
+    {
+      "matchId": "400021478",
+      "homeWinProb": 0.55,
+      "drawProb": 0.25,
+      "awayWinProb": 0.2,
+      "predictedOutcome": "home",
+      "confidence": 0.72,
+      "reasoning": "比利时Elo评分显著高于埃及。尽管埃及有萨拉赫等球星，但比利时的整体阵容深度和经验使其更被看好。"
+    },
+    {
+      "matchId": "400021486",
+      "homeWinProb": 0.2,
+      "drawProb": 0.22,
+      "awayWinProb": 0.58,
+      "predictedOutcome": "away",
+      "confidence": 0.73,
+      "reasoning": "乌拉圭Elo评分远高于沙特阿拉伯，是南美传统豪强。尽管沙特近年进步明显，但乌拉圭的实力和经验优势更大。"
+    },
+    {
+      "matchId": "400021476",
+      "homeWinProb": 0.65,
+      "drawProb": 0.2,
+      "awayWinProb": 0.15,
+      "predictedOutcome": "home",
+      "confidence": 0.75,
+      "reasoning": "伊朗Elo评分高于新西兰，且作风硬朗，防守稳固。在中立场地，伊朗凭借更强的整体实力有望占据上风。"
+    },
+    {
+      "matchId": "400021490",
+      "homeWinProb": 0.8,
+      "drawProb": 0.12,
+      "awayWinProb": 0.08,
+      "predictedOutcome": "home",
+      "confidence": 0.82,
+      "reasoning": "法国是夺冠大热门，Elo评分和模型概率均位列前三。塞内加尔虽为非洲劲旅，但与法国仍有显著的实力差距。"
+    },
+    {
+      "matchId": "400021488",
+      "homeWinProb": 0.3,
+      "drawProb": 0.25,
+      "awayWinProb": 0.45,
+      "predictedOutcome": "away",
+      "confidence": 0.67,
+      "reasoning": "挪威Elo评分高于伊拉克，且拥有哈兰德等顶级球星。尽管在中立场地，挪威队的进攻火力使其占据一定优势。"
+    },
+    {
+      "matchId": "400021496",
+      "homeWinProb": 0.78,
+      "drawProb": 0.13,
+      "awayWinProb": 0.09,
+      "predictedOutcome": "home",
+      "confidence": 0.83,
+      "reasoning": "阿根廷是卫冕冠军和夺冠热门，Elo评分极高。阿尔及利亚实力不弱，但与阿根廷相比，差距依然明显。"
+    },
+    {
+      "matchId": "400021498",
+      "homeWinProb": 0.75,
+      "drawProb": 0.15,
+      "awayWinProb": 0.1,
+      "predictedOutcome": "home",
+      "confidence": 0.8,
+      "reasoning": "奥地利修正Elo评分高达1858，远高于约旦。在中立场地，奥地利凭借更强的整体实力和球星质量有望轻松取胜。"
+    },
+    {
+      "matchId": "400021502",
+      "homeWinProb": 0.82,
+      "drawProb": 0.11,
+      "awayWinProb": 0.07,
+      "predictedOutcome": "home",
+      "confidence": 0.85,
+      "reasoning": "葡萄牙Elo评分很高，拥有C罗等巨星，实力远超刚果民主共和国。预计将是一场葡萄牙主导进攻并取胜的比赛。"
+    },
+    {
+      "matchId": "400021507",
+      "homeWinProb": 0.45,
+      "drawProb": 0.28,
+      "awayWinProb": 0.27,
+      "predictedOutcome": "home",
+      "confidence": 0.65,
+      "reasoning": "英格兰与克罗地亚是老对手，Elo评分接近。英格兰纸面实力稍强，但克罗地亚经验丰富，比赛很可能十分激烈。"
+    },
+    {
+      "matchId": "400021510",
+      "homeWinProb": 0.4,
+      "drawProb": 0.28,
+      "awayWinProb": 0.32,
+      "predictedOutcome": "home",
+      "confidence": 0.62,
+      "reasoning": "加纳与巴拿马Elo评分接近，风格迥异。在中立场地，非洲球队加纳可能凭借身体和速度上的优势取得微弱胜利。"
+    },
+    {
+      "matchId": "400021504",
+      "homeWinProb": 0.12,
+      "drawProb": 0.18,
+      "awayWinProb": 0.7,
+      "predictedOutcome": "away",
+      "confidence": 0.78,
+      "reasoning": "哥伦比亚Elo评分很高，位列夺冠赔率前列。乌兹别克斯坦实力有限，预计将难以抵挡哥伦比亚技术流的进攻。"
+    }
+  ]
+}
