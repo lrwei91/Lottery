@@ -376,13 +376,17 @@
         const participatingTeams = new Set();
         Object.keys(state.matchesData.groups).forEach(groupKey => {
           const g = state.matchesData.groups[groupKey];
-          if (g && g.teams) {
-            g.teams.forEach(team => participatingTeams.add(team));
-          }
+          if (g && g.teams) g.teams.forEach(t => participatingTeams.add(t));
         });
-        state.teams = rawTeams.filter(team => participatingTeams.has(team.country));
+        const aliases = { 'Bosnia-Herzegovina': 'Bosnia and Herzegovina', 'Cabo Verde': 'Cape Verde' };
+        state.teams = rawTeams.filter(team => {
+          if (participatingTeams.has(team.country)) return true;
+          return aliases[team.country] && participatingTeams.has(aliases[team.country]);
+        });
+        console.log('[loadData] teams after filter:', state.teams.length, '| participating:', [...participatingTeams]);
       } else {
         state.teams = rawTeams;
+        console.log('[loadData] no matchesData, loaded all', rawTeams.length, 'teams');
       }
       state.ucl = payload.ucl || {};
       const teams = sortedTeams();
@@ -1687,9 +1691,33 @@
     return groups || '<div class="empty-state">暂无可比对球员数据。</div>';
   }
 
+  async function loadTeamsOnly() {
+    // Silently load teams without loading overlay (used by modal)
+    try {
+      await loadMatches();
+      const res = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-cache' });
+      if (!res.ok) return;
+      const payload = await res.json();
+      const rawTeams = Array.isArray(payload.teams) ? payload.teams : [];
+      if (state.matchesData && state.matchesData.groups) {
+        const participatingTeams = new Set();
+        Object.keys(state.matchesData.groups).forEach(groupKey => {
+          const g = state.matchesData.groups[groupKey];
+          if (g && g.teams) g.teams.forEach(t => participatingTeams.add(t));
+        });
+        const aliases = { 'Bosnia-Herzegovina': 'Bosnia and Herzegovina', 'Cabo Verde': 'Cape Verde' };
+        state.teams = rawTeams.filter(team => {
+          if (participatingTeams.has(team.country)) return true;
+          return aliases[team.country] && participatingTeams.has(aliases[team.country]);
+        });
+      } else {
+        state.teams = rawTeams;
+      }
+    } catch (e) { /* silent */ }
+  }
+
   async function showMatchPredictionModal(home, away, matchId = '') {
-    // Load teams on demand if not yet loaded
-    if (state.teams.length === 0) await loadTeams();
+    if (state.teams.length === 0) await loadTeamsOnly();
     const teamA = findTeam(home);
     const teamB = findTeam(away);
     const scheduleMatch = findScheduleMatch(matchId, home, away);
