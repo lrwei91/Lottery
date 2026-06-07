@@ -1739,8 +1739,11 @@
         </div>
         <div class="modal-body wc-h2h-modal-body">
           <div class="wc-modal-prediction-title">
-            <h3>🤖 综合预测</h3>
-            <p>${dataSourcesBadge || '赛程和历史交锋来自 FIFA 官方接口；胜平负与比分为模型推演，仅作赛前数据参考。'}</p>
+            <div class="wc-modal-title-row">
+              <h3>🤖 综合预测</h3>
+              ${dataSourcesBadge}
+            </div>
+            <p>赛程和历史交锋来自 FIFA 官方接口；胜平负与比分为模型推演，仅作赛前数据参考。</p>
           </div>
           ${(() => {
             const ens = ensemblePredict(result, oddsMarket, polymarketEvent, llmPred);
