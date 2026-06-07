@@ -320,7 +320,17 @@
   }
 
   function findTeam(country) {
-    return state.teams.find(team => team.country === country);
+    const found = state.teams.find(team => team.country === country);
+    if (found) return found;
+    // Alias fallback: try common variant names
+    const aliases = {
+      'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
+      'Cabo Verde': 'Cape Verde',
+      'Ivory Coast': 'Ivory Coast',
+    };
+    const alias = aliases[country];
+    if (alias) return state.teams.find(team => team.country === alias);
+    return null;
   }
 
   function findScheduleMatch(matchId, home, away) {
