@@ -20,7 +20,8 @@
     selectedSquad: '',
     selectedGroup: 'TIME',
     countdownTimerId: null,
-    llmPredictions: null   // { generatedAt, model, predictions: [{matchId, ...}] }
+    llmPredictions: null,   // { generatedAt, model, predictions: [{matchId, ...}] }
+    oddsSnapshots: null     // { meta, polymarket, 'the-odds-api', 'football-data' }
   };
 
   const WORLD_CUP_START = new Date('2026-06-11T19:00:00Z');
@@ -346,8 +347,9 @@
       state.selectedSquad = teams[0]?.country || '';
       state.loaded = true;
       render();
-      // LLM 预测快照（fire-and-forget，加载完会自动 re-render）
+      // LLM 预测快照 + 实时数据快照（fire-and-forget，加载完会自动 re-render）
       loadLLMPredictions();
+      loadOddsSnapshots();
     } catch (error) {
       console.error('World Cup data load failed:', error);
       if (root) {
@@ -370,6 +372,62 @@
     } catch (e) {
       // 文件不存在是正常（用户还没跑 LLM）
     }
+  }
+
+  // 实时数据快照（Polymarket / The Odds API / football-data）
+  // 由 Vercel Cron 每天 0:00 UTC 写入 KV，前端直接 fetch
+  async function loadOddsSnapshots() {
+    try {
+      const res = await fetch('/api/odds/snapshots', { headers: { accept: 'application/json' } });
+      if (!res.ok) return;
+      const payload = await res.json();
+      state.oddsSnapshots = payload;
+    } catch (e) {
+      console.warn('odds 快照加载失败:', e);
+    }
+  }
+
+  // ============ 数据源查找 helpers ============
+  // The Odds API 找 h2h event：按 home + away country 匹配
+  function findOddsApiMatch(homeCountry, awayCountry) {
+    const payload = state.oddsSnapshots?.['the-odds-api'];
+    if (!payload || !Array.isArray(payload.events)) return null;
+    return payload.events.find(ev =>
+      ev.home === homeCountry && ev.away === awayCountry
+    ) || null;
+  }
+
+  // football-data 找已结束 / 进行中比赛
+  function findFootballDataMatch(matchId) {
+    const payload = state.oddsSnapshots?.['football-data'];
+    if (!payload || !Array.isArray(payload.matches)) return null;
+    return payload.matches.find(m => String(m.id) === String(matchId)) || null;
+  }
+
+  // LLM 预测查找
+  function findLLMPrediction(matchId) {
+    return state.llmPredictions?.predictions?.find(p => p.matchId === matchId) || null;
+  }
+
+  // 提取 The Odds API 的 h2h 主盘（最高赔率做代表）
+  function extractH2HMarket(oddsEvent) {
+    if (!oddsEvent || !oddsEvent.bookmakers) return null;
+    for (const bk of oddsEvent.bookmakers) {
+      const h2h = (bk.markets || []).find(m => m.key === 'h2h');
+      if (!h2h) continue;
+      const home = h2h.outcomes.find(o => o.name === oddsEvent.home);
+      const away = h2h.outcomes.find(o => o.name === oddsEvent.away);
+      const draw = h2h.outcomes.find(o => o.name === 'Draw');
+      if (home && away) {
+        return {
+          bookmaker: bk.title || bk.key,
+          home: { name: home.name, decimalOdds: home.decimalOdds },
+          draw: draw ? { name: draw.name, decimalOdds: draw.decimalOdds } : null,
+          away: { name: away.name, decimalOdds: away.decimalOdds }
+        };
+      }
+    }
+    return null;
   }
 
   async function loadMatches() {
@@ -1170,6 +1228,160 @@
     }).join('');
   }
 
+  // ============================================================
+  // 4 源综合预测（融合模型 + 赔率市场 + Polymarket + LLM）
+  // ============================================================
+  // 预设权重（缺源时按比例分给剩余）
+  const ENSEMBLE_WEIGHTS = { h2h: 0.30, odds: 0.30, poly: 0.20, llm: 0.20 };
+
+  function buildOddsApiProbs(market) {
+    // The Odds API 3 outcome (含平) → devig
+    if (!market) return null;
+    const items = [{ decimalOdds: market.home.decimalOdds }];
+    if (market.draw) items.push({ decimalOdds: market.draw.decimalOdds });
+    items.push({ decimalOdds: market.away.decimalOdds });
+    const fair = window.OddsUtils.devig.proportionalDevig(items);
+    return {
+      home: fair[0]?.fairProbability ?? 0,
+      draw: fair[1]?.fairProbability ?? 0,
+      away: fair[fair.length - 1]?.fairProbability ?? 0
+    };
+  }
+
+  function buildPolymarketProbs(event) {
+    // Polymarket 通常 2 outcome (Up/Down)，归一化到 home/away
+    if (!event || !Array.isArray(event.outcomes) || event.outcomes.length < 2) return null;
+    const odds = event.outcomes.map(o => ({ decimalOdds: o.decimalOdds || 1 }));
+    const fair = window.OddsUtils.devig.proportionalDevig(odds);
+    return {
+      home: fair[0]?.fairProbability ?? 0,
+      draw: 0,
+      away: 1 - (fair[0]?.fairProbability ?? 0)
+    };
+  }
+
+  function ensemblePredict(h2hResult, oddsMarket, polymarketEvent, llmPred) {
+    const parts = [];
+    // H2H 模型（必有，El 自算）
+    parts.push({
+      key: 'h2h', name: 'H2H 模型', icon: '🧠', weight: ENSEMBLE_WEIGHTS.h2h,
+      probs: { home: h2hResult.winA, draw: h2hResult.draw, away: h2hResult.winB },
+      detail: `Elo 差 ${h2hResult.diff.toFixed(0)}`
+    });
+    // The Odds API（机构盘口，去水后）
+    if (oddsMarket) {
+      const p = buildOddsApiProbs(oddsMarket);
+      if (p) {
+        parts.push({
+          key: 'odds', name: 'The Odds API', icon: '📊', weight: ENSEMBLE_WEIGHTS.odds,
+          probs: p,
+          detail: `${oddsMarket.bookmaker} · 主 ${oddsMarket.home.decimalOdds.toFixed(2)} / 平 ${oddsMarket.draw?.decimalOdds.toFixed(2) || '—'} / 客 ${oddsMarket.away.decimalOdds.toFixed(2)}`
+        });
+      }
+    }
+    // Polymarket（预测市场）
+    if (polymarketEvent) {
+      const p = buildPolymarketProbs(polymarketEvent);
+      if (p) {
+        const homeO = polymarketEvent.outcomes[0];
+        const awayO = polymarketEvent.outcomes[polymarketEvent.outcomes.length - 1];
+        parts.push({
+          key: 'poly', name: 'Polymarket', icon: '🌐', weight: ENSEMBLE_WEIGHTS.poly,
+          probs: p,
+          detail: `${polymarketEvent.outcomes.length} outcomes · ${homeO.name} vs ${awayO.name}`
+        });
+      }
+    }
+    // LLM（本地推理）
+    if (llmPred) {
+      parts.push({
+        key: 'llm', name: 'LLM 预测', icon: '🤖', weight: ENSEMBLE_WEIGHTS.llm,
+        probs: { home: llmPred.homeWinProb, draw: llmPred.drawProb, away: llmPred.awayWinProb },
+        detail: `${state.llmPredictions?.model || ''} · 置信度 ${(llmPred.confidence * 100).toFixed(0)}%`
+      });
+    }
+
+    // 加权融合
+    const totalW = parts.reduce((s, p) => s + p.weight, 0);
+    const final = { home: 0, draw: 0, away: 0 };
+    parts.forEach(p => {
+      const w = p.weight / totalW;
+      final.home += p.probs.home * w;
+      final.draw += p.probs.draw * w;
+      final.away += p.probs.away * w;
+    });
+    // 归一化（容差 0.01）
+    const sum = final.home + final.draw + final.away;
+    if (sum > 0) {
+      final.home /= sum; final.draw /= sum; final.away /= sum;
+    }
+
+    // 置信度：1 - 归一化熵
+    const H = -Object.values(final).reduce((s, p) => s + (p > 0 ? p * Math.log2(p) : 0), 0);
+    const maxH = Math.log2(3);
+    const confidence = maxH > 0 ? (1 - H / maxH) : 0;
+
+    return { final, parts, confidence };
+  }
+
+  function renderEnsembleCard(ensemble) {
+    const { final, parts, confidence } = ensemble;
+    const homePct = (final.home * 100).toFixed(1);
+    const drawPct = (final.draw * 100).toFixed(1);
+    const awayPct = (final.away * 100).toFixed(1);
+
+    // 推荐结果
+    const rec = final.home >= final.draw && final.home >= final.away ? 'home'
+              : final.away >= final.draw ? 'away' : 'draw';
+    const recLabel = rec === 'home' ? parts[0]?.detail ? `主胜` : '主胜'
+                    : rec === 'away' ? '客胜' : '平局';
+
+    // 各源贡献 = 权重 × 该源概率
+    const sourceRows = parts.map(p => {
+      const actualWeight = (p.weight / parts.reduce((s, x) => s + x.weight, 0)) * 100;
+      return `<div class="wc-ensemble-source">
+        <div class="wc-ensemble-source-head">
+          <span class="wc-ensemble-icon">${p.icon}</span>
+          <span class="wc-ensemble-name">${escapeHtml(p.name)}</span>
+          <span class="wc-ensemble-weight">${actualWeight.toFixed(0)}% 权重</span>
+        </div>
+        <div class="wc-ensemble-bars">
+          <span style="width:${(p.probs.home * 100).toFixed(1)}%" title="主胜"></span>
+          <i style="width:${(p.probs.draw * 100).toFixed(1)}%" title="平"></i>
+          <b style="width:${(p.probs.away * 100).toFixed(1)}%" title="客胜"></b>
+        </div>
+        <div class="wc-ensemble-detail">${escapeHtml(p.detail)}</div>
+      </div>`;
+    }).join('');
+
+    return `
+      <div class="wc-ensemble-card">
+        <div class="wc-ensemble-banner">
+          <div class="wc-ensemble-rec">
+            <span class="wc-ensemble-rec-label">📊 综合推荐</span>
+            <strong>${escapeHtml(recLabel)}</strong>
+          </div>
+          <div class="wc-ensemble-conf">
+            <span class="wc-ensemble-rec-label">🎯 综合置信度</span>
+            <strong>${(confidence * 100).toFixed(0)}%</strong>
+          </div>
+        </div>
+        <div class="wc-winbar wc-ensemble-winbar">
+          <span style="width:${homePct}%">${homePct}%</span>
+          <i style="width:${drawPct}%">${drawPct}%</i>
+          <b style="width:${awayPct}%">${awayPct}%</b>
+        </div>
+        <div class="wc-ensemble-h2h-metrics">
+          <div><span>主胜</span><strong>${homePct}%</strong></div>
+          <div><span>平局</span><strong>${drawPct}%</strong></div>
+          <div><span>客胜</span><strong>${awayPct}%</strong></div>
+        </div>
+        <h4>各源贡献分解</h4>
+        <div class="wc-ensemble-sources">${sourceRows}</div>
+      </div>
+    `;
+  }
+
   function playerMatchups(teamA, teamB) {
     const positions = [
       ['GK', '门将'],
@@ -1270,6 +1482,32 @@
       note: `FIFA 官方历史交锋统计，进球 ${officialH2h.goalsHome}-${officialH2h.goalsAway}。`
     } : null;
 
+    // 实时数据查找
+    const oddsApiEvent = findOddsApiMatch(home, away);
+    const oddsMarket = extractH2HMarket(oddsApiEvent);
+    const fdMatch = findFootballDataMatch(matchId);
+    const llmPred = findLLMPrediction(matchId);
+
+    // Polymarket h2h event（按 country 匹配，title 含双方国家名）
+    const polymarketEvent = (() => {
+      const payload = state.oddsSnapshots?.polymarket;
+      if (!payload || !Array.isArray(payload.events)) return null;
+      return payload.events.find(ev => {
+        const t = (ev.title || '').toLowerCase();
+        const nameA = countryName(teamA.country).toLowerCase();
+        const nameB = countryName(teamB.country).toLowerCase();
+        return t.includes(nameA) && t.includes(nameB);
+      }) || null;
+    })();
+
+    // LLM / Odds 数据可用性标记
+    const meta = state.oddsSnapshots?.meta || null;
+    const dataSourcesBadge = meta ? (() => {
+      const ts = new Date(meta.finishedAt || meta.startedAt);
+      const time = ts.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+      return `<span class="wc-h2h-meta" title="实时数据拉取于 ${escapeHtml(time)}">📡 实时数据 ${escapeHtml(time)}</span>`;
+    })() : '';
+
     modal.innerHTML = `
       <div class="modal-card card wc-h2h-modal-card">
         <div class="modal-header wc-h2h-modal-header">
@@ -1282,19 +1520,13 @@
         </div>
         <div class="modal-body wc-h2h-modal-body">
           <div class="wc-modal-prediction-title">
-            <h3>H2H 对战智能预测</h3>
-            <p>赛程和历史交锋来自 FIFA 官方接口；胜平负与比分为模型推演，仅作赛前数据参考。</p>
+            <h3>🤖 综合预测（4 源融合）</h3>
+            <p>${dataSourcesBadge || '赛程和历史交锋来自 FIFA 官方接口；胜平负与比分为模型推演，仅作赛前数据参考。'}</p>
           </div>
-          <div class="wc-winbar">
-            <span style="width:${aPct.toFixed(1)}%">${aPct.toFixed(1)}%</span>
-            <i style="width:${dPct.toFixed(1)}%">${dPct.toFixed(1)}%</i>
-            <b style="width:${bPct.toFixed(1)}%">${bPct.toFixed(1)}%</b>
-          </div>
-          <div class="wc-h2h-metrics">
-            <div><span>${code(teamA.country)} 胜</span><strong>${aPct.toFixed(1)}%</strong></div>
-            <div><span>平局</span><strong>${dPct.toFixed(1)}%</strong></div>
-            <div><span>${code(teamB.country)} 胜</span><strong>${bPct.toFixed(1)}%</strong></div>
-          </div>
+          ${(() => {
+            const ens = ensemblePredict(result, oddsMarket, polymarketEvent, llmPred);
+            return renderEnsembleCard(ens);
+          })()}
           <div class="wc-score-card">
             <div class="wc-expected">
               <span>${escapeHtml(countryName(teamA.country))} xG <strong>${scores.lambdaA.toFixed(2)}</strong></span>

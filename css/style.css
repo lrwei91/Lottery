@@ -4584,3 +4584,179 @@ body.theme-worldcup .app-toast {
   color: var(--accent) !important;
   box-shadow: 0 0 12px rgba(255, 71, 87, 0.25) !important;
 }
+
+/* ========== H2H Modal: 4-source Ensemble Card ========== */
+.wc-h2h-meta {
+  display: inline-block;
+  margin-left: var(--space-sm);
+  padding: 2px 10px;
+  border-radius: 99px;
+  background: rgba(54, 197, 240, 0.1);
+  border: 1px solid rgba(54, 197, 240, 0.22);
+  color: #36c5f0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.wc-ensemble-card {
+  background: linear-gradient(180deg, rgba(49, 217, 151, 0.06) 0%, rgba(49, 217, 151, 0.02) 100%);
+  border: 1px solid rgba(49, 217, 151, 0.18);
+  border-radius: var(--radius-md);
+  padding: var(--space-lg);
+  margin-bottom: var(--space-md);
+}
+
+.wc-ensemble-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px dashed rgba(49, 217, 151, 0.18);
+}
+
+.wc-ensemble-rec,
+.wc-ensemble-conf {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wc-ensemble-rec-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.wc-ensemble-rec strong,
+.wc-ensemble-conf strong {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: var(--accent);
+  font-family: var(--font-heading);
+}
+
+.wc-ensemble-conf strong {
+  color: var(--back-start);
+}
+
+.wc-ensemble-winbar {
+  margin-bottom: var(--space-md);
+}
+
+.wc-ensemble-h2h-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.wc-ensemble-h2h-metrics > div {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.wc-ensemble-h2h-metrics > div > span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  margin-bottom: 3px;
+}
+
+.wc-ensemble-h2h-metrics > div > strong {
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  font-family: var(--font-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+.wc-ensemble-card h4 {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: var(--space-sm);
+}
+
+.wc-ensemble-sources {
+  display: grid;
+  gap: 10px;
+}
+
+.wc-ensemble-source {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.wc-ensemble-source-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.wc-ensemble-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.wc-ensemble-name {
+  font-weight: 700;
+  font-size: 0.86rem;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.wc-ensemble-weight {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: 'SF Mono', 'Monaco', monospace;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+
+.wc-ensemble-bars {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 3px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.wc-ensemble-bars span {
+  display: block;
+  height: 100%;
+  background: var(--back-start);
+}
+
+.wc-ensemble-bars i {
+  display: block;
+  height: 100%;
+  background: var(--warning);
+  width: 0;
+  min-width: 0;
+}
+
+.wc-ensemble-bars b {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+
+.wc-ensemble-detail {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
