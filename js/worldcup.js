@@ -326,10 +326,16 @@
     const aliases = {
       'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
       'Cabo Verde': 'Cape Verde',
-      'Ivory Coast': 'Ivory Coast',
     };
     const alias = aliases[country];
-    if (alias) return state.teams.find(team => team.country === alias);
+    if (alias) {
+      const aliased = state.teams.find(team => team.country === alias);
+      if (aliased) return aliased;
+    }
+    // Fallback: partial match (e.g. "Bosnia" in name)
+    const fuzzy = state.teams.find(team => team.country.includes(country) || country.includes(team.country));
+    if (fuzzy) return fuzzy;
+    console.warn('[findTeam] not found:', country, '| available:', state.teams.map(t => t.country));
     return null;
   }
 
