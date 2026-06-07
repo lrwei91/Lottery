@@ -1,23 +1,25 @@
 /**
- * 三大数据源统一 cron endpoint
+ * 四大数据源统一 cron endpoint
  * 路由：
- *   POST /api/cron/sync-odds           # Vercel Cron 调用，拉所有源
- *   GET  /api/cron/sync-odds?source=…  # 手动触发单个
+ *   POST /api/cron/sync-odds                       # Vercel Cron 调用，拉所有源
+ *   GET  /api/cron/sync-odds?source=…              # 手动触发单个
  *
  * 数据源：
- *   - polymarket（POLYMARKET_PUBLIC_ENABLED=true 时启用）
- *   - the-odds-api（ODDS_API_KEY 时启用）
- *   - football-data（FOOTBALL_DATA_API_KEY 时启用）
+ *   - polymarket          （POLYMARKET_PUBLIC_ENABLED=true，h2h 单场）
+ *   - polymarket-outright （POLYMARKET_PUBLIC_ENABLED=true，冠军 outright 独立二元）
+ *   - the-odds-api        （ODDS_API_KEY）
+ *   - football-data       （FOOTBALL_DATA_API_KEY）
  *
  * 失败 fallback：
  *   - 任一源失败只 warn，不阻塞其他源
  *   - 没配置 env var 整源跳过
  *
  * 输出到 Vercel KV（@upstash/redis client）：
- *   odds:snapshot:polymarket    → 最新冠军市场
- *   odds:snapshot:the-odds-api  → 最新赔率
- *   odds:snapshot:football-data → 最新赛程+比分
- *   odds:snapshot:_meta         → 拉取时间 + 健康度
+ *   odds:snapshot:polymarket           → 最新 h2h 单场
+ *   odds:snapshot:polymarket-outright  → 最新冠军 outright（每国一个二元 Yes/No）
+ *   odds:snapshot:the-odds-api         → 最新赔率
+ *   odds:snapshot:football-data        → 最新赛程+比分
+ *   odds:snapshot:_meta                → 拉取时间 + 健康度
  */
 
 import { Redis } from '@upstash/redis';
@@ -34,6 +36,7 @@ function getRedis() {
 
 const KV_KEYS = {
   polymarket: 'odds:snapshot:polymarket',
+  'polymarket-outright': 'odds:snapshot:polymarket-outright',
   'the-odds-api': 'odds:snapshot:the-odds-api',
   'football-data': 'odds:snapshot:football-data',
   meta: 'odds:snapshot:_meta'
@@ -101,6 +104,64 @@ function parseJsonArray(v) {
     try { return JSON.parse(v); } catch (_) { return null; }
   }
   return null;
+}
+
+// ============================================================
+// Polymarket 冠军 outright 市场（独立二元 "Will X win the 2026 FIFA World Cup?"）
+// 不用单 event 多 outcome（Polymarket 的设计是 per-country 独立二元市场）
+// Yes 价格 ≈ 该国夺冠市场隐含概率；Yes + No = 1.0（无需 devig）
+// ============================================================
+async function fetchPolymarketOutright() {
+  const enabled = process.env.POLYMARKET_PUBLIC_ENABLED === 'true';
+  if (!enabled) return { skipped: true, reason: 'POLYMARKET_PUBLIC_ENABLED != true' };
+
+  const tagId = process.env.POLYMARKET_OUTRIGHT_TAG_ID || '100350'; // World Cup Winner
+  const limit = process.env.POLYMARKET_OUTRIGHT_LIMIT || '100';
+  const url = `https://gamma-api.polymarket.com/events?tag_id=${tagId}&active=true&closed=false&limit=${limit}`;
+
+  const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+  if (!res.ok) throw new Error(`Polymarket outright HTTP ${res.status}`);
+  const events = await res.json();
+
+  // 标准化：找出 "Will {Country} win the 2026 FIFA World Cup?" 模式
+  const countries = {};
+  let eventId = null;
+  let eventSlug = null;
+  let eventTitle = null;
+  let eventEnd = null;
+
+  (events || []).forEach(ev => {
+    (ev.markets || []).forEach(m => {
+      const names = parseJsonArray(m.outcomes);
+      const prices = parseJsonArray(m.outcomePrices);
+      if (!names || !prices || names.length !== prices.length) return;
+      const question = m.question || '';
+      // 匹配 "Will X win the 2026 FIFA World Cup?"
+      const match = question.match(/^Will\s+(.+?)\s+win the 2026 FIFA World Cup\??$/i);
+      if (!match) return;
+      const country = match[1].trim();
+      const yesIdx = names.findIndex(n => /^yes$/i.test(n));
+      const yesPrice = yesIdx >= 0 ? Number(prices[yesIdx] ?? 0) : 0;
+      if (!Number.isFinite(yesPrice) || yesPrice <= 0 || yesPrice >= 1) return;
+      countries[country] = { yesPrice, question };
+      // 记住父 event（用于展示）
+      if (!eventId) {
+        eventId = ev.id;
+        eventSlug = ev.slug;
+        eventTitle = ev.title;
+        eventEnd = ev.endDate;
+      }
+    });
+  });
+
+  return {
+    fetchedAt: new Date().toISOString(),
+    type: 'outright',
+    event: eventId ? { id: eventId, slug: eventSlug, title: eventTitle, endDate: eventEnd } : null,
+    countries,
+    source: 'polymarket-gamma-api-outright',
+    countryCount: Object.keys(countries).length
+  };
 }
 
 // ============================================================
@@ -192,6 +253,7 @@ async function fetchFootballData() {
 // ============================================================
 const SOURCES = {
   polymarket: fetchPolymarket,
+  'polymarket-outright': fetchPolymarketOutright,
   'the-odds-api': fetchOddsAPI,
   'football-data': fetchFootballData
 };

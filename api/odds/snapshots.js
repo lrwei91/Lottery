@@ -4,9 +4,10 @@
  * GET /api/odds/snapshots
  *   → {
  *       meta: { startedAt, finishedAt, kvEnabled, results },
- *       polymarket: {...} | null,
- *       'the-odds-api': {...} | null,
- *       'football-data': {...} | null,
+ *       polymarket:           {...} | null,   // h2h 单场
+ *       'polymarket-outright':{...} | null,   // 冠军 outright 二元市场
+ *       'the-odds-api':       {...} | null,
+ *       'football-data':      {...} | null,
  *     }
  *
  * 如果某个 key 不存在（cron 还没跑过 / 未配 env），对应字段是 null。
@@ -44,9 +45,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const [meta, polymarket, theOddsApi, footballData] = await Promise.all([
+    const [meta, polymarket, polymarketOutright, theOddsApi, footballData] = await Promise.all([
       redis.get('odds:snapshot:_meta'),
       redis.get('odds:snapshot:polymarket'),
+      redis.get('odds:snapshot:polymarket-outright'),
       redis.get('odds:snapshot:the-odds-api'),
       redis.get('odds:snapshot:football-data')
     ]);
@@ -54,6 +56,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       meta,
       polymarket,
+      'polymarket-outright': polymarketOutright,
       'the-odds-api': theOddsApi,
       'football-data': footballData
     });

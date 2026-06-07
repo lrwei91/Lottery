@@ -3583,7 +3583,7 @@ body.theme-worldcup .app-toast {
 
 .wc-market-row {
   display: grid;
-  grid-template-columns: 42px minmax(110px, 1fr) minmax(160px, 1fr) 110px 58px;
+  grid-template-columns: 42px minmax(110px, 1fr) minmax(160px, 1fr) 130px 58px 68px 70px;
   gap: var(--space-sm);
   align-items: center;
   padding: 12px 0;
@@ -3594,13 +3594,16 @@ body.theme-worldcup .app-toast {
 .wc-market-bars {
   display: grid;
   gap: 3px;
-  height: 16px;
+  height: 24px;
   background: transparent;
 }
 
 .wc-market-bars span,
-.wc-market-bars i {
+.wc-market-bars i,
+.wc-market-bars b {
   height: 6px;
+  display: block;
+  border-radius: 3px;
 }
 
 .wc-market-bars span {
@@ -3609,6 +3612,27 @@ body.theme-worldcup .app-toast {
 
 .wc-market-bars i {
   background: var(--warning);
+}
+
+.wc-market-bars b {
+  background: linear-gradient(90deg, var(--accent), var(--front-end));
+  box-shadow: 0 0 8px rgba(0, 200, 180, 0.25);
+}
+
+.wc-market-pcts {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.wc-market-pcts b {
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+.wc-market-fusion {
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
 }
 
 .wc-value-grid {
@@ -3691,6 +3715,11 @@ body.theme-worldcup .app-toast {
   .wc-market-row .wc-market-bars,
   .wc-market-row > span:nth-child(4) {
     grid-column: 2 / -1;
+  }
+
+  .wc-market-row .wc-market-fusion,
+  .wc-market-row > em:nth-of-type(2) {
+    display: none;
   }
 }
 

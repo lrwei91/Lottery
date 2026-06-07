@@ -192,6 +192,22 @@
     'Czech Republic': { price: 0.001 }
   };
 
+  // Polymarket 用的国家名跟 ticai 数据源略有差异，做一下映射
+  // 优先直接相等，找不到再走 alias 表
+  const POLY_TO_TICAI_ALIAS = {
+    'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
+    'Congo DR': 'DR Congo',
+    'Czechia': 'Czech Republic',
+    'United States': 'USA'
+  };
+
+  // 把 Polymarket outright 的 country 名映射到 ticai 数据里的 country
+  function polyCountryToTicai(name) {
+    if (!name) return null;
+    if (POLY_TO_TICAI_ALIAS[name]) return POLY_TO_TICAI_ALIAS[name];
+    return name;
+  }
+
   const FACTORS = [
     { key: 'elo_score', label: 'Elo 锚点', color: 'var(--back-start)', scale: 0.15 },
     { key: 'age_score', label: '年龄结构', color: 'var(--accent)', scale: 0.10 },
@@ -374,7 +390,7 @@
     }
   }
 
-  // 实时数据快照（Polymarket / The Odds API / football-data）
+  // 实时数据快照（Polymarket / The Odds API / football-data / Polymarket outright）
   // 由 Vercel Cron 每天 0:00 UTC 写入 KV，前端直接 fetch
   async function loadOddsSnapshots() {
     try {
@@ -382,6 +398,8 @@
       if (!res.ok) return;
       const payload = await res.json();
       state.oddsSnapshots = payload;
+      // 拉到新数据后重渲染：market tab 用到了 polymarket-outright
+      if (state.loaded) render();
     } catch (e) {
       console.warn('odds 快照加载失败:', e);
     }
@@ -923,65 +941,119 @@
   }
 
   function renderMarketPanel() {
-    // 先对冠军市场做去水（32 个国家的 price 加起来 = 含水分总和，devig 后归一到 1.0）
-    const winnerEntries = Object.entries(POLY_WINNER)
-      .filter(([, v]) => v && Number.isFinite(v.price))
-      .map(([country, v]) => ({ name: country, price: v.price }));
-    const fairProbMap = winnerEntries.length
-      ? window.OddsUtils.devig.fairProbsFromPrices(winnerEntries)
-      : {};
+    // ============ 双源融合：上游模型 + Polymarket 冠军 outright ============
+    // 权重：上游模型 60% + 市场 40%（产品定位是上游模型的展示厅，模型权重略高）
+    const WEIGHT_MODEL = 0.6;
+    const WEIGHT_MARKET = 0.4;
 
-    const rows = sortedTeams()
-      .filter(team => fairProbMap[team.country] != null)
-      .map(team => {
-        const model = team.final_prob || 0;
-        const fairPrice = fairProbMap[team.country];
-        const diff = OddsUtils.ev.edge(model, fairPrice);
-        const ev = OddsUtils.ev.expectedValue(1 / fairPrice, model);
-        const max = Math.max(model, fairPrice, 0.001);
-        return `
-          <div class="wc-market-row">
-            <span class="wc-code">${code(team.country)}</span>
-            <span class="wc-team-name">${escapeHtml(countryName(team.country))}</span>
-            <div class="wc-market-bars">
-              <span style="width:${(model / max * 100).toFixed(0)}%"></span>
-              <i style="width:${(fairPrice / max * 100).toFixed(0)}%"></i>
+    // 1) 拉取 Polymarket 隐含冠军概率（live KV 优先，POLY_WINNER 静态数据兜底）
+    const liveOutright = state.oddsSnapshots?.['polymarket-outright'];
+    const marketMap = {};   // { ticaiCountry -> yesPrice }
+    let marketSource = 'static-fallback';
+    if (liveOutright && liveOutright.countries && Object.keys(liveOutright.countries).length) {
+      Object.entries(liveOutright.countries).forEach(([polyCountry, info]) => {
+        const ticaiName = polyCountryToTicai(polyCountry);
+        if (ticaiName && info && Number.isFinite(info.yesPrice) && info.yesPrice > 0 && info.yesPrice < 1) {
+          marketMap[ticaiName] = info.yesPrice;
+        }
+      });
+      marketSource = `polymarket-live (${Object.keys(marketMap).length} 国 · ${(liveOutright.fetchedAt || '').slice(0, 10)})`;
+    } else {
+      Object.entries(POLY_WINNER).forEach(([country, info]) => {
+        if (info && Number.isFinite(info.price) && info.price > 0) {
+          marketMap[country] = info.price;
+        }
+      });
+    }
+
+    // 2) 只统计双方都有数据的国家（live 模式下 POLY 覆盖广，static 模式下可能缺一些）
+    const candidateTeams = sortedTeams().filter(team => marketMap[team.country] != null);
+    if (!candidateTeams.length) {
+      return `
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>市场博弈 · 双源融合</h2>
+              <p class="wc-desc">Polymarket outright 数据尚未同步，先看上游模型。</p>
             </div>
-            <span>${pct(model, 1)} / ${pct(fairPrice, 1)}</span>
-            <strong class="${clsByShift(diff)}">${signedPct(diff, 1)}</strong>
-            <em class="wc-market-ev" title="净 EV（按 1 单位本金）">EV ${signedPct(ev, 1)}</em>
           </div>
-        `;
-      }).join('');
+        </div>
+      `;
+    }
 
-    // 价值 picks：按 model × fairPrice（预期价值乘子）排序
-    const valuePicks = sortedTeams()
-      .filter(team => fairProbMap[team.country] != null && team.final_prob - fairProbMap[team.country] > 0.01)
+    // 3) raw fusion + 归一化
+    const rawFusion = {};
+    candidateTeams.forEach(team => {
+      const model = team.final_prob || 0;
+      const market = marketMap[team.country];
+      rawFusion[team.country] = WEIGHT_MODEL * model + WEIGHT_MARKET * market;
+    });
+    const totalRaw = Object.values(rawFusion).reduce((a, b) => a + b, 0);
+    const fusedMap = {};
+    if (totalRaw > 0) {
+      candidateTeams.forEach(team => {
+        fusedMap[team.country] = rawFusion[team.country] / totalRaw;
+      });
+    }
+
+    // 4) 渲染每队行（3 柱条：模型 / Polymarket / 融合）
+    const rows = candidateTeams.map(team => {
+      const model = team.final_prob || 0;
+      const market = marketMap[team.country];
+      const fused = fusedMap[team.country] || 0;
+      const edge = OddsUtils.ev.edge(model, market);          // model vs market
+      const fusionShift = fused - market;                     // 融合 vs 市场
+      const ev = OddsUtils.ev.expectedValue(1 / market, model);
+      const max = Math.max(model, market, fused, 0.001);
+      return `
+        <div class="wc-market-row has-fused">
+          <span class="wc-code">${code(team.country)}</span>
+          <span class="wc-team-name">${escapeHtml(countryName(team.country))}</span>
+          <div class="wc-market-bars is-triple" title="上：上游模型 / 中：Polymarket / 下：双源融合">
+            <span style="width:${(model / max * 100).toFixed(0)}%"></span>
+            <i style="width:${(market / max * 100).toFixed(0)}%"></i>
+            <b style="width:${(fused / max * 100).toFixed(0)}%"></b>
+          </div>
+          <span class="wc-market-pcts" title="模型 / Polymarket / 融合">
+            ${pct(model, 1)} · ${pct(market, 1)} · <b>${pct(fused, 1)}</b>
+          </span>
+          <strong class="${clsByShift(edge)}" title="模型 - 市场">${signedPct(edge, 1)}</strong>
+          <em class="wc-market-fusion ${clsByShift(fusionShift)}" title="融合 - 市场（融合相对市场的偏离）">${signedPct(fusionShift, 1)}</em>
+          <em class="wc-market-ev" title="净 EV（按 1 单位本金）">EV ${signedPct(ev, 1)}</em>
+        </div>
+      `;
+    }).join('');
+
+    // 5) 价值 picks：用 融合 概率算 EV + Kelly（比单用 model 更稳）
+    const valuePicks = candidateTeams
+      .filter(team => (fusedMap[team.country] || 0) - marketMap[team.country] > 0.01)
       .map(team => {
-        const fairPrice = fairProbMap[team.country];
+        const market = marketMap[team.country];
+        const fused = fusedMap[team.country];
         const model = team.final_prob || 0;
-        const edge = OddsUtils.ev.edge(model, fairPrice);
-        const kelly25 = OddsUtils.kelly.fractionalKelly(1 / fairPrice, model, 0.25);
-        return { team, edge, kelly25, fairPrice };
+        const edge = OddsUtils.ev.edge(fused, market);
+        const ev = OddsUtils.ev.expectedValue(1 / market, fused);
+        const kelly25 = OddsUtils.kelly.fractionalKelly(1 / market, fused, 0.25);
+        return { team, edge, ev, kelly25, market, fused, model };
       })
-      .sort((a, b) => b.edge * b.team.final_prob - a.edge * a.team.final_prob)
+      .sort((a, b) => b.edge * b.fused - a.edge * a.fused)
       .slice(0, 3);
 
     return `
       <div class="card">
         <div class="card-header">
           <div>
-            <h2>市场博弈</h2>
-            <p class="wc-desc">对冠军市场做去水（vig）后与模型概率对比；EV = 模型概率 × (赔率 - 1) - (1 - 模型概率)，Kelly 按 1/4 仓位建议。</p>
+            <h2>市场博弈 · 双源融合</h2>
+            <p class="wc-desc">上游模型（${(WEIGHT_MODEL * 100).toFixed(0)}%）+ Polymarket 冠军 outright 市场（${(WEIGHT_MARKET * 100).toFixed(0)}%）按权重加权后重新归一化。Polymarket 数据源：<b>${escapeHtml(marketSource)}</b>。Yes 价格 = 该国夺冠市场隐含概率（独立二元市场 Yes+No=1，无需去水）。EV = 融合概率 × (赔率 - 1) - (1 - 融合概率)，Kelly 按 1/4 仓位建议。</p>
           </div>
         </div>
         <div class="wc-value-grid">
-          ${valuePicks.map(({ team, edge, kelly25, fairPrice }) => `
+          ${valuePicks.map(({ team, edge, ev, kelly25, market, fused, model }) => `
             <div class="wc-value-card">
               <span>${code(team.country)} ${escapeHtml(countryName(team.country))}</span>
               <strong class="${clsByShift(edge)}">${signedPct(edge, 1)}</strong>
-              <small>模型 ${pct(team.final_prob, 1)} · 净市场 ${pct(fairPrice, 1)} · EV ${signedPct(OddsUtils.ev.expectedValue(1 / fairPrice, team.final_prob), 1)}</small>
-              <small>Kelly¼ 仓位 ${(kelly25 * 100).toFixed(1)}% 资金</small>
+              <small>模型 ${pct(model, 1)} · 市场 ${pct(market, 1)} · 融合 <b>${pct(fused, 1)}</b></small>
+              <small>EV ${signedPct(ev, 1)} · Kelly¼ 仓位 ${(kelly25 * 100).toFixed(1)}% 资金</small>
             </div>
           `).join('') || '<div class="empty-state">当前没有超过 1% 的正向偏离。</div>'}
         </div>
