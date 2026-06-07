@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 本地 LLM 跑 2026 世界杯预测
+ * 本地 / 云端 LLM 跑 2026 世界杯预测
  *
  * 数据源（已 git tracked 的静态 JSON）：
  *   - data/worldcup_2026.json      球队基础数据（Elo / final_prob / factor scores）
@@ -14,14 +14,22 @@
  *   # 默认：调 Ollama 本地服务 (http://localhost:11434)
  *   node scripts/llm-predict.js
  *
- *   # 指定 model / endpoint
- *   LLM_MODEL=qwen2.5 node scripts/llm-predict.js
- *   LLM_ENDPOINT=http://localhost:1234/v1/chat/completions LLM_MODEL=local node scripts/llm-predict.js
+ *   # 小米 MiMo（Anthropic 协议，需要 API key）
+ *   LLM_PROVIDER=xiaomi \
+ *     LLM_API_KEY=tp-xxxxx \
+ *     npm run llm:predict
+ *   # 或在 .env 里写 LLM_PROVIDER=xiaomi / LLM_API_KEY=tp-xxxxx，直接 npm run llm:predict:xiaomi
+ *
+ *   # 任意 OpenAI 兼容 endpoint
+ *   LLM_PROVIDER=openai LLM_BASE_URL=https://api.openai.com LLM_MODEL=gpt-4o-mini \
+ *     LLM_API_KEY=sk-xxxxx npm run llm:predict
  *
  *   # 干跑（不写文件）
- *   DRY_RUN=1 node scripts/llm-predict.js
+ *   npm run llm:predict:dry
  *
- * 不需要 API key、不需要联网（只要本地 LLM 服务在跑）。
+ * Provider 选择优先级：LLM_PROVIDER 环境变量 > ENDPOINT 自动检测 > 默认 ollama
+ *
+ * 安全：API key 一律从 LLM_API_KEY 环境变量或 .env 文件读，绝不入 git。
  */
 
 import fs from 'node:fs';
@@ -32,10 +40,67 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, '..');
 
-const ENDPOINT = process.env.LLM_ENDPOINT || 'http://localhost:11434/api/chat';
-const MODEL = process.env.LLM_MODEL || 'llama3.2';
+// ============ .env 简易 loader（无依赖） ============
+// 解析 `KEY=value` 行，跳过注释和空行；不覆盖已存在的 env
+function loadDotenv(envPath) {
+  if (!fs.existsSync(envPath)) return;
+  const lines = fs.readFileSync(envPath, 'utf-8').split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) continue;
+    const m = trimmed.match(/^([A-Z_][A-Z0-9_]*)\s*=\s*(.*)$/i);
+    if (!m) continue;
+    const [, key, rawVal] = m;
+    const val = rawVal.replace(/^['"]|['"]$/g, ''); // 去掉两端引号
+    if (process.env[key] === undefined) process.env[key] = val;
+  }
+}
+loadDotenv(path.join(ROOT, '.env'));
+loadDotenv(path.join(__dirname, '.env'));
+
+// ============ 配置 ============
 const TEMPERATURE = Number(process.env.LLM_TEMPERATURE || '0.3');
 const DRY_RUN = process.env.DRY_RUN === '1';
+const MAX_TOKENS = Number(process.env.LLM_MAX_TOKENS || '4000');
+
+// Provider 选择：显式 > 自动检测
+function autoDetectProvider(endpoint) {
+  if (endpoint.includes('xiaomimimo.com') || /\/anthropic(\/|$)/.test(endpoint)) return 'xiaomi';
+  if (endpoint.includes('localhost:11434') || endpoint.endsWith('/api/chat')) return 'ollama';
+  if (endpoint.endsWith('/v1/chat/completions')) return 'openai';
+  return 'ollama'; // fallback
+}
+
+// Provider 默认值
+const PROVIDER_DEFAULTS = {
+  ollama: { endpoint: 'http://localhost:11434/api/chat', model: 'llama3.2' },
+  openai: { endpoint: 'http://localhost:1234/v1/chat/completions', model: 'gpt-4o-mini' },
+  xiaomi: { baseUrl: 'https://token-plan-cn.xiaomimimo.com/anthropic', model: 'mimo-v2.5-pro' }
+};
+const _initialEndpoint = process.env.LLM_ENDPOINT || PROVIDER_DEFAULTS.ollama.endpoint;
+const PROVIDER = process.env.LLM_PROVIDER || autoDetectProvider(_initialEndpoint);
+
+// 根据 provider 解析最终 endpoint / model / baseUrl
+function resolveConfig() {
+  if (PROVIDER === 'xiaomi') {
+    return {
+      endpoint: null, // xiaomi 用 baseUrl + /v1/messages
+      baseUrl: process.env.LLM_BASE_URL || PROVIDER_DEFAULTS.xiaomi.baseUrl,
+      model: process.env.LLM_MODEL || PROVIDER_DEFAULTS.xiaomi.model
+    };
+  }
+  if (PROVIDER === 'openai') {
+    return {
+      endpoint: process.env.LLM_ENDPOINT || PROVIDER_DEFAULTS.openai.endpoint,
+      model: process.env.LLM_MODEL || PROVIDER_DEFAULTS.openai.model
+    };
+  }
+  // ollama
+  return {
+    endpoint: process.env.LLM_ENDPOINT || PROVIDER_DEFAULTS.ollama.endpoint,
+    model: process.env.LLM_MODEL || PROVIDER_DEFAULTS.ollama.model
+  };
+}
 
 const TEAMS_PATH = path.join(ROOT, 'data', 'worldcup_2026.json');
 const MATCHES_PATH = path.join(ROOT, 'data', 'worldcup_matches.json');
@@ -55,45 +120,100 @@ function ensureInputs() {
   }
 }
 
-// Ollama chat 格式（同时兼容 /api/chat 和 OpenAI /v1/chat/completions）
-async function callLLM(prompt) {
-  const isOllama = ENDPOINT.includes('localhost:11434') || ENDPOINT.endsWith('/api/chat');
-  const isOpenAI = ENDPOINT.endsWith('/v1/chat/completions');
+// ============ Provider 实现 ============
 
-  let body, headers = { 'content-type': 'application/json' };
-  if (isOllama) {
-    body = {
-      model: MODEL,
+// Ollama /api/chat（默认）
+async function callOllama(prompt, cfg) {
+  const res = await fetch(cfg.endpoint, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      model: cfg.model,
       messages: [{ role: 'user', content: prompt }],
       stream: false,
       options: { temperature: TEMPERATURE }
-    };
-  } else if (isOpenAI) {
-    body = {
-      model: MODEL,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: TEMPERATURE
-    };
-    if (process.env.LLM_API_KEY) headers['authorization'] = `Bearer ${process.env.LLM_API_KEY}`;
-  } else {
-    // 通用 /api/generate 风格 fallback
-    body = { model: MODEL, prompt, stream: false };
-  }
+    })
+  });
+  if (!res.ok) throw new Error(`Ollama HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const data = await res.json();
+  return data.message?.content || data.choices?.[0]?.message?.content || data.response || '';
+}
 
-  const res = await fetch(ENDPOINT, { method: 'POST', headers, body: JSON.stringify(body) });
+// OpenAI 兼容 /v1/chat/completions
+async function callOpenAI(prompt, cfg) {
+  const headers = { 'content-type': 'application/json' };
+  if (process.env.LLM_API_KEY) headers['authorization'] = `Bearer ${process.env.LLM_API_KEY}`;
+  const res = await fetch(cfg.endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      model: cfg.model,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: TEMPERATURE,
+      max_tokens: MAX_TOKENS
+    })
+  });
+  if (!res.ok) throw new Error(`OpenAI HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+// 小米 MiMo：Anthropic 协议 /v1/messages
+// 响应 content 是数组：[{type:'text',text:'...'}, {type:'thinking',thinking:'...'}]
+// 按顺序提取所有 text block，thinking 不计入最终输出
+async function callXiaomi(prompt, cfg) {
+  const key = process.env.LLM_API_KEY;
+  if (!key) {
+    throw new Error('xiaomi provider 需要 LLM_API_KEY 环境变量（或 .env 里写 LLM_API_KEY=tp-xxxxx）');
+  }
+  const baseUrl = (cfg.baseUrl || PROVIDER_DEFAULTS.xiaomi.baseUrl).replace(/\/+$/, '');
+  const url = `${baseUrl}/v1/messages`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: cfg.model,
+      max_tokens: MAX_TOKENS,
+      temperature: TEMPERATURE,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
   if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`LLM HTTP ${res.status}: ${text.slice(0, 200)}`);
+    const t = await res.text().catch(() => '');
+    throw new Error(`Xiaomi HTTP ${res.status}: ${t.slice(0, 300)}`);
   }
   const data = await res.json();
-  if (isOllama || isOpenAI) {
-    return data.message?.content || data.choices?.[0]?.message?.content || '';
+  const blocks = Array.isArray(data.content) ? data.content : [];
+  const text = blocks
+    .filter(b => b && b.type === 'text' && typeof b.text === 'string')
+    .map(b => b.text)
+    .join('\n')
+    .trim();
+  if (!text) {
+    // 失败时把 thinking 暴露给用户便于诊断
+    const thinking = blocks
+      .filter(b => b && b.type === 'thinking')
+      .map(b => b.thinking || '')
+      .join('\n');
+    throw new Error(`Xiaomi 响应无 text block（可能 max_tokens 太小被 thinking 耗尽）。stop_reason=${data.stop_reason}，thinking 预览: ${thinking.slice(0, 200)}`);
   }
-  return data.response || '';
+  return text;
+}
+
+async function callLLM(prompt, cfg) {
+  if (PROVIDER === 'xiaomi') return callXiaomi(prompt, cfg);
+  if (PROVIDER === 'openai') return callOpenAI(prompt, cfg);
+  if (PROVIDER === 'ollama') return callOllama(prompt, cfg);
+  throw new Error(`Unknown provider: ${PROVIDER}`);
 }
 
 function buildPrompt(matches, teams, names) {
-  // 给 LLM 简洁的球队信息（top 8 强队 + 12 场重点比赛）
+  // 给 LLM 简洁的球队信息（top 8 强队 + 24 场重点比赛）
   const topTeams = [...teams]
     .sort((a, b) => (b.final_prob || 0) - (a.final_prob || 0))
     .slice(0, 12)
@@ -204,6 +324,7 @@ function validatePredictions(parsed) {
 
 async function main() {
   ensureInputs();
+  const cfg = resolveConfig();
   console.log(`📂 读取数据...`);
   const teamsPayload = readJSON(TEAMS_PATH);
   const matchesPayload = readJSON(MATCHES_PATH);
@@ -211,9 +332,12 @@ async function main() {
   const matches = Object.values(matchesPayload.groups || {}).flatMap(g => g.matches || []);
   const teams = teamsPayload.teams || [];
 
-  console.log(`🤖 调用 LLM (${ENDPOINT}, model=${MODEL})...`);
+  const endpointDesc = cfg.baseUrl
+    ? `${cfg.baseUrl}/v1/messages`
+    : cfg.endpoint;
+  console.log(`🤖 调用 LLM (provider=${PROVIDER}, model=${cfg.model}, endpoint=${endpointDesc})...`);
   const prompt = buildPrompt(matches, teams, names);
-  const text = await callLLM(prompt);
+  const text = await callLLM(prompt, cfg);
 
   console.log(`📥 解析 LLM 输出（${text.length} 字符）...`);
   const parsed = extractJSON(text);
@@ -231,8 +355,9 @@ async function main() {
 
   const output = {
     generatedAt: new Date().toISOString(),
-    model: MODEL,
-    endpoint: ENDPOINT,
+    provider: PROVIDER,
+    model: cfg.model,
+    endpoint: endpointDesc,
     temperature: TEMPERATURE,
     matchCount: predictions.length,
     predictions

@@ -155,33 +155,65 @@ Vercel KV 已被官方 deprecated（[迁移公告](https://vercel.com/changelog/
 
 ---
 
-## 🤖 本地 LLM 预测（离线 AI + GitOps）
+## 🤖 LLM 预测（GitOps：本地 LLM → JSON → Vercel 自动部署）
 
-无需 API key、无需联网，**在自己机器上跑 LLM 预测** → 输出到 `data/wc_llm_predictions.json` → git commit + push → Vercel 部署时自动包含 → 前端 `data/wc_llm_predictions.json` 加载后在每场对战卡片显示 `🤖 [胜平负] [概率]` badge，鼠标悬停看推理说明。
+LLM 跑预测 → 写 `data/wc_llm_predictions.json` → git push → Vercel 部署自动包含 → 前端加载后在每场对战卡片显示 `🤖 [胜平负] [概率]` badge。
 
-### 前置条件
+### Provider 三选一
 
-任意一个本地 LLM 服务：
-- [Ollama](https://ollama.com) — 推荐，零配置 (`ollama serve`)
-- [LM Studio](https://lmstudio.ai) — 图形化，本地 OpenAI 兼容 endpoint
-- [vLLM](https://docs.vllm.ai) — 性能最强
-- 其他 `http://localhost:PORT/v1/chat/completions` 兼容服务
+脚本通过 `LLM_PROVIDER` 切换：
+
+| Provider    | 协议                | 默认 endpoint                          | 默认 model       | API key  |
+|-------------|--------------------|----------------------------------------|------------------|----------|
+| `ollama`    | Ollama chat        | `http://localhost:11434/api/chat`      | `llama3.2`       | 不需要   |
+| `openai`    | OpenAI 兼容        | `http://localhost:1234/v1/chat/completions` | `gpt-4o-mini` | `LLM_API_KEY`（Bearer） |
+| `xiaomi`    | **Anthropic 协议** | `https://token-plan-cn.xiaomimimo.com/anthropic` | `mimo-v2.5-pro` | `LLM_API_KEY`（`x-api-key` header） |
+
+不设 `LLM_PROVIDER` 时，脚本会按 endpoint URL 自动检测（`xiaomimimo.com` / `/anthropic` → xiaomi；`:11434` / `/api/chat` → ollama；`/v1/chat/completions` → openai）。
+
+### 配置 API key（不入 git）
+
+**三种方式（任选一）：**
+
+1. **环境变量**（最简单）：
+   ```bash
+   export LLM_API_KEY=tp-clr5gk93m10jkyo7mjbke1ct2y8977clh8bex9yghkejf8oh
+   npm run llm:predict:xiaomi
+   ```
+
+2. **`.env` 文件**（项目根或 `scripts/` 目录均可，`.env` 已在 `.gitignore`）：
+   ```bash
+   # /ticai/.env
+   LLM_PROVIDER=xiaomi
+   LLM_API_KEY=tp-clr5gk93m10jkyo7mjbke1ct2y8977clh8bex9yghkejf8oh
+   LLM_MAX_TOKENS=4000
+   ```
+
+3. **临时 inline**：
+   ```bash
+   LLM_PROVIDER=xiaomi LLM_API_KEY=tp-xxx npm run llm:predict:xiaomi
+   ```
 
 ### 跑预测
 
 ```bash
-# 装好 Ollama + pull 一个模型
-ollama pull qwen2.5            # 或 llama3.2 / mistral / 任意
-ollama serve                   # 默认监听 :11434
-
-# 跑预测（默认走 Ollama）
+# 路径 A：本地 Ollama（零成本、零联网）
+ollama pull qwen2.5            # 或 llama3.2 / mistral
+ollama serve
 npm run llm:predict
 
-# 干跑（不写文件，看输出）
-npm run llm:predict:dry
+# 路径 B：任意 OpenAI 兼容 endpoint
+LLM_PROVIDER=openai \
+  LLM_BASE_URL=https://api.openai.com \
+  LLM_MODEL=gpt-4o-mini \
+  LLM_API_KEY=sk-xxxxx \
+  npm run llm:predict
 
-# 自定义模型 / endpoint
-LLM_MODEL=qwen2.5 LLM_ENDPOINT=http://localhost:11434/api/chat npm run llm:predict
+# 路径 C：小米 MiMo（Anthropic 协议，走 token-plan）
+npm run llm:predict:xiaomi     # 默认 mimo-v2.5-pro，max_tokens=4000
+
+# 干跑（不写文件，先看输出）
+npm run llm:predict:xiaomi:dry
 ```
 
 ### 推到云端
