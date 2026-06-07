@@ -470,6 +470,50 @@
     return state.llmPredictions?.predictions?.find(p => p.matchId === matchId) || null;
   }
 
+  // Polymarket h2h event（按 country 匹配，title 含双方国家名）
+  function findPolymarketByCountry(homeCountry, awayCountry) {
+    const payload = state.oddsSnapshots?.polymarket;
+    if (!payload || !Array.isArray(payload.events)) return null;
+    const nameA = countryName(homeCountry).toLowerCase();
+    const nameB = countryName(awayCountry).toLowerCase();
+    return payload.events.find(ev => {
+      const t = (ev.title || '').toLowerCase();
+      return t.includes(nameA) && t.includes(nameB);
+    }) || null;
+  }
+
+  // 给定一场比赛，调全部 4 源（Elo + The Odds API + Polymarket + LLM）算综合预测
+  // 用于对战卡片右上角显示"综合胜率"
+  function computeMatchEnsemble(match) {
+    const teamA = findTeam(match.home);
+    const teamB = findTeam(match.away);
+    if (!teamA || !teamB) return null;
+    const h2hResult = h2hCalc(teamA, teamB);
+    const oddsMarket = extractH2HMarket(findOddsApiMatch(match.home, match.away));
+    const polymarketEvent = findPolymarketByCountry(match.home, match.away);
+    const llmPred = findLLMPrediction(match.id);
+    return ensemblePredict(h2hResult, oddsMarket, polymarketEvent, llmPred);
+  }
+
+  // 综合胜率徽章 HTML（4 源融合）
+  function formatEnsembleBadge(match) {
+    const ens = computeMatchEnsemble(match);
+    if (!ens) return '';
+    const { final, parts } = ens;
+    let maxKey, maxProb;
+    if (final.home >= final.draw && final.home >= final.away) {
+      maxKey = 'home'; maxProb = final.home;
+    } else if (final.away >= final.draw) {
+      maxKey = 'away'; maxProb = final.away;
+    } else {
+      maxKey = 'draw'; maxProb = final.draw;
+    }
+    const cn = maxKey === 'home' ? countryName(match.home) : maxKey === 'away' ? countryName(match.away) : '平局';
+    const sourcesCount = parts.length;
+    const sourcesList = parts.map(p => p.name).join(' + ');
+    return `<span class="wc-match-status is-ensemble" title="4 源融合（${escapeHtml(sourcesList)}）共 ${sourcesCount} 源参与">🏆 ${escapeHtml(cn)} ${(maxProb * 100).toFixed(0)}%</span>`;
+  }
+
   // 提取 The Odds API 的 h2h 主盘（最高赔率做代表）
   function extractH2HMarket(oddsEvent) {
     if (!oddsEvent || !oddsEvent.bookmakers) return null;
@@ -688,13 +732,8 @@
       const isScheduled = match.status === 'scheduled';
       const isCompleted = match.status === 'completed';
 
-      // LLM 预测（如果本场有）
-      const llm = state.llmPredictions?.predictions?.find(p => p.matchId === match.id);
-      const llmBadge = llm ? (() => {
-        const out = llm.predictedOutcome === 'home' ? homeCn : llm.predictedOutcome === 'away' ? awayCn : '平局';
-        const prob = llm.predictedOutcome === 'home' ? llm.homeWinProb : llm.predictedOutcome === 'away' ? llm.awayWinProb : llm.drawProb;
-        return `<span class="wc-match-status is-llm" title="${escapeHtml(llm.reasoning || '')}">🤖 ${escapeHtml(out)} ${(prob * 100).toFixed(0)}%</span>`;
-      })() : '';
+      // 综合预测徽章（4 源融合：Elo + The Odds API + Polymarket + LLM）
+      const ensembleBadge = formatEnsembleBadge(match);
 
       // The Odds API 赔率徽章（h2h 主盘，The Odds API 数据未同步时不显示）
       const oddsApiEventForBadge = findOddsApiMatch(match.home, match.away);
@@ -727,7 +766,7 @@
           (isScheduled ? '<span class="wc-match-status is-scheduled">未开始</span>' : '') +
           (isCompleted && match.homeScore != null ? '<span class="wc-match-status is-final">已结束</span>' : '') +
           oddsBadge +
-          llmBadge +
+          ensembleBadge +
         '</div>' +
         '<div class="wc-match-body">' +
           '<div class="wc-match-team is-home">' +

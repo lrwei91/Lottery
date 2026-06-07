@@ -4058,6 +4058,14 @@ body.theme-worldcup .app-toast {
   cursor: help;
 }
 
+.wc-match-status.is-ensemble {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(96, 165, 250, 0.15));
+  color: #d8b4fe;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  cursor: help;
+  font-weight: 800;
+}
+
 .wc-match-status.is-odds {
   background: rgba(245, 158, 11, 0.15);
   color: #fbbf24;
