@@ -152,3 +152,93 @@ Vercel KV 已被官方 deprecated（[迁移公告](https://vercel.com/changelog/
 - ❌ 不会主动跟其他用户的 ID 混在一起
 - ❌ 策略统计/进化仍在本机跑（云端只存语料，后续可以迁移）
 
+
+---
+
+## 🤖 本地 LLM 预测（离线 AI + GitOps）
+
+无需 API key、无需联网，**在自己机器上跑 LLM 预测** → 输出到 `data/wc_llm_predictions.json` → git commit + push → Vercel 部署时自动包含 → 前端 `data/wc_llm_predictions.json` 加载后在每场对战卡片显示 `🤖 [胜平负] [概率]` badge，鼠标悬停看推理说明。
+
+### 前置条件
+
+任意一个本地 LLM 服务：
+- [Ollama](https://ollama.com) — 推荐，零配置 (`ollama serve`)
+- [LM Studio](https://lmstudio.ai) — 图形化，本地 OpenAI 兼容 endpoint
+- [vLLM](https://docs.vllm.ai) — 性能最强
+- 其他 `http://localhost:PORT/v1/chat/completions` 兼容服务
+
+### 跑预测
+
+```bash
+# 装好 Ollama + pull 一个模型
+ollama pull qwen2.5            # 或 llama3.2 / mistral / 任意
+ollama serve                   # 默认监听 :11434
+
+# 跑预测（默认走 Ollama）
+npm run llm:predict
+
+# 干跑（不写文件，看输出）
+npm run llm:predict:dry
+
+# 自定义模型 / endpoint
+LLM_MODEL=qwen2.5 LLM_ENDPOINT=http://localhost:11434/api/chat npm run llm:predict
+```
+
+### 推到云端
+
+```bash
+git add data/wc_llm_predictions.json
+git commit -m "chore: refresh LLM predictions ($(date +%Y-%m-%d))"
+git push origin main
+```
+
+Vercel 会自动部署，浏览器刷新就能看到每场对战卡片右上角多出 `🤖 [预测结果] [概率]` 徽章。
+
+### 输出格式
+
+`data/wc_llm_predictions.json` 结构：
+
+```json
+{
+  "generatedAt": "2026-06-07T...",
+  "model": "qwen2.5",
+  "endpoint": "http://localhost:11434/api/chat",
+  "temperature": 0.3,
+  "matchCount": 24,
+  "predictions": [
+    {
+      "matchId": "...",
+      "homeWinProb": 0.45,
+      "drawProb": 0.25,
+      "awayWinProb": 0.30,
+      "predictedOutcome": "home",
+      "confidence": 0.55,
+      "reasoning": "法国主场 + Elo 高 50 分"
+    }
+  ]
+}
+```
+
+### 实时数据接入（Polymarket / The Odds API / football-data.org）
+
+云端模式用 Vercel Cron 每 6 小时拉一次真实数据，写 Vercel KV，前端 `/api/odds/snapshots` 拉取。
+
+配置环境变量（Vercel Dashboard → Storage → Marketplace → Upstash Redis 装好后）：
+- `ODDS_API_KEY` — The Odds API（可选）
+- `FOOTBALL_DATA_API_KEY` — football-data.org（可选）
+- `POLYMARKET_PUBLIC_ENABLED=true` + 可选 `POLYMARKET_TAG_ID`（公开无 key 模式）
+
+未配置时对应源 `skipped`，前端 fallback 到静态 `POLY_WINNER`。
+
+Cron 配置在 `vercel.json`：`{ "schedule": "0 */6 * * *", "path": "/api/cron/sync-odds" }`。
+
+### 赔率计算工具
+
+`js/odds-utils.js`（`window.OddsUtils`）提供：
+- `devig.proportionalDevig(outcomes)` — 按比例去水
+- `devig.fairProbsFromPrices(prices)` — 32 国冠军市场一键去水
+- `ev.expectedValue(odds, prob)` — 期望值
+- `ev.edge(model, market)` — 模型 vs 净市场偏离
+- `kelly.fractionalKelly(odds, prob, 0.25)` — 1/4 Kelly 仓位
+
+世界 tab 的"市场博弈"已用上，模型 vs 净市场 + EV + Kelly¼ 仓位全展示。

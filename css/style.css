@@ -2306,3 +2306,16 @@ body.theme-worldcup .app-toast {
   color: var(--accent) !important;
   box-shadow: 0 0 12px rgba(255, 71, 87, 0.25) !important;
 }
+
+/* LLM 预测 badge */
+.wc-match-status.is-llm {
+  background: rgba(168, 85, 247, 0.16);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.32);
+  font-size: 0.68rem;
+  cursor: help;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

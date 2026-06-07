@@ -19,7 +19,8 @@
     activeTab: 'matches',
     selectedSquad: '',
     selectedGroup: 'TIME',
-    countdownTimerId: null
+    countdownTimerId: null,
+    llmPredictions: null   // { generatedAt, model, predictions: [{matchId, ...}] }
   };
 
   const WORLD_CUP_START = new Date('2026-06-11T19:00:00Z');
@@ -345,6 +346,8 @@
       state.selectedSquad = teams[0]?.country || '';
       state.loaded = true;
       render();
+      // LLM 预测快照（fire-and-forget，加载完会自动 re-render）
+      loadLLMPredictions();
     } catch (error) {
       console.error('World Cup data load failed:', error);
       if (root) {
@@ -352,6 +355,20 @@
       }
     } finally {
       state.loading = false;
+    }
+  }
+
+  // 本地 LLM 跑完的预测快照（fire-and-forget，不阻塞主加载）
+  async function loadLLMPredictions() {
+    try {
+      const res = await fetch('data/wc_llm_predictions.json?t=' + Date.now(), { cache: 'no-cache' });
+      if (!res.ok) return;
+      const payload = await res.json();
+      state.llmPredictions = payload;
+      // LLM 预测加载完，刷新对战卡片（如果已经渲染了）
+      if (state.loaded) render();
+    } catch (e) {
+      // 文件不存在是正常（用户还没跑 LLM）
     }
   }
 
@@ -542,6 +559,14 @@
       const isScheduled = match.status === 'scheduled';
       const isCompleted = match.status === 'completed';
 
+      // LLM 预测（如果本场有）
+      const llm = state.llmPredictions?.predictions?.find(p => p.matchId === match.id);
+      const llmBadge = llm ? (() => {
+        const out = llm.predictedOutcome === 'home' ? homeCn : llm.predictedOutcome === 'away' ? awayCn : '平局';
+        const prob = llm.predictedOutcome === 'home' ? llm.homeWinProb : llm.predictedOutcome === 'away' ? llm.awayWinProb : llm.drawProb;
+        return `<span class="wc-match-status is-llm" title="${escapeHtml(llm.reasoning || '')}">🤖 ${escapeHtml(out)} ${(prob * 100).toFixed(0)}%</span>`;
+      })() : '';
+
       let scoreHtml;
       if (isCompleted && match.homeScore != null) {
         scoreHtml = '<div class="wc-match-score-badge">' + match.homeScore + ' - ' + match.awayScore + '</div>';
@@ -567,6 +592,7 @@
           '</div>' +
           (isScheduled ? '<span class="wc-match-status is-scheduled">未开始</span>' : '') +
           (isCompleted && match.homeScore != null ? '<span class="wc-match-status is-final">已结束</span>' : '') +
+          llmBadge +
         '</div>' +
         '<div class="wc-match-body">' +
           '<div class="wc-match-team is-home">' +
@@ -839,30 +865,48 @@
   }
 
   function renderMarketPanel() {
+    // 先对冠军市场做去水（32 个国家的 price 加起来 = 含水分总和，devig 后归一到 1.0）
+    const winnerEntries = Object.entries(POLY_WINNER)
+      .filter(([, v]) => v && Number.isFinite(v.price))
+      .map(([country, v]) => ({ name: country, price: v.price }));
+    const fairProbMap = winnerEntries.length
+      ? window.OddsUtils.devig.fairProbsFromPrices(winnerEntries)
+      : {};
+
     const rows = sortedTeams()
-      .filter(team => POLY_WINNER[team.country])
+      .filter(team => fairProbMap[team.country] != null)
       .map(team => {
-        const market = POLY_WINNER[team.country].price;
         const model = team.final_prob || 0;
-        const diff = model - market;
-        const max = Math.max(model, market, 0.001);
+        const fairPrice = fairProbMap[team.country];
+        const diff = OddsUtils.ev.edge(model, fairPrice);
+        const ev = OddsUtils.ev.expectedValue(1 / fairPrice, model);
+        const max = Math.max(model, fairPrice, 0.001);
         return `
           <div class="wc-market-row">
             <span class="wc-code">${code(team.country)}</span>
             <span class="wc-team-name">${escapeHtml(countryName(team.country))}</span>
             <div class="wc-market-bars">
               <span style="width:${(model / max * 100).toFixed(0)}%"></span>
-              <i style="width:${(market / max * 100).toFixed(0)}%"></i>
+              <i style="width:${(fairPrice / max * 100).toFixed(0)}%"></i>
             </div>
-            <span>${pct(model, 1)} / ${pct(market, 1)}</span>
+            <span>${pct(model, 1)} / ${pct(fairPrice, 1)}</span>
             <strong class="${clsByShift(diff)}">${signedPct(diff, 1)}</strong>
+            <em class="wc-market-ev" title="净 EV（按 1 单位本金）">EV ${signedPct(ev, 1)}</em>
           </div>
         `;
       }).join('');
 
+    // 价值 picks：按 model × fairPrice（预期价值乘子）排序
     const valuePicks = sortedTeams()
-      .filter(team => POLY_WINNER[team.country] && team.final_prob - POLY_WINNER[team.country].price > 0.01)
-      .sort((a, b) => ((b.final_prob - POLY_WINNER[b.country].price) * b.final_prob) - ((a.final_prob - POLY_WINNER[a.country].price) * a.final_prob))
+      .filter(team => fairProbMap[team.country] != null && team.final_prob - fairProbMap[team.country] > 0.01)
+      .map(team => {
+        const fairPrice = fairProbMap[team.country];
+        const model = team.final_prob || 0;
+        const edge = OddsUtils.ev.edge(model, fairPrice);
+        const kelly25 = OddsUtils.kelly.fractionalKelly(1 / fairPrice, model, 0.25);
+        return { team, edge, kelly25, fairPrice };
+      })
+      .sort((a, b) => b.edge * b.team.final_prob - a.edge * a.team.final_prob)
       .slice(0, 3);
 
     return `
@@ -870,15 +914,16 @@
         <div class="card-header">
           <div>
             <h2>市场博弈</h2>
-            <p class="wc-desc">对比模型概率与源项目内置的 Polymarket 冠军价格快照。蓝色为模型，黄色为市场。</p>
+            <p class="wc-desc">对冠军市场做去水（vig）后与模型概率对比；EV = 模型概率 × (赔率 - 1) - (1 - 模型概率)，Kelly 按 1/4 仓位建议。</p>
           </div>
         </div>
         <div class="wc-value-grid">
-          ${valuePicks.map(team => `
+          ${valuePicks.map(({ team, edge, kelly25, fairPrice }) => `
             <div class="wc-value-card">
               <span>${code(team.country)} ${escapeHtml(countryName(team.country))}</span>
-              <strong>${signedPct(team.final_prob - POLY_WINNER[team.country].price, 1)}</strong>
-              <small>模型 ${pct(team.final_prob, 1)} · 市场 ${pct(POLY_WINNER[team.country].price, 1)}</small>
+              <strong class="${clsByShift(edge)}">${signedPct(edge, 1)}</strong>
+              <small>模型 ${pct(team.final_prob, 1)} · 净市场 ${pct(fairPrice, 1)} · EV ${signedPct(OddsUtils.ev.expectedValue(1 / fairPrice, team.final_prob), 1)}</small>
+              <small>Kelly¼ 仓位 ${(kelly25 * 100).toFixed(1)}% 资金</small>
             </div>
           `).join('') || '<div class="empty-state">当前没有超过 1% 的正向偏离。</div>'}
         </div>

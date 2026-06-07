@@ -1,7 +1,13 @@
 {
   "functions": {
     "api/**/*.js": {
-      "maxDuration": 10
+      "maxDuration": 30
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/sync-odds",
+      "schedule": "0 */6 * * *"
+    }
+  ]
 }
