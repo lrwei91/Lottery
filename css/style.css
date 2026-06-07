@@ -4760,3 +4760,18 @@ body.theme-worldcup .app-toast {
   color: var(--text-muted);
   line-height: 1.5;
 }
+
+/* ========== H2H Modal: 缺源提示 ========== */
+.wc-ensemble-source.is-empty {
+  opacity: 0.55;
+  background: transparent;
+  border-style: dashed;
+}
+
+.wc-ensemble-empty {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 6px 0 2px;
+}

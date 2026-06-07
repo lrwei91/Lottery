@@ -1262,9 +1262,9 @@
 
   function ensemblePredict(h2hResult, oddsMarket, polymarketEvent, llmPred) {
     const parts = [];
-    // H2H 模型（必有，El 自算）
+    // Elo 推演（必有，自算 Elo + Poisson）
     parts.push({
-      key: 'h2h', name: 'H2H 模型', icon: '🧠', weight: ENSEMBLE_WEIGHTS.h2h,
+      key: 'h2h', name: 'Elo 推演', icon: '🧠', weight: ENSEMBLE_WEIGHTS.h2h,
       probs: { home: h2hResult.winA, draw: h2hResult.draw, away: h2hResult.winB },
       detail: `Elo 差 ${h2hResult.diff.toFixed(0)}`
     });
@@ -1336,9 +1336,27 @@
     const recLabel = rec === 'home' ? parts[0]?.detail ? `主胜` : '主胜'
                     : rec === 'away' ? '客胜' : '平局';
 
-    // 各源贡献 = 权重 × 该源概率
-    const sourceRows = parts.map(p => {
-      const actualWeight = (p.weight / parts.reduce((s, x) => s + x.weight, 0)) * 100;
+    // 各源贡献 = 权重 × 该源概率；固定遍历全部 4 源，缺源标"暂无数据"
+    const ENSEMBLE_ALL_SOURCES = [
+      { key: 'h2h',  name: 'Elo 推演',    icon: '🧠' },
+      { key: 'odds', name: 'The Odds API', icon: '📊' },
+      { key: 'poly', name: 'Polymarket',   icon: '🌐' },
+      { key: 'llm',  name: 'LLM 预测',    icon: '🤖' }
+    ];
+    const totalWeight = parts.reduce((s, x) => s + x.weight, 0);
+    const sourceRows = ENSEMBLE_ALL_SOURCES.map(meta => {
+      const p = parts.find(x => x.key === meta.key);
+      if (!p) {
+        return `<div class="wc-ensemble-source is-empty">
+          <div class="wc-ensemble-source-head">
+            <span class="wc-ensemble-icon">${meta.icon}</span>
+            <span class="wc-ensemble-name">${escapeHtml(meta.name)}</span>
+            <span class="wc-ensemble-weight">未参与</span>
+          </div>
+          <div class="wc-ensemble-empty">暂无数据</div>
+        </div>`;
+      }
+      const actualWeight = (p.weight / totalWeight) * 100;
       return `<div class="wc-ensemble-source">
         <div class="wc-ensemble-source-head">
           <span class="wc-ensemble-icon">${p.icon}</span>
@@ -1520,7 +1538,7 @@
         </div>
         <div class="modal-body wc-h2h-modal-body">
           <div class="wc-modal-prediction-title">
-            <h3>🤖 综合预测（4 源融合）</h3>
+            <h3>🤖 综合预测</h3>
             <p>${dataSourcesBadge || '赛程和历史交锋来自 FIFA 官方接口；胜平负与比分为模型推演，仅作赛前数据参考。'}</p>
           </div>
           ${(() => {
