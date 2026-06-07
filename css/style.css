@@ -4113,21 +4113,17 @@ body.theme-worldcup .app-toast {
   font-style: italic;
 }
 
-/* modal 标题行：h3 左 + 实时数据时间 右上 */
-.wc-modal-title-row {
+/* modal 底部 footer（实时数据时间徽章） */
+.wc-modal-footer {
+  margin-top: var(--space-md);
+  padding-top: var(--space-sm);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
+  justify-content: flex-end;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
-  margin-bottom: var(--space-xs);
 }
 
-.wc-modal-title-row h3 {
-  margin: 0;
-}
-
-.wc-modal-title-row .wc-h2h-meta {
+.wc-modal-footer .wc-h2h-meta {
   font-size: 0.72rem;
   color: var(--accent);
   background: rgba(0, 255, 157, 0.08);

@@ -1738,13 +1738,6 @@
           <button class="modal-close" id="wcH2hModalClose" aria-label="关闭预测窗口">×</button>
         </div>
         <div class="modal-body wc-h2h-modal-body">
-          <div class="wc-modal-prediction-title">
-            <div class="wc-modal-title-row">
-              <h3>🤖 综合预测</h3>
-              ${dataSourcesBadge}
-            </div>
-            <p>赛程和历史交锋来自 FIFA 官方接口；胜平负与比分为模型推演，仅作赛前数据参考。</p>
-          </div>
           ${(() => {
             const ens = ensemblePredict(result, oddsMarket, polymarketEvent, llmPred);
             return renderEnsembleCard(ens, teamA, teamB);
@@ -1802,6 +1795,7 @@
             <h3>球员位置对位较量</h3>
             ${playerMatchups(teamA, teamB)}
           </div>
+          ${dataSourcesBadge ? `<div class="wc-modal-footer">${dataSourcesBadge}</div>` : ''}
         </div>
       </div>
     `;
