@@ -22,7 +22,8 @@
     countdownTimerId: null,
     llmPredictions: null,   // { generatedAt, model, predictions: [{matchId, ...}] } — h2h 单场
     llmOutright: null,      // { generatedAt, model, predictions: [{country, winProb, ...}] } — 冠军 outright
-    oddsSnapshots: null     // { meta, polymarket, 'the-odds-api', 'football-data' }
+    oddsSnapshots: null,    // { meta, polymarket, 'the-odds-api', 'football-data' }
+    oddsHistory: null       // { 'the-odds-api': [{ fetchedAt, events: [...] }, ...] } — 最近 28 个时间点
   };
 
   const WORLD_CUP_START = new Date('2026-06-11T19:00:00Z');
@@ -381,6 +382,7 @@
       loadLLMPredictions();
       loadLLMOutright();
       loadOddsSnapshots();
+      loadOddsHistory();
     } catch (error) {
       console.error('World Cup data load failed:', error);
       if (root) {
@@ -416,6 +418,18 @@
       if (state.loaded) render();
     } catch (e) {
       // 文件不存在是正常（用户还没跑 LLM outright）
+    }
+  }
+
+  // 赔率历史快照（cron 每 6h 累积一次，保留最近 28 个点 = 约 7 天）
+  async function loadOddsHistory() {
+    try {
+      const res = await fetch('/api/odds/history?source=the-odds-api', { headers: { accept: 'application/json' } });
+      if (!res.ok) return;
+      const payload = await res.json();
+      state.oddsHistory = { 'the-odds-api': payload.history || [] };
+    } catch (e) {
+      console.warn('odds history 加载失败:', e);
     }
   }
 
@@ -475,6 +489,21 @@
       }
     }
     return null;
+  }
+
+  // 把 h2h 赔率打包成单行紧凑字符串（卡片用）："1.43 / 4.33 / 7.75"
+  function formatOddsCompact(oddsMarket) {
+    if (!oddsMarket) return '';
+    const h = oddsMarket.home.decimalOdds.toFixed(2);
+    const d = oddsMarket.draw ? oddsMarket.draw.decimalOdds.toFixed(2) : '—';
+    const a = oddsMarket.away.decimalOdds.toFixed(2);
+    return `${h} / ${d} / ${a}`;
+  }
+
+  // 生成对战卡片用的赔率徽章 HTML
+  function formatOddsBadge(oddsMarket) {
+    if (!oddsMarket) return '';
+    return `<span class="wc-match-status is-odds" title="The Odds API h2h · ${escapeHtml(oddsMarket.bookmaker)}">💰 ${escapeHtml(formatOddsCompact(oddsMarket))}</span>`;
   }
 
   async function loadMatches() {
@@ -667,6 +696,11 @@
         return `<span class="wc-match-status is-llm" title="${escapeHtml(llm.reasoning || '')}">🤖 ${escapeHtml(out)} ${(prob * 100).toFixed(0)}%</span>`;
       })() : '';
 
+      // The Odds API 赔率徽章（h2h 主盘，The Odds API 数据未同步时不显示）
+      const oddsApiEventForBadge = findOddsApiMatch(match.home, match.away);
+      const oddsMarketForBadge = extractH2HMarket(oddsApiEventForBadge);
+      const oddsBadge = formatOddsBadge(oddsMarketForBadge);
+
       let scoreHtml;
       if (isCompleted && match.homeScore != null) {
         scoreHtml = '<div class="wc-match-score-badge">' + match.homeScore + ' - ' + match.awayScore + '</div>';
@@ -692,6 +726,7 @@
           '</div>' +
           (isScheduled ? '<span class="wc-match-status is-scheduled">未开始</span>' : '') +
           (isCompleted && match.homeScore != null ? '<span class="wc-match-status is-final">已结束</span>' : '') +
+          oddsBadge +
           llmBadge +
         '</div>' +
         '<div class="wc-match-body">' +
@@ -1058,6 +1093,73 @@
         ${renderLLMPerspectiveSection(marketMap)}
       </div>
     `;
+  }
+
+  // 赔率 24h 趋势段（modal 详情用，从 KV 历史快照算）
+  // 数据不足时显示"趋势累积中"提示
+  function renderOddsTrend(oddsMarket, oddsApiEvent, homeCountry, awayCountry) {
+    const history = state.oddsHistory?.['the-odds-api'] || [];
+    if (history.length < 2) {
+      return `<div class="wc-odds-trend">
+        <span class="wc-odds-trend-label">📈 赔率趋势</span>
+        <span class="wc-odds-trend-empty">数据累积中（当前 ${history.length} / 至少 2 个时间点）</span>
+      </div>`;
+    }
+    // 按时间倒序（最新在前）
+    const points = [...history].sort((a, b) => new Date(b.fetchedAt) - new Date(a.fetchedAt));
+    // 在历史中找跟当前场次匹配的 event（按 home/away name 匹配）
+    const matchKey = (ev) => ev && ev.home === homeCountry && ev.away === awayCountry;
+    // 找出最早 + 最新都包含这场比赛的点
+    const currentPoint = oddsApiEvent ? { fetchedAt: new Date().toISOString(), events: [oddsApiEvent] } : null;
+    const findIn = (point) => (point?.events || []).find(matchKey);
+
+    // 主胜赔率 24h 变化：找 ~24h 前的点
+    const now = Date.now();
+    const targetTime = now - 24 * 60 * 60 * 1000;
+    let baselinePoint = null;
+    for (const p of points) {
+      const t = new Date(p.fetchedAt).getTime();
+      if (t <= targetTime) { baselinePoint = p; break; }
+    }
+    if (!baselinePoint) baselinePoint = points[points.length - 1];  // 兜底用最旧的一个
+
+    const currentEvt = currentPoint ? findIn(currentPoint) : null;
+    const baselineEvt = findIn(baselinePoint);
+    if (!currentEvt || !baselineEvt) {
+      return `<div class="wc-odds-trend">
+        <span class="wc-odds-trend-label">📈 赔率趋势</span>
+        <span class="wc-odds-trend-empty">这场比赛的历史赔率尚未累积到</span>
+      </div>`;
+    }
+    const curMarket = extractH2HMarket(currentEvt);
+    const baseMarket = extractH2HMarket(baselineEvt);
+    if (!curMarket || !baseMarket) {
+      return `<div class="wc-odds-trend">
+        <span class="wc-odds-trend-label">📈 赔率趋势</span>
+        <span class="wc-odds-trend-empty">h2h 赔率抽取失败</span>
+      </div>`;
+    }
+    const curH = curMarket.home.decimalOdds;
+    const baseH = baseMarket.home.decimalOdds;
+    const curA = curMarket.away.decimalOdds;
+    const baseA = baseMarket.away.decimalOdds;
+    const curD = curMarket.draw?.decimalOdds;
+    const baseD = baseMarket.draw?.decimalOdds;
+    const shiftH = curH - baseH;
+    const shiftA = curA - baseA;
+    const shiftD = (curD != null && baseD != null) ? curD - baseD : null;
+    const baseAgoHrs = Math.round((now - new Date(baselinePoint.fetchedAt).getTime()) / (60 * 60 * 1000));
+    const fmt = (n) => (n > 0 ? '+' : '') + n.toFixed(2);
+
+    return `<div class="wc-odds-trend">
+      <span class="wc-odds-trend-label">📈 赔率 ${baseAgoHrs}h 变化</span>
+      <div class="wc-odds-trend-values">
+        <span>主胜 <strong>${baseH.toFixed(2)}</strong> → <strong>${curH.toFixed(2)}</strong></span>
+        ${curD != null ? `<span>平 <strong>${baseD.toFixed(2)}</strong> → <strong>${curD.toFixed(2)}</strong></span>` : ''}
+        <span>客胜 <strong>${baseA.toFixed(2)}</strong> → <strong>${curA.toFixed(2)}</strong></span>
+      </div>
+      <span class="wc-odds-trend-shift ${shiftH < 0 ? 'is-positive' : shiftH > 0 ? 'is-negative' : 'is-neutral'}">主 ${fmt(shiftH)}</span>
+    </div>`;
   }
 
   // LLM AI 视角对比面板：3 源（上游 / Polymarket / LLM）独立判断
@@ -1630,10 +1732,12 @@
           })()}
           <div class="wc-score-card">
             <div class="wc-expected">
-              <span>${escapeHtml(countryName(teamA.country))} xG <strong>${scores.lambdaA.toFixed(2)}</strong></span>
-              <span>精选比分 <strong>${scores.featured.goalsA}-${scores.featured.goalsB}</strong></span>
-              <span>${escapeHtml(countryName(teamB.country))} xG <strong>${scores.lambdaB.toFixed(2)}</strong></span>
+              <span>${escapeHtml(countryName(teamA.country))} 胜 <strong>${oddsMarket ? oddsMarket.home.decimalOdds.toFixed(2) : '—'}</strong></span>
+              <span>平局 <strong>${oddsMarket?.draw ? oddsMarket.draw.decimalOdds.toFixed(2) : '—'}</strong></span>
+              <span>${escapeHtml(countryName(teamB.country))} 胜 <strong>${oddsMarket ? oddsMarket.away.decimalOdds.toFixed(2) : '—'}</strong></span>
             </div>
+            ${renderOddsTrend(oddsMarket, oddsApiEvent, home, away)}
+            <h3>精选比分</h3>
             <div class="wc-score-grid">
               ${scores.likely.map(item => `
                 <div class="${item === scores.featured ? 'is-featured' : ''}">

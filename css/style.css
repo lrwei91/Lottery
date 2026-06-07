@@ -3981,6 +3981,61 @@ body.theme-worldcup .app-toast {
   cursor: help;
 }
 
+.wc-match-status.is-odds {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  cursor: help;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 赔率趋势段（modal 详情） */
+.wc-odds-trend {
+  margin-top: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.04), transparent);
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.wc-odds-trend .wc-odds-trend-label {
+  color: #fbbf24;
+  font-weight: 800;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.wc-odds-trend .wc-odds-trend-values {
+  display: flex;
+  gap: var(--space-md);
+  font-variant-numeric: tabular-nums;
+}
+
+.wc-odds-trend .wc-odds-trend-values strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.wc-odds-trend .wc-odds-trend-shift {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.wc-odds-trend .wc-odds-trend-empty {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
 /* LLM AI 视角对比面板（冠军概率 tab 底部） */
 .wc-llm-perspective {
   margin-top: var(--space-lg);

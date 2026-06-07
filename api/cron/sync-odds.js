@@ -205,6 +205,25 @@ async function fetchOddsAPI() {
   };
 }
 
+// 把 the-odds-api 拉到的 events 追加到历史 list（最多 28 个点 = 约 7 天 @ 4 次/天）
+// 旧点自动 expire，方便前端看 24h / 一周趋势
+async function writeOddsHistory(redis, source, events) {
+  if (!redis) return;
+  const key = `odds:history:${source}`;
+  const point = {
+    fetchedAt: new Date().toISOString(),
+    eventCount: events.length,
+    events
+  };
+  try {
+    await redis.lpush(key, point);
+    await redis.ltrim(key, 0, 27);
+    await redis.expire(key, 7 * 24 * 60 * 60);
+  } catch (err) {
+    console.error(`[sync-odds] history write ${source} failed:`, err?.message || err);
+  }
+}
+
 // ============================================================
 // football-data.org
 // ============================================================
@@ -286,6 +305,10 @@ export default async function handler(req, res) {
       results[name] = { ok: true, data };
       if (redis && data && !data.skipped) {
         await redis.set(KV_KEYS[name], data, { ex: 60 * 60 * 6 }); // 6h TTL
+        // 同步累积历史快照（仅 the-odds-api）
+        if (name === 'the-odds-api' && Array.isArray(data.events)) {
+          await writeOddsHistory(redis, 'the-odds-api', data.events);
+        }
       }
     } catch (err) {
       console.error(`[sync-odds] ${name} failed:`, err);
