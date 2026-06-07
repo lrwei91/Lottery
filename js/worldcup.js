@@ -379,11 +379,20 @@
           if (g && g.teams) g.teams.forEach(t => participatingTeams.add(t));
         });
         const aliases = { 'Bosnia-Herzegovina': 'Bosnia and Herzegovina', 'Cabo Verde': 'Cape Verde' };
+        // Reverse map: raw name -> match name
+        const rawToMatch = {};
+        for (const [matchName, rawName] of Object.entries(aliases)) {
+          rawToMatch[rawName] = matchName;
+        }
         state.teams = rawTeams.filter(team => {
           if (participatingTeams.has(team.country)) return true;
-          return aliases[team.country] && participatingTeams.has(aliases[team.country]);
+          // team.country is raw; check if it has a match-side alias that participates
+          const matchName = rawToMatch[team.country];
+          if (matchName && participatingTeams.has(matchName)) return true;
+          return false;
         });
         console.log('[loadData] teams after filter:', state.teams.length, '| participating:', [...participatingTeams]);
+        console.log('[loadData] bosnia in rawTeams?', rawTeams.find(t => t.country.includes('osnia')));
       } else {
         state.teams = rawTeams;
         console.log('[loadData] no matchesData, loaded all', rawTeams.length, 'teams');
