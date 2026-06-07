@@ -146,6 +146,8 @@
     return PLAYER_CN[english] || english;
   }
 
+  const POSITION_CN = { GK: '门将', DF: '后卫', MF: '中场', FW: '前锋' };
+
   function translateText(text) {
     if (!text) return '';
     let result = text;
@@ -1894,7 +1896,7 @@
             <tbody>
               ${players.map(player => `
                 <tr>
-                  <td><span class="wc-pos">${escapeHtml(player.position || '--')}</span></td>
+                  <td><span class="wc-pos">${escapeHtml(POSITION_CN[player.position] || player.position || '--')}</span></td>
                   <td>
                     <strong>${escapeHtml(playerName(player.name))}</strong>
                     <span>${escapeHtml(player.club || '')}</span>
