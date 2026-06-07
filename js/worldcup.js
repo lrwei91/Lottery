@@ -198,14 +198,27 @@
     'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
     'Congo DR': 'DR Congo',
     'Czechia': 'Czech Republic',
+    'Turkiye': 'Turkey',
     'United States': 'USA'
   };
 
+  // 地区/特殊市场，ticai 没有单国对应 → null
+  const POLY_NON_COUNTRY = new Set([
+    'Africa', 'Asia', 'Europe', 'North America', 'South America', 'Oceania',
+    'Any Other Team', 'Another Continent', 'another continent'
+  ]);
+  // Polymarket 的 "Team A?" placeholder markets
+  const POLY_TEAM_PLACEHOLDER = /^Team [A-Z]{1,2}$/;
+
   // 把 Polymarket outright 的 country 名映射到 ticai 数据里的 country
+  // 返回 null 表示不是 ticai 单国市场（地区、placeholder、未知队）
   function polyCountryToTicai(name) {
     if (!name) return null;
-    if (POLY_TO_TICAI_ALIAS[name]) return POLY_TO_TICAI_ALIAS[name];
-    return name;
+    const trimmed = name.trim();
+    if (POLY_NON_COUNTRY.has(trimmed)) return null;
+    if (POLY_TEAM_PLACEHOLDER.test(trimmed)) return null;
+    if (POLY_TO_TICAI_ALIAS[trimmed]) return POLY_TO_TICAI_ALIAS[trimmed];
+    return trimmed;
   }
 
   const FACTORS = [
