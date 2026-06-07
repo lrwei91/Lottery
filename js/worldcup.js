@@ -1509,7 +1509,7 @@
     return { final, parts, confidence };
   }
 
-  function renderEnsembleCard(ensemble) {
+  function renderEnsembleCard(ensemble, teamA, teamB) {
     const { final, parts, confidence } = ensemble;
     const homePct = (final.home * 100).toFixed(1);
     const drawPct = (final.draw * 100).toFixed(1);
@@ -1518,8 +1518,7 @@
     // 推荐结果
     const rec = final.home >= final.draw && final.home >= final.away ? 'home'
               : final.away >= final.draw ? 'away' : 'draw';
-    const recLabel = rec === 'home' ? parts[0]?.detail ? `主胜` : '主胜'
-                    : rec === 'away' ? '客胜' : '平局';
+    const recLabel = rec === 'home' ? `主胜` : rec === 'away' ? '客胜' : '平局';
 
     // 各源贡献 = 权重 × 该源概率；固定遍历全部 4 源，缺源标"暂无数据"
     const ENSEMBLE_ALL_SOURCES = [
@@ -1542,6 +1541,9 @@
         </div>`;
       }
       const actualWeight = (p.weight / totalWeight) * 100;
+      const ph = (p.probs.home * 100).toFixed(1);
+      const pd = (p.probs.draw * 100).toFixed(1);
+      const pa = (p.probs.away * 100).toFixed(1);
       return `<div class="wc-ensemble-source">
         <div class="wc-ensemble-source-head">
           <span class="wc-ensemble-icon">${p.icon}</span>
@@ -1549,13 +1551,17 @@
           <span class="wc-ensemble-weight">${actualWeight.toFixed(0)}% 权重</span>
         </div>
         <div class="wc-ensemble-bars">
-          <span style="width:${(p.probs.home * 100).toFixed(1)}%" title="主胜"></span>
-          <i style="width:${(p.probs.draw * 100).toFixed(1)}%" title="平"></i>
-          <b style="width:${(p.probs.away * 100).toFixed(1)}%" title="客胜"></b>
+          <span style="width:${ph}%" title="主胜 ${ph}%"></span>
+          <i style="width:${pd}%" title="平 ${pd}%"></i>
+          <b style="width:${pa}%" title="客胜 ${pa}%"></b>
         </div>
-        <div class="wc-ensemble-detail">${escapeHtml(p.detail)}</div>
+        <div class="wc-ensemble-detail">主 ${ph}% · 平 ${pd}% · 客 ${pa}%</div>
       </div>`;
     }).join('');
+
+    // 胜平负 3 卡片（显示融合后的概率，颜色按胜/平/客区分）
+    const homeName = teamA ? countryName(teamA.country) : '主胜';
+    const awayName = teamB ? countryName(teamB.country) : '客胜';
 
     return `
       <div class="wc-ensemble-card">
@@ -1569,15 +1575,24 @@
             <strong>${(confidence * 100).toFixed(0)}%</strong>
           </div>
         </div>
+        <div class="wc-expected-grid">
+          <div class="wc-expected-card is-home" title="融合后主胜概率">
+            <span class="wc-expected-team">${escapeHtml(homeName)} 胜</span>
+            <span class="wc-expected-pct">${homePct}%</span>
+          </div>
+          <div class="wc-expected-card is-draw" title="融合后平局概率">
+            <span class="wc-expected-team">平局</span>
+            <span class="wc-expected-pct">${drawPct}%</span>
+          </div>
+          <div class="wc-expected-card is-away" title="融合后客胜概率">
+            <span class="wc-expected-team">${escapeHtml(awayName)} 胜</span>
+            <span class="wc-expected-pct">${awayPct}%</span>
+          </div>
+        </div>
         <div class="wc-winbar wc-ensemble-winbar">
           <span style="width:${homePct}%">${homePct}%</span>
           <i style="width:${drawPct}%">${drawPct}%</i>
           <b style="width:${awayPct}%">${awayPct}%</b>
-        </div>
-        <div class="wc-ensemble-h2h-metrics">
-          <div><span>主胜</span><strong>${homePct}%</strong></div>
-          <div><span>平局</span><strong>${drawPct}%</strong></div>
-          <div><span>客胜</span><strong>${awayPct}%</strong></div>
         </div>
         <h4>各源贡献分解</h4>
         <div class="wc-ensemble-sources">${sourceRows}</div>
@@ -1728,14 +1743,9 @@
           </div>
           ${(() => {
             const ens = ensemblePredict(result, oddsMarket, polymarketEvent, llmPred);
-            return renderEnsembleCard(ens);
+            return renderEnsembleCard(ens, teamA, teamB);
           })()}
           <div class="wc-score-card">
-            <div class="wc-expected">
-              <span>${escapeHtml(countryName(teamA.country))} 胜 <strong>${oddsMarket ? oddsMarket.home.decimalOdds.toFixed(2) : '—'}</strong></span>
-              <span>平局 <strong>${oddsMarket?.draw ? oddsMarket.draw.decimalOdds.toFixed(2) : '—'}</strong></span>
-              <span>${escapeHtml(countryName(teamB.country))} 胜 <strong>${oddsMarket ? oddsMarket.away.decimalOdds.toFixed(2) : '—'}</strong></span>
-            </div>
             ${renderOddsTrend(oddsMarket, oddsApiEvent, home, away)}
             <h3>精选比分</h3>
             <div class="wc-score-grid">

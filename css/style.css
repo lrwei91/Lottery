@@ -3339,11 +3339,12 @@ body.theme-worldcup .app-toast {
 
 .wc-winbar {
   display: flex;
-  height: 46px;
+  height: 60px;
   overflow: hidden;
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
   margin-bottom: var(--space-md);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .wc-winbar span,
@@ -3352,23 +3353,38 @@ body.theme-worldcup .app-toast {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 48px;
-  color: #05110d;
+  min-width: 64px;
+  color: #0a1410;
   font-style: normal;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  position: relative;
+  transition: width 0.4s ease;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .wc-winbar span {
-  background: var(--back-start);
+  background: linear-gradient(180deg, #34d399, #10b981);
 }
 
 .wc-winbar i {
-  background: var(--warning);
+  background: linear-gradient(180deg, #fbbf24, #f59e0b);
 }
 
 .wc-winbar b {
-  background: var(--accent);
+  background: linear-gradient(180deg, #60a5fa, #3b82f6);
+}
+
+/* 进度条太窄时隐藏文字（避免溢出） */
+.wc-winbar span:empty,
+.wc-winbar i:empty,
+.wc-winbar b:empty {
+  min-width: 0;
+}
+
+.wc-ensemble-winbar {
+  margin-bottom: var(--space-md);
 }
 
 .wc-h2h-metrics,
@@ -3404,6 +3420,67 @@ body.theme-worldcup .app-toast {
 .wc-expected strong {
   color: var(--text-primary);
 }
+
+/* 胜平负概率卡片组（3 卡片，跟精选比分 6 卡片风格一致） */
+.wc-expected-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.wc-expected-card {
+  display: grid;
+  gap: 4px;
+  place-items: center;
+  place-content: center;
+  min-height: 80px;
+  padding: 12px 8px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.045);
+  position: relative;
+  overflow: hidden;
+}
+
+.wc-expected-card.is-home {
+  background: linear-gradient(135deg, rgba(49, 217, 151, 0.18), rgba(49, 217, 151, 0.05));
+  border-color: rgba(49, 217, 151, 0.4);
+}
+
+.wc-expected-card.is-draw {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), rgba(245, 158, 11, 0.05));
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.wc-expected-card.is-away {
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.18), rgba(96, 165, 250, 0.05));
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
+.wc-expected-card .wc-expected-team {
+  font-size: 0.74rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.wc-expected-card .wc-expected-pct {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.wc-expected-card.is-home .wc-expected-pct { color: #6ee7b7; }
+.wc-expected-card.is-draw .wc-expected-pct { color: #fbbf24; }
+.wc-expected-card.is-away .wc-expected-pct { color: #93c5fd; }
 
 .wc-score-grid {
   display: grid;
