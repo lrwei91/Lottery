@@ -378,24 +378,14 @@
           const g = state.matchesData.groups[groupKey];
           if (g && g.teams) g.teams.forEach(t => participatingTeams.add(t));
         });
-        const aliases = { 'Bosnia-Herzegovina': 'Bosnia and Herzegovina', 'Cabo Verde': 'Cape Verde' };
-        // Reverse map: raw name -> match name
-        const rawToMatch = {};
-        for (const [matchName, rawName] of Object.entries(aliases)) {
-          rawToMatch[rawName] = matchName;
-        }
+        const rawToMatch = { 'Bosnia and Herzegovina': 'Bosnia-Herzegovina', 'Cape Verde': 'Cabo Verde' };
         state.teams = rawTeams.filter(team => {
           if (participatingTeams.has(team.country)) return true;
-          // team.country is raw; check if it has a match-side alias that participates
           const matchName = rawToMatch[team.country];
-          if (matchName && participatingTeams.has(matchName)) return true;
-          return false;
+          return matchName && participatingTeams.has(matchName);
         });
-        console.log('[loadData] teams after filter:', state.teams.length, '| participating:', [...participatingTeams]);
-        console.log('[loadData] bosnia in rawTeams?', rawTeams.find(t => t.country.includes('osnia')));
       } else {
         state.teams = rawTeams;
-        console.log('[loadData] no matchesData, loaded all', rawTeams.length, 'teams');
       }
       state.ucl = payload.ucl || {};
       const teams = sortedTeams();
@@ -1701,7 +1691,7 @@
   }
 
   async function loadTeamsOnly() {
-    // Silently load teams without loading overlay (used by modal)
+    // Independent team load for modal use (no guard, no overlay)
     try {
       await loadMatches();
       const res = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-cache' });
@@ -1714,10 +1704,11 @@
           const g = state.matchesData.groups[groupKey];
           if (g && g.teams) g.teams.forEach(t => participatingTeams.add(t));
         });
-        const aliases = { 'Bosnia-Herzegovina': 'Bosnia and Herzegovina', 'Cabo Verde': 'Cape Verde' };
+        const rawToMatch = { 'Bosnia and Herzegovina': 'Bosnia-Herzegovina', 'Cape Verde': 'Cabo Verde' };
         state.teams = rawTeams.filter(team => {
           if (participatingTeams.has(team.country)) return true;
-          return aliases[team.country] && participatingTeams.has(aliases[team.country]);
+          const matchName = rawToMatch[team.country];
+          return matchName && participatingTeams.has(matchName);
         });
       } else {
         state.teams = rawTeams;
