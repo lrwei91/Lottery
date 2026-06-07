@@ -214,8 +214,9 @@ async function fetchFootballData() {
 
   // 国际足联世界杯的 competition id
   const competition = '2000'; // FIFA World Cup
-  const dateFrom = process.env.FOOTBALL_DATA_DATE_FROM || '';
-  const dateTo = process.env.FOOTBALL_DATA_DATE_TO || '';
+  // 默认窗口 2026-06-01 ~ 2026-07-31（覆盖整届世界杯正赛），可通过 env 覆盖
+  const dateFrom = process.env.FOOTBALL_DATA_DATE_FROM || '2026-06-01';
+  const dateTo = process.env.FOOTBALL_DATA_DATE_TO || '2026-07-31';
   const params = new URLSearchParams();
   if (dateFrom) params.set('dateFrom', dateFrom);
   if (dateTo) params.set('dateTo', dateTo);

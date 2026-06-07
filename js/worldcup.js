@@ -20,7 +20,8 @@
     selectedSquad: '',
     selectedGroup: 'TIME',
     countdownTimerId: null,
-    llmPredictions: null,   // { generatedAt, model, predictions: [{matchId, ...}] }
+    llmPredictions: null,   // { generatedAt, model, predictions: [{matchId, ...}] } — h2h 单场
+    llmOutright: null,      // { generatedAt, model, predictions: [{country, winProb, ...}] } — 冠军 outright
     oddsSnapshots: null     // { meta, polymarket, 'the-odds-api', 'football-data' }
   };
 
@@ -378,6 +379,7 @@
       render();
       // LLM 预测快照 + 实时数据快照（fire-and-forget，加载完会自动 re-render）
       loadLLMPredictions();
+      loadLLMOutright();
       loadOddsSnapshots();
     } catch (error) {
       console.error('World Cup data load failed:', error);
@@ -400,6 +402,20 @@
       if (state.loaded) render();
     } catch (e) {
       // 文件不存在是正常（用户还没跑 LLM）
+    }
+  }
+
+  // 本地 LLM 跑完的冠军 outright 预测（独立文件，独立 fire-and-forget）
+  async function loadLLMOutright() {
+    try {
+      const res = await fetch('data/wc_llm_outright.json?t=' + Date.now(), { cache: 'no-cache' });
+      if (!res.ok) return;
+      const payload = await res.json();
+      state.llmOutright = payload;
+      // 冠军概率 tab 用了 LLM outright
+      if (state.loaded) render();
+    } catch (e) {
+      // 文件不存在是正常（用户还没跑 LLM outright）
     }
   }
 
@@ -1039,6 +1055,63 @@
           `).join('') || '<div class="empty-state">当前没有超过 1% 的正向偏离。</div>'}
         </div>
         <div class="wc-market-list">${rows}</div>
+        ${renderLLMPerspectiveSection(marketMap)}
+      </div>
+    `;
+  }
+
+  // LLM AI 视角对比面板：3 源（上游 / Polymarket / LLM）独立判断
+  // 不参与融合计算，仅做对比展示
+  function renderLLMPerspectiveSection(marketMap) {
+    const llm = state.llmOutright;
+    if (!llm || !Array.isArray(llm.predictions) || llm.predictions.length === 0) return '';
+    const top8 = llm.predictions.slice(0, 8);
+    const llmMeta = [
+      llm.provider || '',
+      llm.model || '',
+      (llm.generatedAt || '').slice(0, 10),
+      llm.llmProvided != null ? `直接给 ${llm.llmProvided} 国` : ''
+    ].filter(Boolean).join(' · ');
+
+    const teams = sortedTeams();
+    const rows = top8.map(p => {
+      const country = p.country;
+      const cn = countryName(country);
+      const c = code(country);
+      const ticaiTeam = teams.find(t => t.country === country);
+      const modelP = ticaiTeam ? (ticaiTeam.final_prob || 0) : 0;
+      const marketP = marketMap[country] != null ? marketMap[country] : 0;  // Polymarket Yes 价格
+      const llmP = p.winProb || 0;
+      const llmVsMarket = llmP - marketP;
+      const llmVsModel = llmP - modelP;
+      return `
+        <div class="wc-llm-row">
+          <span class="wc-llm-name">
+            <span class="wc-code">${c}</span>
+            <span>${escapeHtml(cn)}</span>
+          </span>
+          <span class="wc-llm-cell" title="上游模型 final_prob">${pct(modelP, 1)}</span>
+          <span class="wc-llm-cell" title="Polymarket Yes 价格">${pct(marketP, 1)}</span>
+          <span class="wc-llm-cell is-llm-main" title="LLM 独立判断">${pct(llmP, 1)}</span>
+          <span class="wc-llm-cell ${clsByShift(llmVsMarket)}" title="LLM − Polymarket（市场偏离）">${signedPct(llmVsMarket, 1)}</span>
+          <span class="wc-llm-cell ${clsByShift(llmVsModel)}" title="LLM − 上游模型（模型偏离）">${signedPct(llmVsModel, 1)}</span>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="wc-llm-perspective">
+        <div class="wc-llm-head">
+          <h3>🤖 AI 视角（LLM top 8 vs 上游 + 市场）</h3>
+          <span class="wc-llm-meta">${escapeHtml(llmMeta)}</span>
+        </div>
+        <div class="wc-llm-table">
+          <div class="wc-llm-header">
+            <span>国家</span><span>上游</span><span>Polymarket</span><span>LLM</span><span>LLM−市场</span><span>LLM−模型</span>
+          </div>
+          ${rows}
+        </div>
+        <p class="wc-llm-insight">三源独立判断：上游 Elo 模型（确定性） + Polymarket 市场（真钱投票） + LLM AI（综合推理）。LLM 跟市场/模型偏离越大，越值得人工复盘 —— LLM 看到了市场没消化的信息，还是在 Elo 上复读？</p>
       </div>
     `;
   }

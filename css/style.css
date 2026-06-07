@@ -3974,6 +3974,110 @@ body.theme-worldcup .app-toast {
   color: var(--text-muted);
 }
 
+.wc-match-status.is-llm {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.32);
+  cursor: help;
+}
+
+/* LLM AI 视角对比面板（冠军概率 tab 底部） */
+.wc-llm-perspective {
+  margin-top: var(--space-lg);
+  padding: var(--space-md);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.06), rgba(168, 85, 247, 0.01));
+}
+
+.wc-llm-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-sm);
+}
+
+.wc-llm-perspective h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #c084fc;
+  font-weight: 800;
+}
+
+.wc-llm-meta {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.wc-llm-table {
+  display: grid;
+  gap: 2px;
+}
+
+.wc-llm-header,
+.wc-llm-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.6fr) 64px 86px 64px 78px 78px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 0.82rem;
+}
+
+.wc-llm-header {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 8px;
+}
+
+.wc-llm-row {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-variant-numeric: tabular-nums;
+}
+
+.wc-llm-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wc-llm-name .wc-code {
+  flex-shrink: 0;
+}
+
+.wc-llm-cell {
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.wc-llm-cell.is-llm-main {
+  color: #c084fc;
+  font-weight: 800;
+}
+
+.wc-llm-insight {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+  margin: var(--space-md) 0 0 0;
+}
+
+@media (max-width: 768px) {
+  .wc-llm-header,
+  .wc-llm-row {
+    grid-template-columns: minmax(80px, 1fr) 50px 60px 50px 60px 60px;
+    font-size: 0.72rem;
+  }
+}
+
 /* 6. Match Card Body */
 .wc-match-body {
   display: grid;
