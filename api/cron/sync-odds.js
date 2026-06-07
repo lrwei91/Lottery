@@ -61,27 +61,46 @@ async function fetchPolymarket() {
   const events = await res.json();
 
   // 标准化输出：冠军市场（找 2026 World Cup Winner 之类的 event）
+  // 注意：Polymarket Gamma API 的 outcomes / outcomePrices 是 JSON 编码的字符串
   const normalized = {
     fetchedAt: new Date().toISOString(),
-    events: (events || []).map(ev => ({
-      id: ev.id,
-      slug: ev.slug,
-      title: ev.title,
-      active: ev.active,
-      closed: ev.closed,
-      outcomes: (ev.markets || []).flatMap(m =>
-        (m.outcomes || []).map((name, i) => ({
-          name,
-          price: Number(m.outcomePrices?.[i] ?? 0),
-          decimalOdds: Number(m.outcomePrices?.[i] ?? 0) > 0
-            ? 1 / Number(m.outcomePrices[i])
-            : null
-        }))
-      ).filter(o => o.decimalOdds != null)
-    })),
+    events: (events || []).map(ev => {
+      const evOutcomes = [];
+      (ev.markets || []).forEach(m => {
+        const names = parseJsonArray(m.outcomes);
+        const prices = parseJsonArray(m.outcomePrices);
+        if (!names || !prices || names.length !== prices.length) return;
+        names.forEach((name, i) => {
+          const price = Number(prices[i] ?? 0);
+          if (price > 0 && price < 1) {
+            evOutcomes.push({
+              name,
+              price,
+              decimalOdds: 1 / price
+            });
+          }
+        });
+      });
+      return {
+        id: ev.id,
+        slug: ev.slug,
+        title: ev.title,
+        active: ev.active,
+        closed: ev.closed,
+        outcomes: evOutcomes
+      };
+    }),
     source: 'polymarket-gamma-api'
   };
   return normalized;
+}
+
+function parseJsonArray(v) {
+  if (Array.isArray(v)) return v;
+  if (typeof v === 'string') {
+    try { return JSON.parse(v); } catch (_) { return null; }
+  }
+  return null;
 }
 
 // ============================================================
