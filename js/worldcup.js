@@ -1758,13 +1758,13 @@
       }) || null;
     })();
 
-    // LLM / Odds 数据可用性标记
-    const meta = state.oddsSnapshots?.meta || null;
-    const dataSourcesBadge = meta ? (() => {
-      const ts = new Date(meta.finishedAt || meta.startedAt);
-      const time = ts.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-      return `<span class="wc-h2h-meta" title="实时数据拉取于 ${escapeHtml(time)}">📡 实时数据 ${escapeHtml(time)}</span>`;
-    })() : '';
+    // LLM / Odds 数据可用性标记（已移除实时数据徽章）
+    // const meta = state.oddsSnapshots?.meta || null;
+    // const dataSourcesBadge = meta ? (() => {
+    //   const ts = new Date(meta.finishedAt || meta.startedAt);
+    //   const time = ts.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    //   return `<span class="wc-h2h-meta" title="实时数据拉取于 ${escapeHtml(time)}">📡 实时数据 ${escapeHtml(time)}</span>`;
+    // })() : '';
 
     modal.innerHTML = `
       <div class="modal-card card wc-h2h-modal-card">
@@ -1834,7 +1834,6 @@
             <h3>球员位置对位较量</h3>
             ${playerMatchups(teamA, teamB)}
           </div>
-          ${dataSourcesBadge ? `<div class="wc-modal-footer">${dataSourcesBadge}</div>` : ''}
         </div>
       </div>
     `;

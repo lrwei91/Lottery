@@ -4121,26 +4121,7 @@ body.theme-worldcup .app-toast {
   font-style: italic;
 }
 
-/* modal 底部 footer（实时数据时间徽章） */
-.wc-modal-footer {
-  margin-top: var(--space-md);
-  padding-top: var(--space-sm);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-
-.wc-modal-footer .wc-h2h-meta {
-  font-size: 0.72rem;
-  color: var(--accent);
-  background: rgba(0, 255, 157, 0.08);
-  padding: 3px 10px;
-  border-radius: 99px;
-  border: 1px solid rgba(0, 255, 157, 0.18);
-  font-weight: 700;
-  white-space: nowrap;
-}
+/* modal 底部 footer（已移除） */
 
 /* LLM AI 视角对比面板（冠军概率 tab 底部） */
 .wc-llm-perspective {
