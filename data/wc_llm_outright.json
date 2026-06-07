@@ -1,0 +1,301 @@
+{
+  "generatedAt": "2026-06-07T14:10:20.559Z",
+  "provider": "xiaomi",
+  "model": "mimo-v2.5-pro",
+  "endpoint": "https://token-plan-cn.xiaomimimo.com/anthropic/v1/messages",
+  "temperature": 0.3,
+  "mode": "outright",
+  "countryCount": 48,
+  "llmProvided": 48,
+  "fallbackFilled": 0,
+  "predictions": [
+    {
+      "country": "France",
+      "winProb": 0.1382,
+      "rank": 1,
+      "reasoning": "法国队拥有顶级阵容和世界冠军经验，修正Elo最高，是夺冠最大热门。"
+    },
+    {
+      "country": "Brazil",
+      "winProb": 0.1328,
+      "rank": 2,
+      "reasoning": "巴西队传统强队，进攻火力强大，Elo评分高，有望夺冠。"
+    },
+    {
+      "country": "Argentina",
+      "winProb": 0.1256,
+      "rank": 3,
+      "reasoning": "阿根廷队以梅西为核心，防守稳固，修正Elo高，竞争力强。"
+    },
+    {
+      "country": "Portugal",
+      "winProb": 0.0746,
+      "rank": 4,
+      "reasoning": "葡萄牙队阵容深度好，教练战术灵活，修正Elo高，有望走得远。"
+    },
+    {
+      "country": "England",
+      "winProb": 0.0594,
+      "rank": 5,
+      "reasoning": "英格兰队年轻有冲击力，修正Elo高，教练务实，有望突破。"
+    },
+    {
+      "country": "Spain",
+      "winProb": 0.0568,
+      "rank": 6,
+      "reasoning": "西班牙队技术细腻，控球能力强，修正Elo高，夺冠潜力大。"
+    },
+    {
+      "country": "Colombia",
+      "winProb": 0.0351,
+      "rank": 7,
+      "reasoning": "哥伦比亚队进攻多样，修正Elo高，教练战术得当，黑马潜力。"
+    },
+    {
+      "country": "Austria",
+      "winProb": 0.0346,
+      "rank": 8,
+      "reasoning": "奥地利队近年来表现稳定，修正Elo高，阵容均衡，有竞争力。"
+    },
+    {
+      "country": "Netherlands",
+      "winProb": 0.0346,
+      "rank": 9,
+      "reasoning": "荷兰队传统强队，修正Elo高，进攻华丽，有望回归巅峰。"
+    },
+    {
+      "country": "Belgium",
+      "winProb": 0.0328,
+      "rank": 10,
+      "reasoning": "比利时队黄金一代，修正Elo高，经验丰富，但需突破瓶颈。"
+    },
+    {
+      "country": "Croatia",
+      "winProb": 0.0304,
+      "rank": 11,
+      "reasoning": "克罗地亚队中场强大，修正Elo高，教练战术出色，有望再创佳绩。"
+    },
+    {
+      "country": "Germany",
+      "winProb": 0.0288,
+      "rank": 12,
+      "reasoning": "德国队纪律严明，修正Elo高，教练年轻有为，夺冠潜力大。"
+    },
+    {
+      "country": "Paraguay",
+      "winProb": 0.0217,
+      "rank": 13,
+      "reasoning": "巴拉圭队防守反击犀利，修正Elo中等，夺冠希望较小但不容小觑。"
+    },
+    {
+      "country": "Ecuador",
+      "winProb": 0.0187,
+      "rank": 14,
+      "reasoning": "厄瓜多尔队南美劲旅，修正Elo较高，有一定夺冠可能，但挑战大。"
+    },
+    {
+      "country": "Scotland",
+      "winProb": 0.0181,
+      "rank": 15,
+      "reasoning": "苏格兰队斗志顽强，修正Elo较低，进攻有特点，夺冠希望渺茫。"
+    },
+    {
+      "country": "Uruguay",
+      "winProb": 0.0167,
+      "rank": 16,
+      "reasoning": "乌拉圭队经验丰富，修正Elo中等，进攻有威胁，夺冠概率偏低。"
+    },
+    {
+      "country": "Turkey",
+      "winProb": 0.012,
+      "rank": 17,
+      "reasoning": "土耳其队年轻有活力，修正Elo中等，教练战术多变，夺冠希望小。"
+    },
+    {
+      "country": "Switzerland",
+      "winProb": 0.0105,
+      "rank": 18,
+      "reasoning": "瑞士队组织严密，修正Elo中等，防守稳固，夺冠可能性较低。"
+    },
+    {
+      "country": "Sweden",
+      "winProb": 0.0105,
+      "rank": 19,
+      "reasoning": "瑞典队纪律性强，修正Elo较低，防守稳固，夺冠可能性较小。"
+    },
+    {
+      "country": "Mexico",
+      "winProb": 0.01,
+      "rank": 20,
+      "reasoning": "墨西哥队技术细腻，修正Elo较低，主场优势有限，夺冠概率低。"
+    },
+    {
+      "country": "Czech Republic",
+      "winProb": 0.0083,
+      "rank": 21,
+      "reasoning": "捷克队中场控制力强，修正Elo较低，经验丰富，夺冠希望不大。"
+    },
+    {
+      "country": "Japan",
+      "winProb": 0.0076,
+      "rank": 22,
+      "reasoning": "日本队技术流畅，修正Elo较低，教练战术先进，夺冠可能性小。"
+    },
+    {
+      "country": "South Korea",
+      "winProb": 0.0057,
+      "rank": 23,
+      "reasoning": "韩国队跑动积极，修正Elo较低，教练务实，夺冠概率偏低。"
+    },
+    {
+      "country": "Ivory Coast",
+      "winProb": 0.0056,
+      "rank": 24,
+      "reasoning": "科特迪瓦队身体素质出色，修正Elo较低，进攻多样，夺冠希望小。"
+    },
+    {
+      "country": "Tunisia",
+      "winProb": 0.0043,
+      "rank": 25,
+      "reasoning": "突尼斯队防守组织好，修正Elo低，教练战术保守，夺冠概率低。"
+    },
+    {
+      "country": "Uzbekistan",
+      "winProb": 0.0041,
+      "rank": 26,
+      "reasoning": "乌兹别克斯坦队近年来进步快，修正Elo低，夺冠可能性极小。"
+    },
+    {
+      "country": "USA",
+      "winProb": 0.0041,
+      "rank": 27,
+      "reasoning": "美国队年轻有冲击力，修正Elo低，主场优势有限，夺冠概率低。"
+    },
+    {
+      "country": "Morocco",
+      "winProb": 0.004,
+      "rank": 28,
+      "reasoning": "摩洛哥队防守反击犀利，修正Elo低，教练战术灵活，夺冠希望小。"
+    },
+    {
+      "country": "Panama",
+      "winProb": 0.0039,
+      "rank": 29,
+      "reasoning": "巴拿马队斗志顽强，修正Elo低，阵容深度不足，夺冠概率极低。"
+    },
+    {
+      "country": "Egypt",
+      "winProb": 0.0035,
+      "rank": 30,
+      "reasoning": "埃及队技术细腻，修正Elo低，教练战术保守，夺冠可能性小。"
+    },
+    {
+      "country": "Jordan",
+      "winProb": 0.0032,
+      "rank": 31,
+      "reasoning": "约旦队防守组织好，修正Elo低，进攻乏力，夺冠概率极低。"
+    },
+    {
+      "country": "Senegal",
+      "winProb": 0.0032,
+      "rank": 32,
+      "reasoning": "塞内加尔队身体素质出色，修正Elo低，教练战术多变，夺冠希望渺茫。"
+    },
+    {
+      "country": "New Zealand",
+      "winProb": 0.0032,
+      "rank": 33,
+      "reasoning": "新西兰队斗志顽强，修正Elo低，阵容深度不足，夺冠可能性极小。"
+    },
+    {
+      "country": "Bosnia and Herzegovina",
+      "winProb": 0.003,
+      "rank": 34,
+      "reasoning": "波黑队技术细腻，修正Elo低，教练战术多变，夺冠希望渺茫。"
+    },
+    {
+      "country": "Iran",
+      "winProb": 0.0029,
+      "rank": 35,
+      "reasoning": "伊朗队防守严密，修正Elo低，教练战术保守，夺冠概率极低。"
+    },
+    {
+      "country": "Algeria",
+      "winProb": 0.0029,
+      "rank": 36,
+      "reasoning": "阿尔及利亚队进攻多样，修正Elo低，教练战术灵活，夺冠希望小。"
+    },
+    {
+      "country": "Australia",
+      "winProb": 0.0029,
+      "rank": 37,
+      "reasoning": "澳大利亚队跑动积极，修正Elo低，教练务实，夺冠可能性小。"
+    },
+    {
+      "country": "Canada",
+      "winProb": 0.0029,
+      "rank": 38,
+      "reasoning": "加拿大队年轻有潜力，修正Elo低，阵容深度不足，夺冠概率极低。"
+    },
+    {
+      "country": "Ghana",
+      "winProb": 0.0028,
+      "rank": 39,
+      "reasoning": "加纳队身体素质出色，修正Elo低，进攻有威胁，夺冠希望渺茫。"
+    },
+    {
+      "country": "DR Congo",
+      "winProb": 0.0028,
+      "rank": 40,
+      "reasoning": "刚果民主共和国队斗志顽强，修正Elo低，阵容深度不足，夺冠可能性极小。"
+    },
+    {
+      "country": "Haiti",
+      "winProb": 0.0028,
+      "rank": 41,
+      "reasoning": "海地队斗志顽强，修正Elo低，阵容深度不足，夺冠概率极低。"
+    },
+    {
+      "country": "Cape Verde",
+      "winProb": 0.0027,
+      "rank": 42,
+      "reasoning": "佛得角队近年来进步快，修正Elo低，夺冠可能性极小。"
+    },
+    {
+      "country": "Saudi Arabia",
+      "winProb": 0.0027,
+      "rank": 43,
+      "reasoning": "沙特阿拉伯队组织严密，修正Elo低，教练战术保守，夺冠可能性极小。"
+    },
+    {
+      "country": "Qatar",
+      "winProb": 0.0026,
+      "rank": 44,
+      "reasoning": "卡塔尔队主场优势有限，修正Elo低，教练战术保守，夺冠希望渺茫。"
+    },
+    {
+      "country": "Iraq",
+      "winProb": 0.002,
+      "rank": 45,
+      "reasoning": "伊拉克队防守组织好，修正Elo低，教练战术保守，夺冠概率极低。"
+    },
+    {
+      "country": "South Africa",
+      "winProb": 0.002,
+      "rank": 46,
+      "reasoning": "南非队斗志顽强，修正Elo低，阵容深度不足，夺冠概率极低。"
+    },
+    {
+      "country": "Norway",
+      "winProb": 0.0011,
+      "rank": 47,
+      "reasoning": "挪威队Elo高但修正Elo低，阵容深度不足，夺冠概率极低。"
+    },
+    {
+      "country": "Curaçao",
+      "winProb": 0.001,
+      "rank": 48,
+      "reasoning": "库拉索队实力较弱，修正Elo最低，夺冠可能性几乎为零。"
+    }
+  ]
+}
