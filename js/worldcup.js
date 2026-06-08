@@ -391,12 +391,16 @@
       const teams = sortedTeams();
       state.selectedSquad = teams[0]?.country || '';
       state.loaded = true;
+      // 实时数据快照（赔率/Polymarket）跟核心数据并行加载：保证首次 render 就有赔率，
+      // 避免"先空再补"的窗口被网络抖动卡住
+      await Promise.all([
+        loadOddsSnapshots(),
+        loadOddsHistory()
+      ]);
       render();
-      // LLM 预测快照 + 实时数据快照（fire-and-forget，加载完会自动 re-render）
+      // LLM 预测快照（用户本地跑 LLM 后才生成，fire-and-forget 合理）
       loadLLMPredictions();
       loadLLMOutright();
-      loadOddsSnapshots();
-      loadOddsHistory();
     } catch (error) {
       console.error('World Cup data load failed:', error);
       if (root) {
@@ -455,11 +459,61 @@
       if (!res.ok) return;
       const payload = await res.json();
       state.oddsSnapshots = payload;
+      // 健康度检查：避免上游改了 tag/丢了 key 时静默坏数据
+      state.oddsHealth = checkOddsHealth(payload);
+      if (!state.oddsHealth.ok) {
+        console.warn('⚠️ odds 数据源异常:', state.oddsHealth.issues);
+      }
       // 拉到新数据后重渲染：market tab 用到了 polymarket-outright
       if (state.loaded) render();
     } catch (e) {
       console.warn('odds 快照加载失败:', e);
     }
+  }
+
+  // 赔率数据健康度：检查 4 个源是否拉到了正确类型的数据
+  // - the-odds-api.events 应有 sport_key 含 'world_cup' 或 'fifa'
+  // - polymarket.events 标题应含 'World Cup' / 'FIFA' / '2026' 之一
+  // - polymarket-outright.countries 至少 ≥ 20 个国家
+  // - football-data.matches 应非空
+  function checkOddsHealth(payload) {
+    const issues = [];
+    if (!payload) return { ok: false, issues: ['snapshots endpoint returned null'] };
+
+    // the-odds-api
+    const oddsApi = payload['the-odds-api'];
+    if (!oddsApi) {
+      issues.push('the-odds-api 源缺失');
+    } else if (!Array.isArray(oddsApi.events) || oddsApi.events.length === 0) {
+      issues.push('the-odds-api 0 场赔率');
+    } else {
+      const hasWorldCup = oddsApi.events.some(ev =>
+        (ev.sport || '').toLowerCase().includes('world_cup') ||
+        (ev.sport || '').toLowerCase().includes('fifa')
+      );
+      if (!hasWorldCup) issues.push(`the-odds-api sport 异常: ${oddsApi.events[0]?.sport || 'N/A'}`);
+    }
+
+    // polymarket
+    const pm = payload.polymarket;
+    if (!pm) {
+      issues.push('polymarket 源缺失');
+    } else if (Array.isArray(pm.events) && pm.events.length > 0) {
+      const hasWorldCup = pm.events.some(ev =>
+        /world cup|fifa|2026/i.test(ev.title || '')
+      );
+      if (!hasWorldCup) {
+        issues.push(`polymarket 标题异常（前 3）: ${pm.events.slice(0,3).map(e => e.title || '?').join(' | ').slice(0, 120)}`);
+      }
+    }
+
+    // polymarket-outright
+    const pmo = payload['polymarket-outright'];
+    if (pmo && typeof pmo.countryCount === 'number' && pmo.countryCount < 20) {
+      issues.push(`polymarket-outright 国家数偏低: ${pmo.countryCount}`);
+    }
+
+    return { ok: issues.length === 0, issues };
   }
 
   // ============ 数据源查找 helpers ============
@@ -627,6 +681,9 @@
         <button class="wc-tab" data-wc-tab="factor">因子拆解</button>
         <button class="wc-tab" data-wc-tab="mystic">玄学分析</button>
         <button class="wc-tab" data-wc-tab="squad">球队阵容</button>
+        ${state.oddsHealth && !state.oddsHealth.ok
+          ? `<span class="wc-odds-health-badge" title="${escapeHtml(state.oddsHealth.issues.join(' / '))}">⚠️ 数据源异常</span>`
+          : ''}
       </div>
 
       <div class="wc-panel active" id="wcPanelMatches">${renderMatchPanel()}</div>

@@ -55,7 +55,7 @@ async function fetchPolymarket() {
   const enabled = process.env.POLYMARKET_PUBLIC_ENABLED === 'true';
   if (!enabled) return { skipped: true, reason: 'POLYMARKET_PUBLIC_ENABLED != true' };
 
-  const tagId = process.env.POLYMARKET_TAG_ID || '102467'; // 2026 World Cup
+  const tagId = process.env.POLYMARKET_TAG_ID || '102350'; // 2026 FIFA World Cup (was 102467, returned crypto spam)
   const limit = process.env.POLYMARKET_LIMIT || '100';
   const url = `https://gamma-api.polymarket.com/events?tag_id=${tagId}&active=true&closed=false&limit=${limit}`;
 

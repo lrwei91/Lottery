@@ -3105,6 +3105,22 @@ body.theme-worldcup .app-toast {
   border-color: rgba(49, 217, 151, 0.28);
 }
 
+.wc-odds-health-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: auto;
+  align-self: center;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  cursor: help;
+  white-space: nowrap;
+}
+
 .wc-panel {
   display: none;
 }
