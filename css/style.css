@@ -3399,6 +3399,20 @@ body.theme-worldcup .app-toast {
   min-width: 0;
 }
 
+/* Conformal 校正 winbar：文字小一号、delta 标签绝对定位浮在右上 */
+.cp-calibrated-bar span,
+.cp-calibrated-bar i,
+.cp-calibrated-bar b {
+  font-size: 0.82rem;
+  padding: 0 4px;
+  gap: 4px;
+}
+.cp-calibrated-bar .cp-delta {
+  /* 当 winbar 段太窄时不让它撑出去 */
+  display: inline-block;
+  vertical-align: middle;
+}
+
 .wc-ensemble-winbar {
   margin-bottom: var(--space-md);
 }
@@ -5225,4 +5239,64 @@ body.theme-worldcup .app-toast {
   font-size: 10.5px;
   color: var(--text-muted, rgba(255, 255, 255, 0.5));
   font-family: 'SF Mono', Menlo, monospace;
+}
+
+/* H2H 弹窗：Conformal 校正后的"安全边际"卡片
+   复用 wc-ensemble-card 样式，但加 cp-calibrated 类做区分
+   - 上方一行 raw → adj 对比
+   - 概率柱带 delta（+1.2 / -3.4）
+   - 底部说明为什么这步是合理的 */
+.cp-calibrated {
+  border: 1px dashed rgba(0, 168, 107, 0.35);
+  background: linear-gradient(180deg, rgba(0,168,107,0.04) 0%, transparent 100%);
+  margin-bottom: 14px;
+}
+.cp-raw-compare {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.55));
+  margin: 10px 0 6px;
+  font-family: 'SF Mono', Menlo, monospace;
+  letter-spacing: 0.2px;
+}
+.cp-raw-compare span:last-child {
+  color: var(--text-secondary, rgba(255, 255, 255, 0.8));
+  font-weight: 600;
+}
+.cp-arrow {
+  color: var(--front-start, #00a86b);
+  font-weight: 800;
+  font-size: 14px;
+}
+.cp-calibrated-bar {
+  margin-top: 4px;
+}
+.cp-delta {
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: 'SF Mono', Menlo, monospace;
+  background: rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+}
+.cp-delta.is-pos {
+  color: var(--front-start, #00a86b);
+}
+.cp-delta.is-neg {
+  color: var(--danger, #ff4757);
+}
+.cp-delta.is-neutral {
+  color: var(--text-muted, rgba(255, 255, 255, 0.45));
+}
+.cp-calibrate-note {
+  font-size: 11px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+  line-height: 1.45;
+  margin-top: 8px;
+  font-style: italic;
 }

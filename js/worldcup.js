@@ -2021,6 +2021,71 @@
             return renderEnsembleCard(ens, teamA, teamB);
           })()}
           ${(() => {
+            // v3.4.2: Conformal 校正后的"安全边际"最终预测
+            // 4 维融合 (ensemble) 输出连续概率 → 用 Conformal 预测集做收缩
+            //  - set_size=1: 保留 raw
+            //  - set_size=2: 向 0.5/0.5/0 收缩
+            //  - set_size=3: 向 1/3/1/3/1/3 收缩
+            if (!state.h2hConformal || !window.WorldCupConformal) return '';
+            const cp = state.h2hConformal[teamA.country]?.[teamB.country];
+            if (!cp) return '';
+            const ens = ensemblePredict(result, oddsMarket, polymarketEvent, llmPred);
+            const raw = ens.final;  // {home, draw, away}
+            const adj = window.WorldCupConformal.conformalCalibrateProbs(
+              raw.home, raw.draw, raw.away, cp.prediction_set
+            );
+            const ph = (adj.home * 100).toFixed(1);
+            const pd = (adj.draw * 100).toFixed(1);
+            const pa = (adj.away * 100).toFixed(1);
+            const rawPh = (raw.home * 100).toFixed(1);
+            const rawPd = (raw.draw * 100).toFixed(1);
+            const rawPa = (raw.away * 100).toFixed(1);
+            const setLbl = cp.prediction_set.join('/');
+            const size = cp.set_size;
+            const setColor = size === 1 ? '#00a86b' : size === 2 ? '#faad14' : '#ff4757';
+            const conf = (cp.confidence * 100).toFixed(0);
+            // 各结果的偏移 (校正后 - 4 维融合)
+            const dHome = (adj.home - raw.home) * 100;
+            const dDraw = (adj.draw - raw.draw) * 100;
+            const dAway = (adj.away - raw.away) * 100;
+            // delta < 0.5 不显示（set_size=1 全部 < 0.5 视为"无变化"）
+            const fmtDelta = (d) => {
+              if (Math.abs(d) < 0.5) return '';
+              const s = d > 0 ? '+' : '';
+              const cls = d > 0 ? 'is-pos' : 'is-neg';
+              return `<span class="cp-delta ${cls}">${s}${d.toFixed(1)}</span>`;
+            };
+            return `
+              <div class="wc-ensemble-card cp-calibrated">
+                <div class="wc-ensemble-banner">
+                  <div class="wc-ensemble-rec">
+                    <span class="wc-ensemble-rec-label">🛡 Conformal 校正后</span>
+                    <strong>${setLbl}</strong>
+                  </div>
+                  <div class="wc-ensemble-conf">
+                    <span class="wc-ensemble-rec-label">🎯 校准置信度</span>
+                    <strong style="color:${setColor}">${conf}%</strong>
+                  </div>
+                </div>
+                <div class="cp-raw-compare">
+                  <span>4 维融合: 主 ${rawPh}% / 平 ${rawPd}% / 客 ${rawPa}%</span>
+                  <span class="cp-arrow">→</span>
+                  <span>校正后: 主 ${ph}% / 平 ${pd}% / 客 ${pa}%</span>
+                </div>
+                <div class="wc-winbar wc-ensemble-winbar cp-calibrated-bar">
+                  <span style="width:${ph}%" title="校正后主胜 ${ph}% (${fmtDelta(dHome)})">主 ${ph}% ${fmtDelta(dHome)}</span>
+                  <i style="width:${pd}%" title="校正后平 ${pd}% (${fmtDelta(dDraw)})">平 ${pd}% ${fmtDelta(dDraw)}</i>
+                  <b style="width:${pa}%" title="校正后客胜 ${pa}% (${fmtDelta(dAway)})">客 ${pa}% ${fmtDelta(dAway)}</b>
+                </div>
+                <p class="cp-calibrate-note">
+                  基于 Split Conformal Prediction（2006-2022 世界杯 95 场校准，约 90% 覆盖率）。
+                  set_size=${size} 时把 4 维融合向${size === 1 ? '原值' : (size === 2 ? '0.5/0.5/0' : '1/3/1/3/1/3')} 收缩，
+                  给"实力接近"的比赛戴上安全边际。
+                </p>
+              </div>
+            `;
+          })()}
+          ${(() => {
             // v3.4.2: Conformal Prediction Set — {胜/平/负} 预测集
             if (!state.h2hConformal) return '';
             const cp = state.h2hConformal[teamA.country]?.[teamB.country];
