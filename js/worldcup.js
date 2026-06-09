@@ -2032,7 +2032,7 @@
             const ens = ensemblePredict(result, oddsMarket, polymarketEvent, llmPred);
             const raw = ens.final;  // {home, draw, away}
             const adj = window.WorldCupConformal.conformalCalibrateProbs(
-              raw.home, raw.draw, raw.away, cp.prediction_set
+              raw.home, raw.draw, raw.away, cp.prediction_set, cp.confidence
             );
             const ph = (adj.home * 100).toFixed(1);
             const pd = (adj.draw * 100).toFixed(1);
@@ -2084,7 +2084,8 @@
                 </div>
                 <p class="cp-calibrate-note">
                   基于 Split Conformal Prediction（2006-2022 世界杯 95 场校准，约 90% 覆盖率）。
-                  set_size=${size} 时把 4 维融合向${size === 1 ? '原值' : (size === 2 ? '0.5/0.5/0' : '1/3/1/3/1/3')} 收缩，
+                  校正 = 4 维融合 ${conf}% + 集内均匀分布 ${100-conf}% 线性混合（Conformal 置信度 ${conf}%）。
+                  set_size=${size} 给出 ${size} 种可能结果（${cp.prediction_set.join('/')}），
                   给"实力接近"的比赛戴上安全边际。
                 </p>
               </div>

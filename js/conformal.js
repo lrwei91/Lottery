@@ -364,27 +364,39 @@
 
   // ── Public API ──────────────────────────────────────────────────────
   // conformalCalibrateProbs: 把 4 维融合后的连续概率 (raw) + Conformal 预测集
-  // 合并成"安全边际"修正后的概率。
-  // - set_size=1 高置信：保留 raw 几乎不动（shrink=0）
-  // - set_size=2 中等置信：向 0.5/0.5/0 收缩（shrink=0.5）
-  // - set_size=3 高不确定：向 1/3/1/3/1/3 收缩（shrink=1）
+  // + confidence 合并成"安全边际"修正后的概率。
+  //
+  // 公式：adj = confidence * raw + (1 - confidence) * uniform
+  //   - confidence=0.92 (set_size=1 高置信): 几乎完全保留 raw
+  //   - confidence=0.65 (set_size=2 中等置信): 65% raw + 35% uniform
+  //   - confidence=0.35 (set_size=3 高不确定): 35% raw + 65% uniform
+  //
+  // 注：之前用 setSize 推 shrink=(setSize-1)/2 时，set_size=3 的 shrink=1
+  //     会把 raw 完全丢成均匀 1/3 1/3 1/3（过度保守）。改成 confidence 后
+  //     永远保留 raw 的最少 35% 信号，更符合"安全边际"语义。
+  //
   // prediction_set: ['胜'] 或 ['胜','负'] 或 ['胜','平','负']
-  function conformalCalibrateProbs(rawHome, rawDraw, rawAway, predictionSet) {
+  // confidence: 0~1，predictH2H().confidence
+  function conformalCalibrateProbs(rawHome, rawDraw, rawAway, predictionSet, confidence) {
     const setSize = Array.isArray(predictionSet) ? predictionSet.length : 1;
-    // uniform distribution for the in-set results; 0 for out-of-set
+    // uniform distribution over in-set results; 0 for out-of-set
     const uniformHome = predictionSet.includes('胜') ? (setSize === 3 ? 1/3 : 0.5) : 0;
     const uniformDraw = predictionSet.includes('平') ? (setSize === 3 ? 1/3 : 0.5) : 0;
     const uniformAway = predictionSet.includes('负') ? (setSize === 3 ? 1/3 : 0.5) : 0;
-    const shrink = (setSize - 1) / 2;  // 0, 0.5, 1
-    const adjHome = (1 - shrink) * rawHome + shrink * uniformHome;
-    const adjDraw = (1 - shrink) * rawDraw + shrink * uniformDraw;
-    const adjAway = (1 - shrink) * rawAway + shrink * uniformAway;
+    // 置信度 0~1，clamp 到 [0, 1]，缺失时回退到 setSize 启发式
+    const conf = Math.max(0, Math.min(1, confidence != null ? confidence : ({ 1: 0.92, 2: 0.65, 3: 0.35 })[setSize] || 0.5));
+    const keep = conf;            // raw 保留比例
+    const shrink = 1 - conf;      // uniform 占比（保留向后兼容的字段名）
+    const adjHome = keep * rawHome + shrink * uniformHome;
+    const adjDraw = keep * rawDraw + shrink * uniformDraw;
+    const adjAway = keep * rawAway + shrink * uniformAway;
     const total = adjHome + adjDraw + adjAway;
-    if (total <= 0) return { home: rawHome, draw: rawDraw, away: rawAway };
+    if (total <= 0) return { home: rawHome, draw: rawDraw, away: rawAway, keep, shrink };
     return {
       home: adjHome / total,
       draw: adjDraw / total,
       away: adjAway / total,
+      keep,
       shrink
     };
   }
