@@ -3399,18 +3399,47 @@ body.theme-worldcup .app-toast {
   min-width: 0;
 }
 
-/* Conformal 校正 winbar：文字小一号、delta 标签绝对定位浮在右上 */
+/* Conformal 校正卡片的推荐文字：用 set_size 颜色（绿/黄/红）
+   避免和 4 维融合的 --accent（红色）混淆 */
+.cp-calibrated .wc-ensemble-rec strong {
+  color: inherit;  /* 父元素内联 style 的 color 生效 */
+}
+
+/* Conformal 校正 winbar：文字小一号 */
 .cp-calibrated-bar span,
 .cp-calibrated-bar i,
 .cp-calibrated-bar b {
   font-size: 0.82rem;
   padding: 0 4px;
-  gap: 4px;
 }
-.cp-calibrated-bar .cp-delta {
-  /* 当 winbar 段太窄时不让它撑出去 */
+
+/* delta 单独成行（放在 winbar 下面）— 避免压住 winbar 段内文字 */
+.cp-delta-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-family: 'SF Mono', Menlo, monospace;
+  font-weight: 700;
+  color: var(--text-muted, rgba(255, 255, 255, 0.55));
+  margin: 6px 4px 0;
+  min-height: 14px;
+}
+.cp-delta-row span:empty {
+  /* 保留占位避免布局抖动，但内容为空时不显示 */
+}
+.cp-delta-row .cp-delta {
   display: inline-block;
-  vertical-align: middle;
+  margin-left: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 10px;
+}
+.cp-delta-row .cp-delta.is-pos {
+  color: var(--front-start, #00a86b);
+}
+.cp-delta-row .cp-delta.is-neg {
+  color: var(--danger, #ff4757);
 }
 
 .wc-ensemble-winbar {

@@ -2060,7 +2060,7 @@
                 <div class="wc-ensemble-banner">
                   <div class="wc-ensemble-rec">
                     <span class="wc-ensemble-rec-label">🛡 Conformal 校正后</span>
-                    <strong>${setLbl}</strong>
+                    <strong style="color:${setColor}">${setLbl}</strong>
                   </div>
                   <div class="wc-ensemble-conf">
                     <span class="wc-ensemble-rec-label">🎯 校准置信度</span>
@@ -2073,9 +2073,14 @@
                   <span>校正后: 主 ${ph}% / 平 ${pd}% / 客 ${pa}%</span>
                 </div>
                 <div class="wc-winbar wc-ensemble-winbar cp-calibrated-bar">
-                  <span style="width:${ph}%" title="校正后主胜 ${ph}% (${fmtDelta(dHome)})">主 ${ph}% ${fmtDelta(dHome)}</span>
-                  <i style="width:${pd}%" title="校正后平 ${pd}% (${fmtDelta(dDraw)})">平 ${pd}% ${fmtDelta(dDraw)}</i>
-                  <b style="width:${pa}%" title="校正后客胜 ${pa}% (${fmtDelta(dAway)})">客 ${pa}% ${fmtDelta(dAway)}</b>
+                  <span style="width:${ph}%" title="校正后主胜 ${ph}%">主 ${ph}%</span>
+                  <i style="width:${pd}%" title="校正后平 ${pd}%">平 ${pd}%</i>
+                  <b style="width:${pa}%" title="校正后客胜 ${pa}%">客 ${pa}%</b>
+                </div>
+                <div class="cp-delta-row">
+                  <span>主 ${fmtDelta(dHome)}</span>
+                  <span>平 ${fmtDelta(dDraw)}</span>
+                  <span>客 ${fmtDelta(dAway)}</span>
                 </div>
                 <p class="cp-calibrate-note">
                   基于 Split Conformal Prediction（2006-2022 世界杯 95 场校准，约 90% 覆盖率）。
