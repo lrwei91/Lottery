@@ -390,6 +390,9 @@
       state.ucl = payload.ucl || {};
       const teams = sortedTeams();
       state.selectedSquad = teams[0]?.country || '';
+      // v3.4.2: Conformal Prediction + Factor Attribution
+      // 计算结果挂在 state.conformal / state.attribution 上，渲染层从这里取
+      enrichTeamsWithConformalAndAttribution();
       state.loaded = true;
       // 实时数据快照（赔率/Polymarket）跟核心数据并行加载：保证首次 render 就有赔率，
       // 避免"先空再补"的窗口被网络抖动卡住
@@ -960,6 +963,120 @@
     return renderMarketPanel();
   }
 
+  // ============================================================
+  // v3.4.2: Conformal Prediction + Factor Attribution 集成
+  // - 计算结果挂在 state.conformal / state.attribution 上
+  // - 渲染层只读，避免重复计算
+  // - 兼容旧版 JSON（缺 final_prob 时退回 logical_prob）
+  // ============================================================
+  function enrichTeamsWithConformalAndAttribution() {
+    if (!window.WorldCupConformal || !window.WorldCupAttribution) return;
+    if (!state.teams || state.teams.length === 0) return;
+    if (state.conformal && state.attribution) return;  // 已算过
+
+    const cp = new window.WorldCupConformal.ConformalPredictor();
+    const teams = state.teams.map(t => ({
+      country: t.country,
+      final_probability: t.final_prob || t.prob || 0.03,
+      elo: t.mod_elo || t.elo || 1700,
+      age_score: t.age_score || 0,
+      exp_score: t.exp_score || 0,
+      form_score: t.form_score || 0,
+      coach_score: t.coach_score || 0,
+      mystic_score: t.mystic_score || 0
+    }));
+
+    // Champion intervals: 写回原 team 对象，渲染时直接读
+    const intervals = cp.predictChampionIntervals(teams);
+    state.conformal = { intervals, predictor: cp };
+    intervals.forEach(iv => {
+      const team = state.teams.find(t => t.country === iv.country);
+      if (team) {
+        team.conformal_ci_low = iv.ci_low;
+        team.conformal_ci_high = iv.ci_high;
+        team.conformal_uncertainty = iv.uncertainty_level;
+        team.conformal_half_width = iv.abs_error_expected;
+      }
+    });
+
+    // Factor attribution: 每队的 6 因子贡献
+    // 注意：attributeTeam 内部用 raw elo（不是 mod_elo）算 baseline
+    const attrInputs = state.teams.map(t => ({
+      country: t.country,
+      final_prob: t.final_prob || t.prob || 0.03,
+      elo: t.elo || 1700,        // ← 用 raw elo，不是 mod_elo
+      age_score: t.age_score || 0,
+      exp_score: t.exp_score || 0,
+      form_score: t.form_score || 0,
+      coach_score: t.coach_score || 0,
+      mystic_score: t.mystic_score || 0
+    }));
+    const attributions = window.WorldCupAttribution.attributeAllTeams(attrInputs);
+    state.attribution = attributions;
+    attributions.forEach(attr => {
+      const team = state.teams.find(t => t.country === attr.country);
+      if (team) {
+        team.attribution = attr;
+      }
+    });
+
+    // 预计算 H2H conformal map: { countryA: { countryB: {prediction_set, ...} } }
+    const h2hMap = {};
+    state.teams.forEach(a => {
+      h2hMap[a.country] = {};
+      state.teams.forEach(b => {
+        if (a.country === b.country) return;
+        h2hMap[a.country][b.country] = cp.predictH2H(
+          a.country, b.country,
+          a.mod_elo || a.elo || 1700,
+          b.mod_elo || b.elo || 1700
+        );
+      });
+    });
+    state.h2hConformal = h2hMap;
+  }
+
+  // 渲染辅助：不确定度 badge HTML
+  function uncBadgeHtml(level) {
+    const map = {
+      low:    { cls: 'unc-low', text: '低不确定' },
+      medium: { cls: 'unc-med', text: '中不确定' },
+      high:   { cls: 'unc-high', text: '高不确定' }
+    };
+    const m = map[level] || map.medium;
+    return `<span class="unc-badge ${m.cls}">${m.text}</span>`;
+  }
+
+  // 渲染辅助：归因柱状条 HTML
+  function attributionHtml(attr) {
+    if (!attr || !attr.attributions || attr.attributions.length === 0) return '';
+    const lo = (attr.elo_baseline * 100).toFixed(2);
+    const hi = (attr.final_probability * 100).toFixed(2);
+      const rows = attr.attributions
+        .filter(a => Math.abs(a.contribution) > 0.0001)
+        .map(a => {
+          const isPos = a.contribution > 0;
+          const sign = isPos ? '+' : '';
+          const width = Math.min(100, Math.abs(a.contribution) * 2000);
+          // 主题适配：worldcup 主题的 --accent 是红色，正向贡献用 --front-start（绿色）
+          const bg = isPos ? 'var(--front-start, #00a86b)' : 'var(--danger, #ff4757)';
+          return `
+          <div class="attr-row">
+            <span class="attr-lbl">${a.label}</span>
+            <div class="attr-bar"><div class="attr-seg" style="width:${width.toFixed(1)}%;background:${bg}"></div></div>
+            <span class="attr-val ${isPos ? 'is-pos' : 'is-neg'}">${sign}${(a.contribution * 100).toFixed(3)}%</span>
+          </div>
+        `;
+        }).join('');
+    return `
+      <div class="attr-block">
+        <div class="attr-hd">概率归因</div>
+        <div class="attr-base">Elo 基准 ${lo}% → 最终 ${hi}%</div>
+        <div class="attr-rows">${rows}</div>
+      </div>
+    `;
+  }
+
   function renderFactorPanel() {
     const rows = sortedTeams().slice(0, 28).map(team => {
       const bars = FACTORS.map(factor => {
@@ -974,14 +1091,31 @@
         `;
       }).join('');
 
+      // Conformal 置信区间
+      const ciLo = team.conformal_ci_low;
+      const ciHi = team.conformal_ci_high;
+      const uncLvl = team.conformal_uncertainty;
+      const ciText = (ciLo != null && ciHi != null)
+        ? `<div class="wc-factor-ci">置信区间 ${(ciLo * 100).toFixed(2)}% ~ ${(ciHi * 100).toFixed(2)}%</div>`
+        : '';
+      const badge = uncLvl ? uncBadgeHtml(uncLvl) : '';
+
+      // Factor attribution
+      const attrHtml = attributionHtml(team.attribution);
+
       return `
         <details class="wc-detail-row">
           <summary>
             <span class="wc-code">${code(team.country)}</span>
             <span class="wc-team-name">${escapeHtml(countryName(team.country))}</span>
-            <strong>${pct(team.final_prob, 1)}</strong>
+            <span class="wc-factor-meta">
+              ${badge}
+              <strong>${pct(team.final_prob, 1)}</strong>
+            </span>
           </summary>
           <div class="wc-factor-list">${bars}</div>
+          ${ciText}
+          ${attrHtml}
           <p class="wc-narrative">${escapeHtml(team.narrative || '暂无补充叙述')}</p>
         </details>
       `;
@@ -992,7 +1126,7 @@
         <div class="card-header">
           <div>
             <h2>因子拆解</h2>
-            <p class="wc-desc">各队因子的相对强弱按源模型输出展示。负向值保留为红色，表示该维度对最终判断形成压制。</p>
+            <p class="wc-desc">各队因子的相对强弱按源模型输出展示。负向值保留为红色，表示该维度对最终判断形成压制。展开后查看 Conformal 置信区间（基于 2006-2022 世界杯历史校准）和各因子的概率绝对贡献。</p>
           </div>
         </div>
         <div class="wc-detail-list">${rows}</div>
@@ -1770,11 +1904,13 @@
       } else {
         state.teams = rawTeams;
       }
+      enrichTeamsWithConformalAndAttribution();
     } catch (e) { /* silent */ }
   }
 
   async function showMatchPredictionModal(home, away, matchId = '') {
     if (state.teams.length === 0) await loadTeamsOnly();
+    if (state.teams.length > 0 && !state.conformal) enrichTeamsWithConformalAndAttribution();
     const teamA = findTeam(home);
     const teamB = findTeam(away);
     const scheduleMatch = findScheduleMatch(matchId, home, away);
@@ -1883,6 +2019,29 @@
           ${(() => {
             const ens = ensemblePredict(result, oddsMarket, polymarketEvent, llmPred);
             return renderEnsembleCard(ens, teamA, teamB);
+          })()}
+          ${(() => {
+            // v3.4.2: Conformal Prediction Set — {胜/平/负} 预测集
+            if (!state.h2hConformal) return '';
+            const cp = state.h2hConformal[teamA.country]?.[teamB.country];
+            if (!cp) return '';
+            const setLbl = cp.prediction_set.join('/');
+            const size = cp.set_size;
+            // 主题适配：worldcup 主题 --accent 是红色，不适合做"绿色"语义
+            // 用显式语义色：size=1 高度确定=绿，size=2=黄，size=3=红
+            const color = size === 1 ? '#00a86b' : size === 2 ? '#faad14' : '#ff4757';
+            const bg = size === 1 ? 'rgba(0,168,107,0.10)' : size === 2 ? 'rgba(250,173,20,0.10)' : 'rgba(255,71,87,0.10)';
+            const confidence = (cp.confidence * 100).toFixed(0);
+            return `
+              <div class="cp-set-box" style="background:${bg};border:1px solid ${color};border-radius:12px;padding:12px 14px;margin-bottom:14px">
+                <div class="cp-set-hd">
+                  <span class="cp-set-lbl">Conformal 预测集</span>
+                  <span class="cp-set-badge" style="background:${color};color:#0a0a0a">${setLbl}</span>
+                </div>
+                <div class="cp-set-exp">${escapeHtml(cp.explanation)}</div>
+                <div class="cp-set-conf">置信度 ${confidence}% · 基于 2006-2022 世界杯历史校准（约 90% 覆盖率）</div>
+              </div>
+            `;
           })()}
           <div class="wc-score-card">
             ${renderOddsTrend(oddsMarket, oddsApiEvent, home, away)}

@@ -5088,3 +5088,141 @@ body.theme-worldcup .app-toast {
   text-align: center;
   padding: 6px 0 2px;
 }
+
+/* ============================================================
+   v3.4.2: Conformal Prediction + Factor Attribution 样式
+   - .wc-factor-meta: 队伍行右侧 metadata
+   - .unc-badge: 置信度 badge（低/中/高）
+   - .attr-block / .attr-row: 归因柱状条
+   - .cp-set-box: H2H 弹窗的预测集卡片
+   ============================================================ */
+
+.wc-factor-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.unc-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.unc-low {
+  color: var(--front-start, #00a86b);
+  background: var(--accent-dim, rgba(48, 209, 88, 0.12));
+}
+.unc-med {
+  color: var(--warning, #faad14);
+  background: rgba(250, 173, 20, 0.12);
+}
+.unc-high {
+  color: var(--danger, #ff4d4f);
+  background: rgba(255, 77, 79, 0.12);
+}
+
+.wc-factor-ci {
+  font-size: 11px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.55));
+  margin: 8px 0 4px;
+  font-family: 'SF Mono', Menlo, monospace;
+  letter-spacing: 0.2px;
+}
+
+.attr-block {
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  border: 0.5px solid var(--card-border, rgba(255, 255, 255, 0.08));
+}
+.attr-hd {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted, rgba(255, 255, 255, 0.55));
+  margin-bottom: 6px;
+}
+.attr-base {
+  font-size: 12px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  margin-bottom: 8px;
+  font-family: 'SF Mono', Menlo, monospace;
+}
+.attr-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.attr-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+}
+.attr-lbl {
+  flex: 0 0 64px;
+  font-weight: 600;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+}
+.attr-bar {
+  flex: 1;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+  min-width: 80px;
+}
+.attr-seg {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+.attr-val {
+  flex: 0 0 72px;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: right;
+  font-family: 'SF Mono', Menlo, monospace;
+}
+.attr-val.is-pos { color: var(--front-start, #00a86b); }
+.attr-val.is-neg { color: var(--danger, #ff4757); }
+
+/* H2H 弹窗：Conformal Prediction Set 卡片 */
+.cp-set-box {
+  /* 颜色由内联 style 根据 set_size 1/2/3 控制 */
+}
+.cp-set-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.cp-set-lbl {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--text-muted, rgba(255, 255, 255, 0.55));
+}
+.cp-set-badge {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 6px;
+  letter-spacing: 0.4px;
+}
+.cp-set-exp {
+  font-size: 12px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.8));
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+.cp-set-conf {
+  font-size: 10.5px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.5));
+  font-family: 'SF Mono', Menlo, monospace;
+}
