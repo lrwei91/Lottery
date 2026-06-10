@@ -364,6 +364,21 @@
 
     await loadNames();
 
+    // Kimi 2026 增量: 加载 benchmarks (Elo 校准表 / MC 参数 / 校准矩阵 / 概率基准)
+    if (window.KimiBenchmarks) {
+      try {
+        const b = await window.KimiBenchmarks.load();
+        window._kimiBenchCache = b;
+        console.info('[KimiBenchmarks] loaded:', {
+          teams: b.championBenchmarks?.teams?.length || 0,
+          eloRows: b.eloMappingTable?.rows?.length || 0,
+          calBins: b.calibrationMatrix?.bins?.length || 0
+        });
+      } catch (e) {
+        console.warn('[KimiBenchmarks] load failed:', e);
+      }
+    }
+
     try {
       await loadMatches();
 
@@ -446,11 +461,14 @@
   async function loadOddsHistory() {
     try {
       const res = await fetch('/api/odds/history?source=the-odds-api', { headers: { accept: 'application/json' } });
-      if (!res.ok) return;
+      if (!res.ok) {
+        if (res.status !== 503) console.info('[odds] history HTTP', res.status);
+        return;
+      }
       const payload = await res.json();
       state.oddsHistory = { 'the-odds-api': payload.history || [] };
     } catch (e) {
-      console.warn('odds history 加载失败:', e);
+      // 静默 — 缺失不影响主功能
     }
   }
 
@@ -459,18 +477,25 @@
   async function loadOddsSnapshots() {
     try {
       const res = await fetch('/api/odds/snapshots', { headers: { accept: 'application/json' } });
-      if (!res.ok) return;
+      if (!res.ok) {
+        // 503 通常 = Vercel 没配 Upstash env (开发/预览环境常见), 静默
+        if (res.status !== 503) {
+          console.info('[odds] /api/odds/snapshots HTTP', res.status);
+        }
+        return;
+      }
       const payload = await res.json();
       state.oddsSnapshots = payload;
       // 健康度检查：避免上游改了 tag/丢了 key 时静默坏数据
       state.oddsHealth = checkOddsHealth(payload);
       if (!state.oddsHealth.ok) {
-        console.warn('⚠️ odds 数据源异常:', state.oddsHealth.issues);
+        // 用 info 替代 warn — 缺源是部署/配置问题, 不阻塞用户
+        console.info('ℹ️ [odds] 部分源缺失（部署侧配置问题）:', state.oddsHealth.issues);
       }
       // 拉到新数据后重渲染：market tab 用到了 polymarket-outright
       if (state.loaded) render();
     } catch (e) {
-      console.warn('odds 快照加载失败:', e);
+      console.info('[odds] 快照加载失败:', e?.message || e);
     }
   }
 
@@ -559,7 +584,12 @@
     const teamA = findTeam(match.home);
     const teamB = findTeam(match.away);
     if (!teamA || !teamB) return null;
-    const h2hResult = h2hCalc(teamA, teamB);
+    // Kimi 2026 增量: 从 match.venue 解析主场/海拔/WBGT, 传给 h2hCalc
+    // 主场对位判定: 世界杯主队就是 match.home
+    const matchCtx = (window.KimiBenchmarks && window.KimiBenchmarks.buildMatchContext)
+      ? window.KimiBenchmarks.buildMatchContext(match.venue, 'A')
+      : { home: 'A' };
+    const h2hResult = h2hCalc(teamA, teamB, matchCtx);
     const oddsMarket = extractH2HMarket(findOddsApiMatch(match.home, match.away));
     const polymarketEvent = findPolymarketByCountry(match.home, match.away);
     const llmPred = findLLMPrediction(match.id);
@@ -1568,21 +1598,84 @@
     });
   }
 
-  function h2hCalc(teamA, teamB) {
+  // ============================================================
+  // Kimi 2026 Benchmarks 集成钩子
+  // 优先用 PDF 校准表 (Table B.1) + 主场调整 (65 Elo pts)
+  // 没加载到 benchmarks 时回退原启发式
+  // ============================================================
+  function bench() {
+    const f = (window.KimiBenchmarks && window.KimiBenchmarks.flags) || { enabled: true };
+    if (!f.enabled) return null;
+    return window._kimiBenchCache || null;
+  }
+
+  function h2hCalc(teamA, teamB, opts) {
+    opts = opts || {};
     const eloA = teamA.mod_elo || teamA.elo || 1700;
     const eloB = teamB.mod_elo || teamB.elo || 1700;
-    const diff = eloA - eloB;
-    const eloWinA = 1 / (1 + Math.pow(10, -diff / 400));
-    const draw = Math.max(0.10, Math.min(0.35, 0.30 - Math.abs(diff) / 1500));
+    // 主场优势调整 (Kimi Table D.2: 65 Elo pts)
+    const b = bench();
+    const useKimiElo = b && window.KimiBenchmarks.flags.useKimiEloTable;
+    const homeAdv = (b && window.KimiBenchmarks.flags.useKimiMCParams) ? window.KimiBenchmarks.homeAdvantageElo(b) : 65;
+    const isHome = opts.home != null ? opts.home : null;
+    let effectiveA = eloA, effectiveB = eloB;
+    if (isHome === 'A') effectiveA += homeAdv;
+    else if (isHome === 'B') effectiveB += homeAdv;
+    const diff = effectiveA - effectiveB;
+
+    // 海拔调整 (Mexico City Azteca 2240m → 1.20x)
+    let altMulA = 1.0, altMulB = 1.0;
+    if (b && opts.venue) {
+      const mul = window.KimiBenchmarks.altitudeMultiplier(b, opts.venue);
+      if (/mexico|azteca/i.test(opts.venue || '')) {
+        // 主队获得 multiplier 加成 (按主队对位)
+        if (isHome === 'A') altMulA = mul;
+        else if (isHome === 'B') altMulB = mul;
+      }
+    }
+
+    // 高温惩罚 (WBGT 简化为 0/1 触发, 默认无)
+    const heat = (b && opts.wbgt != null) ? window.KimiBenchmarks.heatPenalty(b, opts.wbgt) : 1.0;
+    // 把热衰减转化为 lambda 倍率 (后传给 scorePredictions)
+
+    // Elo 差 → 胜率: 优先用 PDF Table B.1 校准, fallback 用 logistic
+    const winA = useKimiElo
+      ? window.KimiBenchmarks.eloWinProbability(b, diff)
+      : 1 / (1 + Math.pow(10, -diff / 400));
+    // 平局校准: 同样优先用 PDF Table B.1
+    const draw = useKimiElo
+      ? window.KimiBenchmarks.eloDrawProbability(b, diff)
+      : Math.max(0.10, Math.min(0.35, 0.30 - Math.abs(diff) / 1500));
     const winTotal = 1 - draw;
-    const rawA = eloWinA * winTotal + 0.03;
-    const rawB = (1 - eloWinA) * winTotal + 0.03;
+    const rawA = winA * winTotal + 0.03;
+    const rawB = (1 - winA) * winTotal + 0.03;
     const rawTotal = rawA + rawB;
+    let outWinA = rawA / rawTotal * winTotal;
+    let outWinB = rawB / rawTotal * winTotal;
+    let outDraw = draw;
+
+    // Kimi 2026 增量: 对 h2h 单源输出也走校准矩阵 (PDF Table 9.13)
+    // 让单独 h2h 视图/调试视图/旧 UI 路径也享受厚尾补偿
+    if (b && window.KimiBenchmarks.flags.useCalibrationMatrix) {
+      outWinA = window.KimiBenchmarks.calibrate(b, outWinA);
+      outWinB = window.KimiBenchmarks.calibrate(b, outWinB);
+      outDraw = window.KimiBenchmarks.calibrate(b, outDraw);
+      const sum2 = outWinA + outWinB + outDraw;
+      if (sum2 > 0) {
+        outWinA /= sum2; outWinB /= sum2; outDraw /= sum2;
+      }
+    }
     return {
-      winA: rawA / rawTotal * winTotal,
-      winB: rawB / rawTotal * winTotal,
-      draw,
-      diff
+      winA: outWinA,
+      winB: outWinB,
+      draw: outDraw,
+      diff,
+      // 新增 context 字段 (供 Poisson / 校准使用)
+      _altMulA: altMulA,
+      _altMulB: altMulB,
+      _heatMul: heat,
+      _isHome: isHome,
+      _homeAdv: homeAdv
     };
   }
 
@@ -1602,22 +1695,57 @@
     return Math.abs(hash) / 2147483647;
   }
 
-  function scorePredictions(teamA, teamB) {
+  function scorePredictions(teamA, teamB, opts) {
+    opts = opts || {};
     let lambdaA = 1.3 + ((teamA.mod_elo || teamA.elo || 1700) - 1700) / 500;
     let lambdaB = 1.3 + ((teamB.mod_elo || teamB.elo || 1700) - 1700) / 500;
     lambdaA = Math.max(0.3, Math.min(4, lambdaA * (1 + (teamA.shift || 0) * 3)));
     lambdaB = Math.max(0.3, Math.min(4, lambdaB * (1 + (teamB.shift || 0) * 3)));
 
+    // Kimi 2026 增量: 海拔/主场/高温/主场优势 baseline 替换
+    const b = bench();
+    const useMCParams = b && window.KimiBenchmarks.flags.useKimiMCParams;
+    if (b && useMCParams) {
+      const pBase = window.KimiBenchmarks.poissonBase(b);
+      // 主场优势 (Kimi: 65 Elo pts ≈ 1.18x lambda)
+      const homeAdv = window.KimiBenchmarks.homeAdvantageElo(b);
+      if (opts.home === 'A') {
+        // 把 65 Elo 优势转成 lambda 倍率 (~0.13, 与 home 1.18 系数一致)
+        lambdaA *= 1 + (homeAdv / 500);
+      } else if (opts.home === 'B') {
+        lambdaB *= 1 + (homeAdv / 500);
+      }
+      // 海拔 multiplier (Mexico City 1.20x)
+      if (opts.venue && /mexico|azteca/i.test(opts.venue)) {
+        const mul = window.KimiBenchmarks.altitudeMultiplier(b, opts.venue);
+        if (opts.home === 'A') lambdaA *= mul;
+        else if (opts.home === 'B') lambdaB *= mul;
+      }
+      // 高温惩罚
+      if (opts.wbgt != null) {
+        const heat = window.KimiBenchmarks.heatPenalty(b, opts.wbgt);
+        lambdaA *= heat;
+        lambdaB *= heat;
+      }
+    }
+
+    const useDC = b && window.KimiBenchmarks.flags.useDixonColes;
     const raw = [];
     for (let goalsA = 0; goalsA <= 5; goalsA += 1) {
       for (let goalsB = 0; goalsB <= 5; goalsB += 1) {
         const total = goalsA + goalsB;
         const base = poisson(goalsA, lambdaA) * poisson(goalsB, lambdaB);
+        // Kimi 2026 增量: Dixon-Coles 低分互依修正 (ρ = -0.048)
+        let dc = 1.0;
+        if (b && useDC) {
+          const rho = window.KimiBenchmarks.dixonColesRho(b);
+          dc = window.KimiBenchmarks.dixonColesTau(goalsA, goalsB, lambdaA, lambdaB, rho);
+        }
         raw.push({
           goalsA,
           goalsB,
           total,
-          boosted: total >= 5 ? base * 3 : base
+          boosted: total >= 5 ? base * 3 * dc : base * dc
         });
       }
     }
@@ -1750,12 +1878,36 @@
       final.home /= sum; final.draw /= sum; final.away /= sum;
     }
 
+    // Kimi 2026 增量: 校准调整矩阵 (Table 9.13)
+    // 0-5% 区间 +1.5pp (厚尾补偿), >25% -1.0pp (过自信修正)
+    const b = bench();
+    if (b && window.KimiBenchmarks.flags.useCalibrationMatrix) {
+      final.home = window.KimiBenchmarks.calibrate(b, final.home);
+      final.draw = window.KimiBenchmarks.calibrate(b, final.draw);
+      final.away = window.KimiBenchmarks.calibrate(b, final.away);
+      // 校准后再次归一化 (calibrate 单独改每个维度可能不再和为1)
+      const sum2 = final.home + final.draw + final.away;
+      if (sum2 > 0) {
+        final.home /= sum2; final.draw /= sum2; final.away /= sum2;
+      }
+    }
+
     // 置信度：1 - 归一化熵
     const H = -Object.values(final).reduce((s, p) => s + (p > 0 ? p * Math.log2(p) : 0), 0);
     const maxH = Math.log2(3);
     const confidence = maxH > 0 ? (1 - H / maxH) : 0;
 
     return { final, parts, confidence };
+  }
+
+  // Kimi 2026 增量: 拿某支强队的 ensemble 冠军概率基准
+  // 用于"我们对 X 的预测 vs 20-model 共识" 偏差诊断
+  function benchmarkChampionGap(country) {
+    const b = bench();
+    if (!b) return null;
+    const ref = window.KimiBenchmarks.ensembleProb(b, country);
+    if (ref == null) return null;
+    return { ref, interval: window.KimiBenchmarks.championInterval(b, country) };
   }
 
   function renderEnsembleCard(ensemble, teamA, teamB) {
@@ -1965,8 +2117,12 @@
       return;
     }
 
-    const result = h2hCalc(teamA, teamB);
-    const scores = scorePredictions(teamA, teamB);
+    // Kimi 2026 增量: 从 scheduleMatch.venue 解析 context 传给 h2hCalc + scorePredictions
+    const matchCtx = (window.KimiBenchmarks && window.KimiBenchmarks.buildMatchContext)
+      ? window.KimiBenchmarks.buildMatchContext(scheduleMatch?.venue, 'A')
+      : { home: 'A' };
+    const result = h2hCalc(teamA, teamB, matchCtx);
+    const scores = scorePredictions(teamA, teamB, matchCtx);
     const aPct = result.winA * 100;
     const bPct = result.winB * 100;
     const dPct = result.draw * 100;

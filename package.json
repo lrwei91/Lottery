@@ -19,7 +19,10 @@
     "llm:predict:openai": "LLM_PROVIDER=openai node scripts/llm-predict.js all",
     "llm:predict:xiaomi": "LLM_PROVIDER=xiaomi node scripts/llm-predict.js all",
     "llm:predict:xiaomi:dry": "LLM_PROVIDER=xiaomi DRY_RUN=1 node scripts/llm-predict.js all",
-    "dev": "npx -y serve ."
+    "dev": "npx -y serve .",
+    "env:check": "node scripts/check-env.js",
+    "env:check:vercel": "node scripts/check-env.js --vercel",
+    "env:check:strict": "node scripts/check-env.js --strict"
   },
   "dependencies": {
     "@upstash/redis": "^1.34.0"
