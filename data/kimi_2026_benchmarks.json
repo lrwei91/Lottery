@@ -1,0 +1,139 @@
+{
+  "_meta": {
+    "source": "Kimi 2026 World Cup Analysis & Prediction Report (June 2026)",
+    "purpose": "移植自 PDF 的校准基准、MC 参数、夺冠概率表、风险因子",
+    "compiledAt": "2026-06-09",
+    "scope": "48 队 2026 世界杯预测模型校准"
+  },
+
+  "championBenchmarks": {
+    "description": "Page 218-219 Table 7.1: 20-model 集成共识 (June 5, 2026)",
+    "tableRef": "Table 7.1 Pre-Tournament Baseline Probability",
+    "teams": [
+      { "country": "Spain",      "elo": 18.2, "dixonColes": 16.8, "spi": 16.1, "gradientBoosting": 17.5, "ensemble": 16.8, "ciLow": 13.2, "ciHigh": 20.4, "confidence": "high" },
+      { "country": "France",     "elo": 15.8, "dixonColes": 14.2, "spi": 14.5, "gradientBoosting": 13.8, "ensemble": 14.3, "ciLow": 11.0, "ciHigh": 17.6, "confidence": "high" },
+      { "country": "England",    "elo": 12.4, "dixonColes": 11.5, "spi": 11.2, "gradientBoosting": 10.5, "ensemble": 11.2, "ciLow":  8.2, "ciHigh": 14.2, "confidence": "medium" },
+      { "country": "Germany",    "elo": 11.5, "dixonColes": 12.0, "spi": 11.2, "gradientBoosting": 12.8, "ensemble": 11.8, "ciLow":  8.8, "ciHigh": 14.8, "confidence": "medium" },
+      { "country": "Argentina",  "elo": 10.5, "dixonColes":  9.8, "spi": 10.4, "gradientBoosting":  9.2, "ensemble":  9.9, "ciLow":  7.2, "ciHigh": 12.6, "confidence": "medium" },
+      { "country": "Brazil",     "elo":  8.2, "dixonColes":  7.5, "spi":  8.8, "gradientBoosting":  7.0, "ensemble":  7.8, "ciLow":  5.2, "ciHigh": 10.4, "confidence": "low" },
+      { "country": "Portugal",   "elo":  5.8, "dixonColes":  6.2, "spi":  6.5, "gradientBoosting":  5.5, "ensemble":  6.0, "ciLow":  3.8, "ciHigh":  8.2, "confidence": "low" },
+      { "country": "Netherlands","elo":  4.5, "dixonColes":  4.8, "spi":  5.2, "gradientBoosting":  4.2, "ensemble":  4.7, "ciLow":  2.8, "ciHigh":  6.6, "confidence": "low" }
+    ],
+    "other39TeamsEnsemble": 15.5,
+    "other39TeamsCiLow": 12.0,
+    "other39TeamsCiHigh": 19.0
+  },
+
+  "monteCarloParams": {
+    "description": "Page 273-275 Appendix D: 10,000 次 MC 模拟参数 (batch MC_20260605_10000, seed 20260605)",
+    "eloScalingFactor": 400,
+    "kFactor": {
+      "worldCup": 60,
+      "continental": 50,
+      "qualifier": 40,
+      "friendly": 20
+    },
+    "homeAdvantageElo": 65,
+    "altitude": {
+      "mexicoCityMultiplier": 1.20,
+      "altitudeMeters": 2240
+    },
+    "heat": {
+      "wbgt30Penalty": 0.85,
+      "highIntensityDeclinePct": 26
+    },
+    "dixonColesRho": -0.048,
+    "timeDecay": {
+      "rate": 0.35,
+      "halfLifeYears": 1.98
+    },
+    "poisson": {
+      "baseGoalsPerMatch": 1.42,
+      "homeGoalsMultiplier": 1.18
+    },
+    "simulations": 10000,
+    "randomSeed": 20260605
+  },
+
+  "eloMappingTable": {
+    "description": "Page 272 Table B.1: Elo 差 → 胜率 + draw 校准 (scaling=400)",
+    "tableRef": "Table B.1 Elo Rating-Difference to Expected Win-Rate Mapping",
+    "rows": [
+      { "diff":   0, "winHigher": 50.0, "winLower": 50.0, "drawEmpirical": 25 },
+      { "diff":  50, "winHigher": 57.1, "winLower": 42.9, "drawEmpirical": 22 },
+      { "diff": 100, "winHigher": 64.0, "winLower": 36.0, "drawEmpirical": 19 },
+      { "diff": 200, "winHigher": 76.0, "winLower": 24.0, "drawEmpirical": 14 },
+      { "diff": 300, "winHigher": 84.9, "winLower": 15.1, "drawEmpirical":  9 },
+      { "diff": 400, "winHigher": 90.9, "winLower":  9.1, "drawEmpirical":  5 },
+      { "diff": 500, "winHigher": 94.6, "winLower":  5.4, "drawEmpirical":  3 }
+    ]
+  },
+
+  "calibrationMatrix": {
+    "description": "Page 263 Table 9.13: 2026 概率校准调整矩阵 (基于 2018+2022 WC 回测)",
+    "tableRef": "Table 9.13 2026 Prediction Calibration Adjustment Matrix",
+    "bins": [
+      { "lo":  0.0, "hi":  5.0, "adjustment":  0.015, "logic": "Compensate for thick-tail underestimation" },
+      { "lo":  5.0, "hi": 10.0, "adjustment":  0.008, "logic": "Mild thick-tail compensation" },
+      { "lo": 10.0, "hi": 15.0, "adjustment":  0.003, "logic": "Marginal correction" },
+      { "lo": 15.0, "hi": 20.0, "adjustment":  0.0,   "logic": "Well calibrated, no adjustment" },
+      { "lo": 20.0, "hi": 25.0, "adjustment": -0.005, "logic": "Mild overconfidence correction" },
+      { "lo": 25.0, "hi":  1.01,"adjustment": -0.010, "logic": "Goldman Sachs 26% correction" }
+    ]
+  },
+
+  "groupRules": {
+    "description": "Page 201 6.1.6: 48 队新赛制关键规则",
+    "thirdPlaceFourPoints": {
+      "advanceProbability": 0.98,
+      "note": "第三名 4 分 (1胜1平1负) 几乎必然晋级"
+    },
+    "drawRateAdjustment": {
+      "historicalRange": [0.22, 0.25],
+      "projectedRange2026": [0.27, 0.30],
+      "rationale": "强队提前出线后第3场战略性轮换+平局"
+    },
+    "upsetAdjustment": {
+      "context": "强队 vs 中游队，第3场 (强队已出线)",
+      "uplift": [0.05, 0.10],
+      "note": "upset 概率系统性上调 5-10pp"
+    }
+  },
+
+  "teamSpecific": {
+    "Germany": {
+      "elo": 1940,
+      "eloRank": 9,
+      "transfermarktValueMEUR": 998,
+      "transfermarktValueRank": 4,
+      "oddsImpliedProb": 7.4,
+      "modelBaseProbLow": 9,
+      "modelBaseProbHigh": 14,
+      "divergencePp": 3.6,
+      "biasSource": "Recency bias (2018/2022 group exits)",
+      "checklistSignals": {
+        "marketImpliedBelowModel": true,
+        "valuationRankAboveOddsRank": true,
+        "recentPerformanceUpward": true,
+        "negativeNarrativeAnchor": true,
+        "keyPlayerRecovering": true,
+        "thirdPartyUnderestimationSignal": true,
+        "historicalCycleSupport": "limited"
+      }
+    },
+    "Spain": {
+      "elo": 2090,
+      "eloRank": 1,
+      "marketImpliedProb": 16.5,
+      "divergencePp": -1.7,
+      "biasSource": "Competitive overestimation (multiple favourites splitting funds)"
+    },
+    "England": {
+      "elo": 1854,
+      "marketImpliedProb": 14.3,
+      "goldmanSachsProb": 5.0,
+      "divergencePp": -3.3,
+      "biasSource": "Availability bias (Tuchel Champions League effect)"
+    }
+  }
+}
