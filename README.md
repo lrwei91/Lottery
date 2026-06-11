@@ -184,8 +184,8 @@ LLM 跑预测 → 写 `data/wc_llm_predictions.json` → git push → Vercel 部
 | Provider    | 协议                | 默认 endpoint                          | 默认 model       | API key  |
 |-------------|--------------------|----------------------------------------|------------------|----------|
 | `ollama`    | Ollama chat        | `http://localhost:11434/api/chat`      | `llama3.2`       | 不需要   |
-| `openai`    | OpenAI 兼容        | `http://localhost:1234/v1/chat/completions` | `gpt-4o-mini` | `LLM_API_KEY`（Bearer） |
-| `xiaomi`    | **Anthropic 协议** | `https://token-plan-cn.xiaomimimo.com/anthropic` | `mimo-v2.5-pro` | `LLM_API_KEY`（`x-api-key` header） |
+| `openai`    | OpenAI 兼容        | `http://localhost:1234/v1/chat/completions` | `gpt-4o-mini` | `XIAOMI_API_KEY`（Bearer） |
+| `xiaomi`    | **Anthropic 协议** | `https://token-plan-cn.xiaomimimo.com/anthropic` | `mimo-v2.5-pro` | `XIAOMI_API_KEY`（`x-api-key` header） |
 
 不设 `LLM_PROVIDER` 时，脚本会按 endpoint URL 自动检测（`xiaomimimo.com` / `/anthropic` → xiaomi；`:11434` / `/api/chat` → ollama；`/v1/chat/completions` → openai）。
 
@@ -193,9 +193,11 @@ LLM 跑预测 → 写 `data/wc_llm_predictions.json` → git push → Vercel 部
 
 **三种方式（任选一）：**
 
-1. **环境变量**（最简单）：
+1. **环境变量**（最简单，BWS 统一读）：
    ```bash
-   export LLM_API_KEY=tp-clr5gk93m10jkyo7mjbke1ct2y8977clh8bex9yghkejf8oh
+   # 一次性注入到当前 shell（推荐）
+   # 注: 真值只通过 BitwardenSecrets().get() 返回,CLI 输出会脱敏
+   export XIAOMI_API_KEY=$(python3 -c "import sys; sys.path.insert(0, '$HOME/.hermes/scripts'); from bw_secrets import BitwardenSecrets; print(BitwardenSecrets().get('XIAOMI_API_KEY') or '')")
    npm run llm:predict:xiaomi
    ```
 
@@ -203,14 +205,17 @@ LLM 跑预测 → 写 `data/wc_llm_predictions.json` → git push → Vercel 部
    ```bash
    # /ticai/.env
    LLM_PROVIDER=xiaomi
-   LLM_API_KEY=tp-clr5gk93m10jkyo7mjbke1ct2y8977clh8bex9yghkejf8oh
-   LLM_MAX_TOKENS=4000
+   XIAOMI_API_KEY=***
+   LLM_MAX_TOKENS=***
    ```
 
 3. **临时 inline**：
    ```bash
-   LLM_PROVIDER=xiaomi LLM_API_KEY=tp-xxx npm run llm:predict:xiaomi
+   LLM_PROVIDER=xiaomi XIAOMI_API_KEY=*** npm run llm:predict:xiaomi
    ```
+
+> **2026-06-12 更新**：环境变量名从 `LLM_API_KEY` 改名为 `XIAOMI_API_KEY`（更明确当前唯一 provider）。
+> 推荐从 BWS 统一读，避免 .env 真 key 误入 git。
 
 ### 跑预测
 
@@ -233,7 +238,7 @@ npm run llm:predict:all        # 跑 h2h + outright
 LLM_PROVIDER=openai \
   LLM_BASE_URL=https://api.openai.com \
   LLM_MODEL=gpt-4o-mini \
-  LLM_API_KEY=sk-xxxxx \
+  XIAOMI_API_KEY=sk-xxxxx \
   npm run llm:predict:all
 
 # 路径 C：小米 MiMo（Anthropic 协议，走 token-plan）

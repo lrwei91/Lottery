@@ -106,11 +106,11 @@ const SPEC = {
     purpose: 'LLM provider: ollama / openai / xiaomi',
     detected: () => !!process.env.LLM_PROVIDER
   },
-  LLM_API_KEY: {
+  XIAOMI_API_KEY: {
     required: 'optional',
     scope: 'local',
-    purpose: 'LLM API key (xiaomi/openai 等)',
-    detected: () => !!process.env.LLM_API_KEY
+    purpose: 'Xiaomi MiMo API key (本项目当前唯一 LLM provider,2026-06-12 从 LLM_API_KEY 改名)',
+    detected: () => !!process.env.XIAOMI_API_KEY
   },
   LLM_BASE_URL: {
     required: 'optional',
