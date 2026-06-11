@@ -243,6 +243,15 @@
     calibrate() {
       const { cal } = threeWaySplit(this.matches, 0.60, 42);
 
+      // TODO(mod-elo alignment, 2026-06-12 review):
+      //   HISTORICAL_MATCHES 的 elo_a/elo_b 是历史 raw Elo, 但 predictH2H 实际接收的是
+      //   mod_elo (已被 Kimi 基准微调, 含主场优势 +65 pts + 海拔 + 高温等)。
+      //   偏差量级通常 ≤ 65 pts, 对 qhat 影响 < 0.05, 当前可接受。
+      //   后续 backtest 时 (2026 小组赛打完一批后):
+      //     1) 给 HISTORICAL_MATCHES 加 stage 字段, 按小组/淘汰分两套校准集
+      //     2) 或者在 calibrate 前用 mod_elo offset 统一平移历史 Elo
+      //     3) 重跑校准对比 qhat 变化, 决定是否需要校准集更新
+
       // Nonconformity scores: 1 - P(true outcome)
       const scores = cal.map(m => {
         const probs = eloWinProb(m.elo_a, m.elo_b);
@@ -310,6 +319,8 @@
         set_size: setSize,
         confidence,
         elo_diff: eloDiff,
+        // 暴露 qhat, 方便 4 源融合根据校准分布微调 confidence
+        _qhat: qhat,
         explanation
       };
     }
@@ -364,29 +375,96 @@
 
   // ── Public API ──────────────────────────────────────────────────────
   // conformalCalibrateProbs: 把 4 维融合后的连续概率 (raw) + Conformal 预测集
-  // + confidence 合并成"安全边际"修正后的概率。
+  // 合并成"安全边际"修正后的概率。
   //
   // 公式：adj = confidence * raw + (1 - confidence) * uniform
-  //   - confidence=0.92 (set_size=1 高置信): 几乎完全保留 raw
-  //   - confidence=0.65 (set_size=2 中等置信): 65% raw + 35% uniform
-  //   - confidence=0.35 (set_size=3 高不确定): 35% raw + 65% uniform
+  //   - confidence 高: 几乎完全保留 raw
+  //   - confidence 低: 拉向集内均匀
   //
-  // 注：之前用 setSize 推 shrink=(setSize-1)/2 时，set_size=3 的 shrink=1
-  //     会把 raw 完全丢成均匀 1/3 1/3 1/3（过度保守）。改成 confidence 后
-  //     永远保留 raw 的最少 35% 信号，更符合"安全边际"语义。
+  // 第 5 参 confidenceOrOpts 同时支持两种调用:
+  //   - 旧调用: number (predictH2H().confidence)
+  //   - 新调用: object { confidence, qhat, ensembleAgreement, drawFloor }
   //
-  // prediction_set: ['胜'] 或 ['胜','负'] 或 ['胜','平','负']
-  // confidence: 0~1，predictH2H().confidence
-  function conformalCalibrateProbs(rawHome, rawDraw, rawAway, predictionSet, confidence) {
+  // 新调用的额外信号:
+  //   - qhat (0~1): 校准阈值, 越大说明校准集非一致性越强, 整体 confidence 越低
+  //   - ensembleAgreement (0~1): 4 源 home 概率的 1 - CV 系数, 1 = 完全一致
+  //   - drawFloor (0~0.5): 当 prediction_set 不含 "平" 时, 给 draw 一个 floor
+  //     (避免 强强对话 时 draw 概率被压到 0, 反映足球平局先验 22-30%)
+  //
+  // base confidence 启发式（setSize → 初始 conf）:
+  //   - setSize=1: 0.92 (Elo 很确定)
+  //   - setSize=2: 0.70 (中等不确定, 比之前 0.65 略高, 缓解过度收缩)
+  //   - setSize=3: 0.45 (高不确定, 比之前 0.35 略高, 避免 raw 被拉平)
+  //
+  // 之前用 setSize 推 shrink=(setSize-1)/2 时，set_size=3 的 shrink=1
+  // 会把 raw 完全丢成均匀 1/3 1/3 1/3（过度保守）。改成 confidence 后
+  // 永远保留 raw 的最少 35% 信号。
+  const BASE_CONFIDENCE_BY_SET_SIZE = { 1: 0.92, 2: 0.70, 3: 0.45 };
+
+  function conformalCalibrateProbs(rawHome, rawDraw, rawAway, predictionSet, confidenceOrOpts) {
     const setSize = Array.isArray(predictionSet) ? predictionSet.length : 1;
-    // uniform distribution over in-set results; 0 for out-of-set
-    const uniformHome = predictionSet.includes('胜') ? (setSize === 3 ? 1/3 : 0.5) : 0;
-    const uniformDraw = predictionSet.includes('平') ? (setSize === 3 ? 1/3 : 0.5) : 0;
-    const uniformAway = predictionSet.includes('负') ? (setSize === 3 ? 1/3 : 0.5) : 0;
-    // 置信度 0~1，clamp 到 [0, 1]，缺失时回退到 setSize 启发式
-    const conf = Math.max(0, Math.min(1, confidence != null ? confidence : ({ 1: 0.92, 2: 0.65, 3: 0.35 })[setSize] || 0.5));
-    const keep = conf;            // raw 保留比例
-    const shrink = 1 - conf;      // uniform 占比（保留向后兼容的字段名）
+    const set = new Set(Array.isArray(predictionSet) ? predictionSet : []);
+
+    // 解析第 5 参: number → 旧调用; object → 新调用
+    let confOverride = null;
+    let qhat = null;
+    let agreement = null;
+    let drawFloor = 0.15;  // 默认给 draw 一个 0.15 floor (反映足球平局先验)
+    if (typeof confidenceOrOpts === 'number' || confidenceOrOpts == null) {
+      confOverride = confidenceOrOpts;
+    } else if (typeof confidenceOrOpts === 'object') {
+      confOverride = confidenceOrOpts.confidence;
+      qhat = confidenceOrOpts.qhat;
+      agreement = confidenceOrOpts.ensembleAgreement;
+      if (typeof confidenceOrOpts.drawFloor === 'number') {
+        drawFloor = confidenceOrOpts.drawFloor;
+      }
+    }
+
+    // 1) base confidence (setSize 启发式, 比旧的 0.92/0.65/0.35 平滑)
+    let baseConf = BASE_CONFIDENCE_BY_SET_SIZE[setSize];
+    if (baseConf == null) baseConf = 0.5;
+
+    // 2) qhat 微调: qhat 越大说明校准分布越分散 → 整体下调 conf
+    //    qhat 经验范围 0.10~0.50; 把 qhat>0.3 视为"高分散", 向下微调
+    if (typeof qhat === 'number' && Number.isFinite(qhat) && qhat > 0) {
+      // qhat 0.1 → 1.05 (轻微上调, 表示校准很紧)
+      // qhat 0.3 → 0.95 (中性)
+      // qhat 0.5 → 0.85 (校准松, 整体下调)
+      const qhatFactor = 1.10 - qhat * 0.5;
+      baseConf *= Math.max(0.7, Math.min(1.15, qhatFactor));
+    }
+
+    // 3) 4 源一致性微调: agreement 越高 (4 源越一致), 上调 conf
+    //    agreement 0 → 0.85 (4 源互相打架, 整体下调)
+    //    agreement 0.5 → 1.0 (中性)
+    //    agreement 1.0 → 1.15 (4 源一致, 上调)
+    if (typeof agreement === 'number' && Number.isFinite(agreement)) {
+      const a = Math.max(0, Math.min(1, agreement));
+      const agreeFactor = 0.85 + a * 0.30;
+      baseConf *= agreeFactor;
+    }
+
+    // 4) clamp 到 [0.20, 0.95]
+    baseConf = Math.max(0.20, Math.min(0.95, baseConf));
+
+    // 5) 用 confOverride 覆盖 (前端如果显式传了置信度, 以传入为准)
+    const conf = Math.max(0, Math.min(1, confOverride != null ? confOverride : baseConf));
+
+    // 6) uniform 构造: 集内结果赋均匀概率; draw 在集外时给 drawFloor
+    const uniformHome = set.has('胜') ? (setSize === 3 ? 1/3 : 0.5) : 0;
+    const uniformAway = set.has('负') ? (setSize === 3 ? 1/3 : 0.5) : 0;
+    let uniformDraw;
+    if (set.has('平')) {
+      uniformDraw = setSize === 3 ? 1/3 : 0.5;
+    } else {
+      // draw 不在 prediction_set 内, 但足球平局是先验 (历史 22-30%),
+      // 给一个 floor 避免被压到 0。drawFloor=0.15 大致是下限。
+      uniformDraw = drawFloor;
+    }
+
+    const keep = conf;
+    const shrink = 1 - conf;
     const adjHome = keep * rawHome + shrink * uniformHome;
     const adjDraw = keep * rawDraw + shrink * uniformDraw;
     const adjAway = keep * rawAway + shrink * uniformAway;

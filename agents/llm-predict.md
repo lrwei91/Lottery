@@ -11,8 +11,8 @@
 | Provider | 协议 | Endpoint | 鉴权 | 默认模型 |
 |---|---|---|---|---|
 | `ollama` | Ollama `/api/chat` | `http://localhost:11434/api/chat` | 无 | `llama3.2` |
-| `openai` | OpenAI `/v1/chat/completions` | `http://localhost:1234/v1/chat/completions` | `Authorization: Bearer <LLM_API_KEY>`（可选） | `gpt-4o-mini` |
-| `xiaomi` | Anthropic `/v1/messages` | `https://token-plan-cn.xiaomimimo.com/anthropic` | `x-api-key: <LLM_API_KEY>` + `anthropic-version: 2023-06-01`（**必填**） | `mimo-v2.5-pro` |
+| `openai` | OpenAI `/v1/chat/completions` | `http://localhost:1234/v1/chat/completions` | `Authorization: Bearer <XIAOMI_API_KEY>`（可选） | `gpt-4o-mini` |
+| `xiaomi` | Anthropic `/v1/messages` | `https://token-plan-cn.xiaomimimo.com/anthropic` | `x-api-key: <XIAOMI_API_KEY>` + `anthropic-version: 2023-06-01`（**必填**） | `mimo-v2.5-pro` |
 
 **Provider 选择优先级**（`scripts/llm-predict.js:90`）：
 1. 显式 `LLM_PROVIDER` 环境变量
@@ -24,7 +24,7 @@
 | 变量 | 必填 | 用途 |
 |---|---|---|
 | `LLM_PROVIDER` | 否 | 强制 provider（`ollama` / `openai` / `xiaomi`） |
-| `LLM_API_KEY` | xiaomi **必填** | API key，xiaomi 走 `x-api-key` header；openai 走 `Authorization: Bearer` |
+| `XIAOMI_API_KEY` | xiaomi **必填** | API key，xiaomi 走 `x-api-key` header；openai 走 `Authorization: Bearer`（2026-06-12 从 `LLM_API_KEY` 改名为 `XIAOMI_API_KEY`，本项目当前唯一 LLM provider） |
 | `LLM_ENDPOINT` | 否 | 覆盖默认 endpoint（`ollama`/`openai` 适用） |
 | `LLM_BASE_URL` | 否 | xiaomi 专用，覆盖默认 `https://token-plan-cn.xiaomimimo.com/anthropic` |
 | `LLM_MODEL` | 否 | 覆盖默认 model |
@@ -52,7 +52,7 @@ DRY_RUN=1 node scripts/llm-predict.js all
 # 切 provider
 LLM_PROVIDER=xiaomi node scripts/llm-predict.js all
 LLM_PROVIDER=openai LLM_BASE_URL=https://api.openai.com LLM_MODEL=gpt-4o-mini \
-  LLM_API_KEY=sk-xxxxx node scripts/llm-predict.js all
+  XIAOMI_API_KEY=sk-xxxxx node scripts/llm-predict.js all
 ```
 
 `package.json` 已经预置了 `llm:predict` / `llm:predict:dry` / `llm:predict:ollama` 等短名，**优先用 npm script**，避免漏写 `DRY_RUN`。
@@ -176,3 +176,50 @@ const ENSEMBLE_WEIGHTS = { h2h: 0.30, odds: 0.30, poly: 0.20, llm: 0.20 };
 ```
 
 LLM 占 20%，Elo/The Odds API 各 30%，Polymarket 20%。**改权重**时同时改 `worldcup.js` 和这份权重表。
+
+## 11. 实时数据源（2026-06-12 新增）
+
+早期版本 LLM 上下文只有"12 强队 Elo + 24 场列表"，**缺：赔率、球员名单、伤停、天气、海拔**。本次新增 4 个 fetcher，每次跑实时拉：
+
+| 数据 | 来源 | 抓法 | 失败行为 |
+|---|---|---|---|
+| The Odds API h2h | Vercel KV `odds:snapshot:the-odds-api` | Upstash REST `GET /get/<key>` | 标 `⚠️ 未拉取` + LLM 看不到赔率 |
+| Polymarket h2h | Vercel KV `odds:snapshot:polymarket` | 同上 | 标 `⚠️ 未拉取` |
+| 球员名单 (top 3 by 估值) | `data/worldcup_2026.json` 静态字段 | 脚本里读 | 标"名单缺失" |
+| 海拔 / 场地 | `data/worldcup_matches.json` venue 字符串 | `VENUE_META` 硬编码表 (16 场馆) | 静默 (venue 表 100% 覆盖) |
+| 天气 (温/湿/风/降水) | Open-Meteo（无 key 免费 API） | `GET /v1/forecast?lat=&lon=&hourly=...` | 标"天气未拉取" |
+| 伤停 | **无稳定源** | — | 标"未拉取" + prompt 显式禁止瞎猜 |
+
+**关键设计原则**：
+- 单源失败不阻塞其他源（`Promise.all` + try/catch）
+- 失败时在 prompt 顶部"数据源状态"段明确标注，让 LLM 知道哪些项不可信
+- LLM system prompt 显式要求**只能引用列出的数据**，**不能凭印象编造**（伤停/教练战术/心理因素）
+- 输出 JSON 顶层新增 `realtimeSources: { oddsApi, polymarket, weather, players }` 字段，前端可显示"本次含 N 源实时数据"
+
+**新的 dry run 开关**：
+- `DRY_RUN=1`：调 LLM 但不写文件（花钱的 dry run）
+- `DRY_RUN_PROMPT=1`：**不调 LLM**，只打印拼好的 prompt（用于 prompt 调优/token 估算，本地零成本）
+
+```bash
+# 调 LLM 干跑（仍花时间 + token）
+DRY_RUN=1 node scripts/llm-predict.js h2h
+
+# 零成本打 prompt 看实际拼出来的样子
+DRY_RUN_PROMPT=1 node scripts/llm-predict.js h2h
+```
+
+**Token 预算**（实测）：24 场 h2h prompt 约 **6400 字符 / ~4300 tokens**（中文比例），加 LLM 输出 ~2000 tokens ≈ 一次 6k+ tokens。在 `LLM_MAX_TOKENS=4000`（默认）下，xiaomi `mimo-v2.5-pro` 容易在 thinking block 上耗尽，调到 `LLM_MAX_TOKENS=6000` 更稳。
+
+**新增 Vercel 部署注意点**：
+- `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` 必须在 Vercel env 里有（**已经连了 Storage 的项目应该都有**）
+- 跑 cron 时如果 KV 不可达（比如 KV 数据库没建），会 fallback 到无赔率，**不会整个失败**——只是 LLM 看不到市场信号，输出会更保守
+- Open-Meteo 走公网（Vercel Function 出站流量），不消耗 Vercel 配额
+
+**修改 fetcher 时的 checklist**：
+1. 新增源 → 在 `main()` `Promise.all([...])` 数组里加调用
+2. prompt 注入 → `buildH2HPrompt()` 顶部加 `sourceNotes` push
+3. 失败 fallback → 跟现有 `fetchOddsApiH2H` 一样返回 `{ skipped: true, reason }`
+4. 输出 JSON → `realtimeSources` 加字段
+5. AGENTS.md 同步更新本节表格
+
+

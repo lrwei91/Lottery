@@ -5329,3 +5329,77 @@ body.theme-worldcup .app-toast {
   margin-top: 8px;
   font-style: italic;
 }
+
+/* ============================================================
+ * v3.4.3: 4 源融合 + Conformal 校正增强样式
+ * - 源完整性 / 一致度 / CI 反馈
+ * ============================================================ */
+
+.wc-ensemble-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 12px 0;
+  font-size: 11px;
+}
+
+.wc-ensemble-sources,
+.wc-ensemble-agreement {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.wc-ensemble-sources.is-complete {
+  background: rgba(0, 168, 107, 0.12);
+  color: #00a86b;
+  border: 1px solid rgba(0, 168, 107, 0.30);
+}
+.wc-ensemble-sources.is-partial {
+  background: rgba(250, 173, 20, 0.12);
+  color: #faad14;
+  border: 1px solid rgba(250, 173, 20, 0.30);
+}
+.wc-ensemble-sources.is-weak {
+  background: rgba(255, 71, 87, 0.12);
+  color: #ff4757;
+  border: 1px solid rgba(255, 71, 87, 0.30);
+}
+
+.wc-ensemble-agreement.is-good {
+  background: rgba(0, 168, 107, 0.10);
+  color: #00a86b;
+}
+.wc-ensemble-agreement.is-mid {
+  background: rgba(250, 173, 20, 0.10);
+  color: #faad14;
+}
+.wc-ensemble-agreement.is-bad {
+  background: rgba(255, 71, 87, 0.10);
+  color: #ff4757;
+}
+
+/* 冠军价值 picks: CI 半宽 badge */
+.wc-value-card.is-low-conf {
+  border-left: 3px solid #faad14;
+}
+.wc-value-ci {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted, rgba(255, 255, 255, 0.55));
+  font-weight: 500;
+}
+.wc-value-discount {
+  color: #faad14;
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: 4px;
+}

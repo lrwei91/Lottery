@@ -198,13 +198,17 @@
 
   // Polymarket 用的国家名跟 ticai 数据源略有差异，做一下映射
   // 优先直接相等，找不到再走 alias 表
-  const POLY_TO_TICAI_ALIAS = {
+  // 这张表同时被 polyCountryToTicai 和 findTeam 引用, 是唯一的国家名 alias 来源
+  const COUNTRY_ALIAS = {
     'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
+    'Cabo Verde': 'Cape Verde',
     'Congo DR': 'DR Congo',
     'Czechia': 'Czech Republic',
     'Turkiye': 'Turkey',
     'United States': 'USA'
   };
+  // 保留旧名 (向后兼容历史代码 / 文档)
+  const POLY_TO_TICAI_ALIAS = COUNTRY_ALIAS;
 
   // 地区/特殊市场，ticai 没有单国对应 → null
   const POLY_NON_COUNTRY = new Set([
@@ -221,7 +225,7 @@
     const trimmed = name.trim();
     if (POLY_NON_COUNTRY.has(trimmed)) return null;
     if (POLY_TEAM_PLACEHOLDER.test(trimmed)) return null;
-    if (POLY_TO_TICAI_ALIAS[trimmed]) return POLY_TO_TICAI_ALIAS[trimmed];
+    if (COUNTRY_ALIAS[trimmed]) return COUNTRY_ALIAS[trimmed];
     return trimmed;
   }
 
@@ -322,12 +326,8 @@
   function findTeam(country) {
     const found = state.teams.find(team => team.country === country);
     if (found) return found;
-    // Alias fallback for name variants across data sources
-    const aliases = {
-      'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
-      'Cabo Verde': 'Cape Verde',
-    };
-    const alias = aliases[country];
+    // Alias fallback — 复用上面声明的 COUNTRY_ALIAS (跟 polyCountryToTicai 同一份)
+    const alias = COUNTRY_ALIAS[country];
     if (alias) return state.teams.find(team => team.country === alias) || null;
     return null;
   }
@@ -1288,11 +1288,27 @@
   }
 
     // 3) raw fusion + 归一化
+    // 3.4.x 增强: 动态权重 (分歧大时偏向市场)
+    // 理由: 市场聚合信息通常比单一模型准, 但模型可以捕捉市场没消化的新信息
+    //   - 分歧小 (|model-market| < 1pp): 两源高度一致, 维持 w_model = 0.5
+    //   - 分歧中 (1-5pp): 略偏市场, w_model = 0.50~0.55
+    //   - 分歧大 (>5pp): 强偏市场, w_model = 0.55~0.70 (clamp 上限)
+    //   - 任意情况 w_market = 1 - w_model
+    const weightMap = {};
+    candidateTeams.forEach(team => {
+      const model = team.final_prob || 0;
+      const market = marketMap[team.country];
+      const edge = Math.abs(model - market);
+      // 公式: w_model = 0.5 + edge * 4, 范围 [0.5, 0.7] (edge > 5pp 时上限 0.7)
+      const wModel = Math.max(0.5, Math.min(0.7, 0.5 + edge * 4));
+      weightMap[team.country] = wModel;
+    });
     const rawFusion = {};
     candidateTeams.forEach(team => {
       const model = team.final_prob || 0;
       const market = marketMap[team.country];
-      rawFusion[team.country] = WEIGHT_MODEL * model + WEIGHT_MARKET * market;
+      const wModel = weightMap[team.country];
+      rawFusion[team.country] = wModel * model + (1 - wModel) * market;
     });
     const totalRaw = Object.values(rawFusion).reduce((a, b) => a + b, 0);
     const fusedMap = {};
@@ -1315,12 +1331,15 @@
       const ev = OddsUtils.ev.expectedValue(1 / market, model);
       const max = Math.max(model, market, fused, 0.001);
       const rank = idx + 1;
+      // 该队实际权重 (动态计算)
+      const wModel = weightMap[team.country] || 0.5;
+      const wMarket = 1 - wModel;
       return `
         <div class="wc-market-row has-fused">
           <span class="wc-rank ${idx < 3 ? 'top' : ''}" title="按融合概率排名">#${rank}</span>
           <span class="wc-code">${code(team.country)}</span>
           <span class="wc-team-name">${escapeHtml(countryName(team.country))}</span>
-          <div class="wc-market-bars is-triple" title="上：上游模型 / 中：Polymarket / 下：双源融合">
+          <div class="wc-market-bars is-triple" title="上：上游模型 / 中：Polymarket / 下：双源融合 · 实际权重 模型 ${(wModel * 100).toFixed(0)}% / 市场 ${(wMarket * 100).toFixed(0)}%">
             <span style="width:${(model / max * 100).toFixed(0)}%"></span>
             <i style="width:${(market / max * 100).toFixed(0)}%"></i>
             <b style="width:${(fused / max * 100).toFixed(0)}%"></b>
@@ -1336,6 +1355,9 @@
     }).join('');
 
     // 5) 价值 picks：用 融合 概率算 EV + Kelly（比单用 model 更稳）
+    // 3.4.x 增强: 引入 Conformal CI 半宽做风控
+    //   - ciHalfWidth > 10pp 标 "⚠️ 信心不足", 跟 edge 共同决定推荐
+    //   - Kelly 仓位按 ciHalfWidth 折扣: 越宽 → 越保守 (CI 半宽 0% 时 ×1, 20% 时 ×0)
     const valuePicks = candidateTeams
       .filter(team => (fusedMap[team.country] || 0) - marketMap[team.country] > 0.01)
       .map(team => {
@@ -1344,10 +1366,24 @@
         const model = team.final_prob || 0;
         const edge = OddsUtils.ev.edge(fused, market);
         const ev = OddsUtils.ev.expectedValue(1 / market, fused);
-        const kelly25 = OddsUtils.kelly.fractionalKelly(1 / market, fused, 0.25);
-        return { team, edge, ev, kelly25, market, fused, model };
+        const kelly25Raw = OddsUtils.kelly.fractionalKelly(1 / market, fused, 0.25);
+        // CI 半宽: conformal_ci_high - conformal_ci_low (enrich 时已算到 team 对象上)
+        const ciLo = team.conformal_ci_low;
+        const ciHi = team.conformal_ci_high;
+        const ciHalfWidth = (ciLo != null && ciHi != null) ? Math.max(0, (ciHi - ciLo) / 2) : null;
+        // CI 半宽 0 → 折扣 1 (不动), 0.2 → 折扣 0 (不下注)
+        const ciDiscount = ciHalfWidth != null ? Math.max(0, 1 - ciHalfWidth / 0.2) : 1;
+        const kelly25 = kelly25Raw * ciDiscount;
+        // 信心不足: ciHalfWidth > 0.10 (10pp)
+        const lowConfidence = ciHalfWidth != null && ciHalfWidth > 0.10;
+        return { team, edge, ev, kelly25, kelly25Raw, ciHalfWidth, ciDiscount, lowConfidence, market, fused, model };
       })
-      .sort((a, b) => b.edge * b.fused - a.edge * a.fused)
+      .sort((a, b) => {
+        // 先按 edge * fused 排 (基础信号), 信心不足的降权
+        const aScore = a.edge * a.fused * (a.lowConfidence ? 0.5 : 1);
+        const bScore = b.edge * b.fused * (b.lowConfidence ? 0.5 : 1);
+        return bScore - aScore;
+      })
       .slice(0, 3);
 
     return `
@@ -1355,18 +1391,25 @@
         <div class="card-header">
           <div>
             <h2>冠军概率</h2>
-            <p class="wc-desc">上游模型（${(WEIGHT_MODEL * 100).toFixed(0)}%）+ Polymarket 冠军 outright 市场（${(WEIGHT_MARKET * 100).toFixed(0)}%）按权重加权后归一化。</p>
+            <p class="wc-desc">上游模型 + Polymarket 冠军 outright 市场按权重加权后归一化。
+              <br><small>⚙️ <b>动态权重</b>：每队按 <code>|模型 - 市场|</code> 分歧度计算实际权重
+              （分歧小 50:50，分歧大 70:30 偏市场）。鼠标悬停每行查看该队实际权重。</small></p>
           </div>
         </div>
         <div class="wc-value-grid">
-          ${valuePicks.map(({ team, edge, ev, kelly25, market, fused, model }) => `
-            <div class="wc-value-card">
-              <span>${code(team.country)} ${escapeHtml(countryName(team.country))}</span>
+          ${valuePicks.map(({ team, edge, ev, kelly25, kelly25Raw, ciHalfWidth, ciDiscount, lowConfidence, market, fused, model }) => {
+            const ciBadge = ciHalfWidth != null
+              ? `<span class="wc-value-ci" title="Conformal 90% 置信区间半宽 ${(ciHalfWidth * 100).toFixed(1)}pp${ciDiscount < 1 ? `, Kelly 折扣 ×${ciDiscount.toFixed(2)}` : ''}">${lowConfidence ? '⚠️ ' : ''}CI±${(ciHalfWidth * 100).toFixed(1)}pp</span>`
+              : '';
+            return `
+            <div class="wc-value-card${lowConfidence ? ' is-low-conf' : ''}">
+              <span>${code(team.country)} ${escapeHtml(countryName(team.country))} ${ciBadge}</span>
               <strong class="${clsByShift(edge)}">${signedPct(edge, 1)}</strong>
               <small>模型 ${pct(model, 1)} · 市场 ${pct(market, 1)} · 融合 <b>${pct(fused, 1)}</b></small>
-              <small>EV ${signedPct(ev, 1)} · Kelly¼ 仓位 ${(kelly25 * 100).toFixed(1)}% 资金</small>
+              <small>EV ${signedPct(ev, 1)} · Kelly¼ 仓位 ${(kelly25 * 100).toFixed(1)}% 资金${ciDiscount < 1 ? ` <span class="wc-value-discount" title="原始 ${(kelly25Raw * 100).toFixed(1)}%, CI 折扣后">(${ciDiscount.toFixed(2)}×)</span>` : ''}</small>
             </div>
-          `).join('') || '<div class="empty-state">当前没有超过 1% 的正向偏离。</div>'}
+            `;
+          }).join('') || '<div class="empty-state">当前没有超过 1% 的正向偏离。</div>'}
         </div>
         <div class="wc-market-list">${rows}</div>
         ${renderLLMPerspectiveSection(marketMap)}
@@ -1654,17 +1697,9 @@
     let outWinB = rawB / rawTotal * winTotal;
     let outDraw = draw;
 
-    // Kimi 2026 增量: 对 h2h 单源输出也走校准矩阵 (PDF Table 9.13)
-    // 让单独 h2h 视图/调试视图/旧 UI 路径也享受厚尾补偿
-    if (b && window.KimiBenchmarks.flags.useCalibrationMatrix) {
-      outWinA = window.KimiBenchmarks.calibrate(b, outWinA);
-      outWinB = window.KimiBenchmarks.calibrate(b, outWinB);
-      outDraw = window.KimiBenchmarks.calibrate(b, outDraw);
-      const sum2 = outWinA + outWinB + outDraw;
-      if (sum2 > 0) {
-        outWinA /= sum2; outWinB /= sum2; outDraw /= sum2;
-      }
-    }
+    // 注意: h2h 单源不再单独走 calibrate 矩阵。
+    // 历史原因: ensemblePredict 在 4 源加权融合后会再 calibrate 一次, h2h 这条路径
+    // 会吃两次校准, 破坏 4 源公平性。统一交给 ensemble 后处理。
     return {
       winA: outWinA,
       winB: outWinB,
@@ -1730,42 +1765,6 @@
     }
 
     const useDC = b && window.KimiBenchmarks.flags.useDixonColes;
-    const raw = [];
-    for (let goalsA = 0; goalsA <= 5; goalsA += 1) {
-      for (let goalsB = 0; goalsB <= 5; goalsB += 1) {
-        const total = goalsA + goalsB;
-        const base = poisson(goalsA, lambdaA) * poisson(goalsB, lambdaB);
-        // Kimi 2026 增量: Dixon-Coles 低分互依修正 (ρ = -0.048)
-        let dc = 1.0;
-        if (b && useDC) {
-          const rho = window.KimiBenchmarks.dixonColesRho(b);
-          dc = window.KimiBenchmarks.dixonColesTau(goalsA, goalsB, lambdaA, lambdaB, rho);
-        }
-        raw.push({
-          goalsA,
-          goalsB,
-          total,
-          boosted: total >= 5 ? base * 3 * dc : base * dc
-        });
-      }
-    }
-
-    const boostedTotal = raw.reduce((sum, item) => sum + item.boosted, 0) || 1;
-    raw.forEach(item => { item.prob = item.boosted / boostedTotal; });
-    const sorted = raw.slice().sort((a, b) => b.prob - a.prob);
-    const top3 = sorted.slice(0, 3);
-    const seed = hashNumber(`${teamA.country} vs ${teamB.country}`);
-    const top3Total = top3.reduce((sum, item) => sum + item.prob, 0) || 1;
-    let cursor = 0;
-    let featured = top3[0];
-    for (const item of top3) {
-      cursor += item.prob / top3Total;
-      if (seed <= cursor) {
-        featured = item;
-        break;
-      }
-    }
-
     return {
       lambdaA,
       lambdaB,
@@ -1892,12 +1891,42 @@
       }
     }
 
-    // 置信度：1 - 归一化熵
+    // 置信度：1 - 归一化熵，再按"源完整性"打折
+    // 之前只用熵, 单源也可以很"自信", 但用户看不出 4 源齐不齐
+    // 现在加一个 completenessFactor: 4 源齐 ×1, 1 源 ×0.5 (sqrt 缩放)
     const H = -Object.values(final).reduce((s, p) => s + (p > 0 ? p * Math.log2(p) : 0), 0);
     const maxH = Math.log2(3);
-    const confidence = maxH > 0 ? (1 - H / maxH) : 0;
+    const entropyConfidence = maxH > 0 ? (1 - H / maxH) : 0;
+    const TOTAL_SOURCES = 4;
+    const sourceCount = parts.length;
+    const completenessFactor = Math.sqrt(sourceCount / TOTAL_SOURCES);
+    const confidence = entropyConfidence * completenessFactor;
 
-    return { final, parts, confidence };
+    // 4 源一致性: 各源 home 概率的变异系数 (CV) 反推
+    //   CV 小 → 各源接近 → agreement 高
+    //   CV 大 → 各源打架 → agreement 低
+    // 用于传给 Conformal 校正, 让 4 源一致时多保留 raw, 分歧大时多拉向均匀
+    let ensembleAgreement = 0;
+    if (sourceCount >= 2) {
+      const homeProbs = parts.map(p => p.probs.home);
+      const mean = homeProbs.reduce((s, x) => s + x, 0) / homeProbs.length;
+      const variance = homeProbs.reduce((s, x) => s + (x - mean) ** 2, 0) / homeProbs.length;
+      const std = Math.sqrt(variance);
+      // mean 太小 (<0.01) 时 CV 容易爆, clamp 到 1.0 表示"完全不一致"
+      const cv = mean > 0.01 ? std / mean : 1.0;
+      ensembleAgreement = Math.max(0, Math.min(1, 1 - cv));
+    }
+
+    return {
+      final,
+      parts,
+      confidence,
+      sourceCount,
+      totalSources: TOTAL_SOURCES,
+      ensembleAgreement,
+      // 4 源 home 概率, 调试 / 透明度用
+      homeProbsBySource: Object.fromEntries(parts.map(p => [p.key, p.probs.home]))
+    };
   }
 
   // Kimi 2026 增量: 拿某支强队的 ensemble 冠军概率基准
@@ -1911,7 +1940,7 @@
   }
 
   function renderEnsembleCard(ensemble, teamA, teamB) {
-    const { final, parts, confidence } = ensemble;
+    const { final, parts, confidence, sourceCount, totalSources, ensembleAgreement } = ensemble;
     const homePct = (final.home * 100).toFixed(1);
     const drawPct = (final.draw * 100).toFixed(1);
     const awayPct = (final.away * 100).toFixed(1);
@@ -1919,7 +1948,16 @@
     // 推荐结果
     const rec = final.home >= final.draw && final.home >= final.away ? 'home'
               : final.away >= final.draw ? 'away' : 'draw';
-    const recLabel = rec === 'home' ? `主胜` : rec === 'away' ? '客胜' : '平局';
+    const recLabel = rec === 'home' ? `主胜` : rec === 'away' ? `客胜` : '平局';
+
+    // 源完整性 badge
+    // 4/4 = 完整, 3/4 = 部分 (一个源缺失), 2/4 = 弱 (只有 h2h+一个市场), 1/4 = 极弱
+    const completeCls = sourceCount === totalSources ? 'is-complete' : (sourceCount >= 3 ? 'is-partial' : 'is-weak');
+    const agreementPct = (ensembleAgreement * 100).toFixed(0);
+    const agreementCls = ensembleAgreement >= 0.7 ? 'is-good' : (ensembleAgreement >= 0.4 ? 'is-mid' : 'is-bad');
+    const completenessHint = sourceCount === totalSources
+      ? '4 源齐'
+      : `缺 ${totalSources - sourceCount} 源（已自动重分配权重）`;
 
     // 各源贡献 = 权重 × 该源概率；固定遍历全部 4 源，缺源标"暂无数据"
     const ENSEMBLE_ALL_SOURCES = [
@@ -1976,6 +2014,14 @@
             <span class="wc-ensemble-rec-label">🎯 综合置信度</span>
             <strong>${(confidence * 100).toFixed(0)}%</strong>
           </div>
+        </div>
+        <div class="wc-ensemble-meta">
+          <span class="wc-ensemble-sources ${completeCls}" title="${escapeHtml(completenessHint)}">
+            📡 ${sourceCount}/${totalSources} 源参与
+          </span>
+          <span class="wc-ensemble-agreement ${agreementCls}" title="4 源 home 概率的 1 - 变异系数 (CV)">
+            🤝 源一致度 ${agreementPct}%
+          </span>
         </div>
         <div class="wc-expected-grid">
           <div class="wc-expected-card is-home" title="融合后主胜概率">
@@ -2180,15 +2226,28 @@
             // v3.4.2: Conformal 校正后的"安全边际"最终预测
             // 4 维融合 (ensemble) 输出连续概率 → 用 Conformal 预测集做收缩
             //  - set_size=1: 保留 raw
-            //  - set_size=2: 向 0.5/0.5/0 收缩
+            //  - set_size=2: 向 0.5/0.5/0 收缩 (draw 给 0.15 floor, 避免压成 0)
             //  - set_size=3: 向 1/3/1/3/1/3 收缩
+            //
+            // v3.4.3 增强: 传 qhat + ensembleAgreement 让 conf 跟 4 源对齐
+            //   - qhat: Elo 校准阈值, 反映校准集分散度
+            //   - ensembleAgreement: 4 源 home 概率的一致度 (1 - CV)
+            //   - drawFloor: 平局先验下限, 保护 draw 不被压成 0
             if (!state.h2hConformal || !window.WorldCupConformal) return '';
             const cp = state.h2hConformal[teamA.country]?.[teamB.country];
             if (!cp) return '';
             const ens = ensemblePredict(result, oddsMarket, polymarketEvent, llmPred);
             const raw = ens.final;  // {home, draw, away}
+            // 注意: 第 5 参传对象, 启用 qhat + agreement 联动
+            // cp.confidence 是 predictH2H 给的, 这里覆盖 (calibrateProbs 内部会用 ens.agreement 微调)
             const adj = window.WorldCupConformal.conformalCalibrateProbs(
-              raw.home, raw.draw, raw.away, cp.prediction_set, cp.confidence
+              raw.home, raw.draw, raw.away, cp.prediction_set,
+              {
+                confidence: cp.confidence,
+                qhat: cp._qhat,
+                ensembleAgreement: ens.ensembleAgreement,
+                drawFloor: 0.15
+              }
             );
             const ph = (adj.home * 100).toFixed(1);
             const pd = (adj.draw * 100).toFixed(1);
@@ -2199,7 +2258,7 @@
             const setLbl = cp.prediction_set.join('/');
             const size = cp.set_size;
             const setColor = size === 1 ? '#00a86b' : size === 2 ? '#faad14' : '#ff4757';
-            const conf = (cp.confidence * 100).toFixed(0);
+            const conf = (adj.keep * 100).toFixed(0);  // 用实际 keep (可能跟 cp.confidence 不同)
             // 各结果的偏移 (校正后 - 4 维融合)
             const dHome = (adj.home - raw.home) * 100;
             const dDraw = (adj.draw - raw.draw) * 100;
@@ -2240,7 +2299,11 @@
                 </div>
                 <p class="cp-calibrate-note">
                   基于 Split Conformal Prediction（2006-2022 世界杯 95 场校准，约 90% 覆盖率）。
-                  校正 = 4 维融合 ${conf}% + 集内均匀分布 ${100-conf}% 线性混合（Conformal 置信度 ${conf}%）。
+                  校正 = 4 维融合 ${conf}% + 集内均匀分布 ${100 - Math.round(adj.keep * 100)}% 线性混合（Conformal 置信度 ${conf}%${
+                    ens.ensembleAgreement != null
+                      ? `，4 源一致度 ${(ens.ensembleAgreement * 100).toFixed(0)}%${ens.ensembleAgreement >= 0.7 ? '（上调）' : ens.ensembleAgreement < 0.4 ? '（下调）' : ''}`
+                      : ''
+                  }）。
                   set_size=${size} 给出 ${size} 种可能结果（${cp.prediction_set.join('/')}），
                   给"实力接近"的比赛戴上安全边际。
                 </p>
