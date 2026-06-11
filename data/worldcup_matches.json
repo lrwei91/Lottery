@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-10T21:27:47.837374+00:00",
+    "lastUpdated": "2026-06-11T21:30:10.306152+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-10",
+    "sourceDataDate": "2026-06-11",
     "note": "Official FIFA World Cup 2026 group-stage fixtures and score status.",
     "teamCount": 48,
     "matchCount": 72
@@ -30,19 +30,28 @@
           "away": "South Africa",
           "homeId": "43911",
           "awayId": "43883",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 2,
+          "awayScore": 0,
+          "status": "unknown",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
-            "wHome": 0,
+            "wHome": 1,
             "draws": 1,
             "wAway": 0,
-            "total": 1,
-            "goalsHome": 1,
+            "total": 2,
+            "goalsHome": 3,
             "goalsAway": 1,
             "matches": [
+              {
+                "date": "2026-06-11",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Mexico",
+                "away": "South Africa",
+                "homeScore": 2,
+                "awayScore": 0
+              },
               {
                 "date": "2010-06-11",
                 "competition": "FIFA World Cup™",
