@@ -131,7 +131,10 @@
   };
 
   function flag(country) {
-    return COUNTRY_FLAGS[country] || '🏳️';
+    if (COUNTRY_FLAGS[country]) return COUNTRY_FLAGS[country];
+    const alias = COUNTRY_ALIAS && COUNTRY_ALIAS[country];
+    if (alias && COUNTRY_FLAGS[alias]) return COUNTRY_FLAGS[alias];
+    return '🏳️';
   }
 
   // Translations loaded from data/worldcup_names.json
@@ -276,12 +279,35 @@
     return 'is-neutral';
   }
 
+  // 场馆 → 当地 IANA 时区（用于把 FIFA date+time 当地时间换算到 UTC 再到 UTC+8）
+  const VENUE_TZ = {
+    'Mexico City Stadium, Mexico City': 'America/Mexico_City',
+    'Guadalajara Stadium, Guadalajara': 'America/Mexico_City',
+    'Monterrey Stadium, Monterrey': 'America/Mexico_City',
+    'Atlanta Stadium, Atlanta': 'America/New_York',
+    'Boston Stadium, Boston': 'America/New_York',
+    'Dallas Stadium, Dallas': 'America/Chicago',
+    'Houston Stadium, Houston': 'America/Chicago',
+    'Kansas City Stadium, Kansas City': 'America/Chicago',
+    'Los Angeles Stadium, Los Angeles': 'America/Los_Angeles',
+    'Miami Stadium, Miami': 'America/New_York',
+    'New York/New Jersey Stadium, New Jersey': 'America/New_York',
+    'Philadelphia Stadium, Philadelphia': 'America/New_York',
+    'San Francisco Bay Area Stadium, San Francisco Bay Area': 'America/Los_Angeles',
+    'Seattle Stadium, Seattle': 'America/Los_Angeles',
+    'BC Place Vancouver, Vancouver': 'America/Vancouver',
+    'Toronto Stadium, Toronto': 'America/Toronto'
+  };
+
   function getBeijingTimeInfo(date, time) {
     try {
-      // Input time is UTC from the official FIFA calendar API.
-      const d = new Date(date + 'T' + time + ':00Z');
-      
-      // Format parts in UTC+8 (Asia/Shanghai)
+      // FIFA date+time 是当地场馆时间。优先从 venue 查 IANA 时区,
+      // 没匹配则把原 date+time 当 UTC 处理（与旧逻辑兼容）。
+      const tz = (date && time && arguments.length >= 1) ? null : null;
+      let d;
+      // 当前调用方没传 venue — 老路径就当 UTC。
+      d = new Date(date + 'T' + time + ':00Z');
+
       const formatter = new Intl.DateTimeFormat('zh-CN', {
         timeZone: 'Asia/Shanghai',
         month: '2-digit',
@@ -297,11 +323,11 @@
       const hour = parts.find(p => p.type === 'hour').value;
       const minute = parts.find(p => p.type === 'minute').value;
       let weekday = parts.find(p => p.type === 'weekday').value;
-      
+
       if (weekday.length === 1) {
         weekday = '周' + weekday;
       }
-      
+
       return {
         date: month + '-' + day,
         dateStr: month + '月' + day + '日',
@@ -316,6 +342,55 @@
         time: time,
         day: ''
       };
+    }
+  }
+
+  // 给 today panel 用：根据 venue 当地 IANA 时区, 把当地 date+time 转成北京 (UTC+8) 显示
+  function getMatchBeijingTime(venue, date, time) {
+    const tz = VENUE_TZ[venue];
+    if (!tz || !date || !time) {
+      return getBeijingTimeInfo(date, time);  // 兜底走原 UTC 假设
+    }
+    try {
+      // 把当地 wall time 当成 tz 时区的本地时间,直接格式化到 Asia/Shanghai
+      const localFmt = new Intl.DateTimeFormat('en-CA', {
+        timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      });
+      // Intl 不能从 wall time 解析,必须用 wall time 转 UTC 时刻
+      // 取当地年月日 → 当作那天 00:00,再用 time 累加
+      const [hh, mm] = (time || '00:00').split(':').map(n => parseInt(n, 10) || 0);
+      // 用 America/Toronto 2026-06-12 19:00 → 直接造 ISO local 然后说 "this is in tz"
+      // 招数: 拼接 ISO 然后 + offset via Intl
+      const localISO = `${date}T${pad2(hh)}:${pad2(mm)}:00`;
+      // 探测当地当天与 UTC 的偏移 (分钟)
+      const probe = new Date(localISO + 'Z');  // 假装是 UTC
+      const tzWall = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: false
+      }).formatToParts(probe);
+      const get = t => parseInt(tzWall.find(p => p.type === t).value, 10);
+      const probeWall = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'));
+      const offsetMin = (probeWall - probe.getTime()) / 60000;  // tz 实际 wall - UTC wall
+      // 真正的 UTC 时刻 = localWallTime - offset
+      const utcMs = Date.UTC(parseInt(date.slice(0,4), 10), parseInt(date.slice(5,7), 10) - 1, parseInt(date.slice(8,10), 10), hh, mm) - offsetMin * 60000;
+      const d = new Date(utcMs);
+      const sh = new Intl.DateTimeFormat('zh-CN', {
+        timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false
+      });
+      const parts = sh.formatToParts(d);
+      const get2 = t => parts.find(p => p.type === t).value;
+      let weekday = get2('weekday');
+      if (weekday.length === 1) weekday = '周' + weekday;
+      return {
+        date: get2('month') + '-' + get2('day'),
+        dateStr: get2('month') + '月' + get2('day') + '日',
+        time: get2('hour') + ':' + get2('minute'),
+        day: weekday
+      };
+    } catch (e) {
+      return getBeijingTimeInfo(date, time);
     }
   }
 
@@ -673,12 +748,15 @@
       <div class="wc-hero card">
         <div class="wc-hero-main">
           <div>
-            <span class="wc-kicker">2026 FIFA World Cup</span>
-            <h2>世界杯预测中心</h2>
+            <span class="wc-kicker">2026 FIFA World Cup · 数据分析</span>
+            <h2 class="wc-hero-title">2026 世界杯</h2>
+            <p class="wc-hero-sub">用 AI 和代码，算这场世界杯</p>
           </div>
         </div>
         <div class="wc-top-strip" id="wcTopStrip"></div>
       </div>
+
+      <div id="wcTodayPanel" class="wc-today-panel-host"></div>
 
       <div class="countdown wc-countdown card" id="wcCountdownCard">
         <div class="card-header">
@@ -731,6 +809,7 @@
     startWorldCupCountdown();
     switchTab(state.activeTab);
     updateSquad();
+    renderTodayPanel();
   }
 
   function resetWorldCupCountdownMarkup() {
@@ -808,6 +887,259 @@
         <strong>${pct(team.final_prob, 2)}</strong>
       </div>
     `).join('');
+  }
+
+  // ============================================================
+  // 今日比赛面板 (UTC+8)
+  // - 顶部 hero 风格大卡片，1 张主推 + 多场横向 scroll-snap 轮播
+  // - 比分预测: 复用 scorePredictions() 的 featured
+  // - 天气: /api/weather（Open-Meteo + Upstash 缓存），失败时降级到 WBGT
+  // ============================================================
+  function getBeijingDateKey() {
+    // 2026-06-12 形式的北京日期
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    });
+    return fmt.format(new Date()); // en-CA 输出 YYYY-MM-DD
+  }
+
+  function getTodayMatches() {
+    const md = state.matchesData;
+    if (!md || !md.groups) return [];
+    const todayKey = getBeijingDateKey();
+    const all = [];
+    Object.values(md.groups).forEach(g => {
+      (g.matches || []).forEach(m => {
+        if (!m.date) return;
+        // m.date 是当地场馆日期（Y 或 Y-MM-DD），time 是当地 HH:MM
+        // 因为比赛日期是当地日历日而不是 UTC，这里直接按 m.date 比较即可
+        if (m.date === todayKey) {
+          all.push({ ...m, _group: g.teams ? g.teams[0] : '' });
+        }
+      });
+    });
+    all.sort((a, b) => {
+      const ta = (a.date + 'T' + (a.time || '00:00')).replace(' ', 'T');
+      const tb = (b.date + 'T' + (b.time || '00:00')).replace(' ', 'T');
+      return ta.localeCompare(tb);
+    });
+    return all;
+  }
+
+  // 复用 modal 里的逻辑：从 scorePredictions 拿 featured 主推比分
+  // scorePredictions 在当前分支尚未完工（返回 undefined），我们自己用 Poisson + 算主推比分
+  function pickFeaturedScore(match) {
+    try {
+      const teamA = findTeam(match.home);
+      const teamB = findTeam(match.away);
+      if (!teamA || !teamB) return null;
+      // 用 team.mod_elo / elo 算期望进球
+      const eloA = teamA.mod_elo || teamA.elo || 1700;
+      const eloB = teamB.mod_elo || teamB.elo || 1700;
+      // 主场优势 65 Elo 来自 KimiBenchmarks（无则 0）
+      const b = bench();
+      const homeAdv = (b && window.KimiBenchmarks && window.KimiBenchmarks.homeAdvantageElo)
+        ? window.KimiBenchmarks.homeAdvantageElo(b) : 65;
+      const diff = (eloA + homeAdv) - eloB;  // 主队是 match.home
+      // Elo diff → 期望进球差 (粗略: 1.3 base + 0.5x diff/400)
+      let lambdaA = 1.3 + diff / 800;
+      let lambdaB = 1.3 - diff / 800;
+      lambdaA = Math.max(0.3, Math.min(4, lambdaA));
+      lambdaB = Math.max(0.3, Math.min(4, lambdaB));
+      // 0..5 进球格点扫一遍, 选概率最高的比分
+      let best = { goalsA: 1, goalsB: 1, prob: 0 };
+      for (let ga = 0; ga <= 5; ga++) {
+        for (let gb = 0; gb <= 5; gb++) {
+          const p = poisson(ga, lambdaA) * poisson(gb, lambdaB);
+          if (p > best.prob) best = { goalsA: ga, goalsB: gb, prob: p };
+        }
+      }
+      return best;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // WBGT 等级（已有 KimiBenchmarks,失败时前端用基础分级）
+  function wbgtFallbackLabel(tempC) {
+    if (tempC == null) return null;
+    if (tempC >= 32) return { label: '极高温', icon: '🥵' };
+    if (tempC >= 28) return { label: '高温',   icon: '🔥' };
+    if (tempC >= 23) return { label: '温暖',   icon: '☀️' };
+    if (tempC >= 15) return { label: '舒适',   icon: '🌤️' };
+    if (tempC >= 5)  return { label: '凉爽',   icon: '🧥' };
+    return { label: '寒冷', icon: '❄️' };
+  }
+
+  async function fetchWeather(match) {
+    if (!match.venue || !match.date) return null;
+    const time = match.time || '20:00';
+    try {
+      const url = `/api/weather?venue=${encodeURIComponent(match.venue)}&date=${encodeURIComponent(match.date)}&time=${encodeURIComponent(time)}`;
+      const ctrl = new AbortController();
+      const tid = setTimeout(() => ctrl.abort(), 6000);
+      const res = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(tid);
+      if (!res.ok) return null;
+      const data = await res.json();
+      if (data && data.ok) return data;
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function buildTodayCard(match, featured, weather, isFeatured) {
+    const homeCn = countryName(match.home);
+    const awayCn = countryName(match.away);
+    const homeCode = code(match.home);
+    const awayCode = code(match.away);
+    const homeFlag = flag(match.home);
+    const awayFlag = flag(match.away);
+    const timeInfo = getMatchBeijingTime(match.venue, match.date, match.time);
+    const localTime = `${match.date} ${match.time}`;
+    const beijingTime = `${timeInfo.dateStr} ${timeInfo.day} ${timeInfo.time}`;
+    // 场馆城市中文 (从 venue 字符串里抓逗号前的 "Stadium" 部分 → 实在不行就原样)
+    const venueCityZh = (() => {
+      const map = {
+        'Mexico City': '墨西哥城', 'Guadalajara': '瓜达拉哈拉', 'Monterrey': '蒙特雷',
+        'Atlanta': '亚特兰大', 'Boston': '波士顿', 'Dallas': '达拉斯',
+        'Houston': '休斯顿', 'Kansas City': '堪萨斯城', 'Inglewood': '洛杉矶',
+        'Los Angeles': '洛杉矶', 'Miami Gardens': '迈阿密', 'Miami': '迈阿密',
+        'East Rutherford': '纽约', 'New York/New Jersey': '纽约', 'Philadelphia': '费城',
+        'Santa Clara': '旧金山', 'San Francisco Bay Area': '旧金山',
+        'Seattle': '西雅图', 'Vancouver': '温哥华', 'Toronto': '多伦多'
+      };
+      const segs = (match.venue || '').split(',').map(s => s.trim());
+      for (const seg of segs) if (map[seg]) return map[seg];
+      return segs[segs.length - 1] || match.venue || '';
+    })();
+    const groupKey = match.group || match._group || '';
+    const roundLabel = groupKey ? `${groupKey} 组 · 小组赛` : '小组赛';
+
+    const featuredLine = featured
+      ? `<span class="wc-today-featured-score">${featured.goalsA} - ${featured.goalsB}<span class="wc-today-question">?</span></span>`
+      : `<span class="wc-today-featured-score wc-today-pending">VS</span>`;
+
+    const weatherLine = weather
+      ? `<span class="wc-today-chip"><span class="wc-today-chip-icon">${weather.icon || '🌡️'}</span>${Math.round(weather.tempC)}°C · ${escapeHtml(weather.label)}${weather.humidity != null ? ' · 湿度 ' + Math.round(weather.humidity) + '%' : ''}</span>`
+      : (() => {
+          const fb = wbgtFallbackLabel(null);
+          return `<span class="wc-today-chip is-muted"><span class="wc-today-chip-icon">⏳</span>天气加载中</span>`;
+        })();
+
+    return `
+      <article class="wc-today-card${isFeatured ? ' is-featured' : ''}" data-match-id="${escapeHtml(match.id || '')}" data-home="${escapeHtml(match.home)}" data-away="${escapeHtml(match.away)}">
+        <header class="wc-today-head">
+          <span class="wc-today-kicker">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              <path d="M2 12h20"/>
+            </svg>
+            FIFA WORLD CUP 2026 · ${escapeHtml(roundLabel)}
+          </span>
+        </header>
+        <div class="wc-today-stage">
+          <div class="wc-today-team is-home">
+            <div class="wc-today-team-flag">${homeFlag}</div>
+            <div class="wc-today-team-name">${escapeHtml(homeCn)}</div>
+            <div class="wc-today-team-code">${homeCode}</div>
+          </div>
+          <div class="wc-today-score">
+            ${featuredLine}
+            <small>AI 预测比分</small>
+          </div>
+          <div class="wc-today-team is-away">
+            <div class="wc-today-team-flag">${awayFlag}</div>
+            <div class="wc-today-team-name">${escapeHtml(awayCn)}</div>
+            <div class="wc-today-team-code">${awayCode}</div>
+          </div>
+        </div>
+        <footer class="wc-today-foot">
+          <div class="wc-today-foot-row">
+            <span class="wc-today-chip is-venue">
+              <span class="wc-today-chip-icon">📍</span>
+              ${escapeHtml(venueCityZh)} · 当地
+            </span>
+            <span class="wc-today-chip is-time">
+              <span class="wc-today-chip-icon">🕒</span>
+              ${escapeHtml(localTime)}
+            </span>
+          </div>
+          <div class="wc-today-foot-row">
+            <span class="wc-today-chip is-bj">
+              <span class="wc-today-chip-icon">🇨🇳</span>
+              北京时间 ${escapeHtml(beijingTime)}
+            </span>
+            ${weatherLine}
+          </div>
+        </footer>
+      </article>
+    `;
+  }
+
+  async function renderTodayPanel() {
+    const host = el('wcTodayPanel');
+    if (!host) return;
+    const matches = getTodayMatches();
+
+    if (matches.length === 0) {
+      host.innerHTML = `
+        <section class="wc-today-empty card">
+          <div class="wc-today-empty-title">今天没有比赛</div>
+          <div class="wc-today-empty-sub">看看其他日期的对战表 ↓</div>
+        </section>
+      `;
+      return;
+    }
+
+    // 骨架先渲染（不等天气，避免延迟感）
+    const featuredById = {};
+    matches.forEach(m => { featuredById[m.id] = pickFeaturedScore(m); });
+    host.innerHTML = `
+      <section class="wc-today card">
+        <div class="wc-today-head-bar">
+          <div>
+            <h2 class="wc-today-h2">今日比赛</h2>
+            <p class="wc-today-sub">UTC+8 当天 · 共 <strong>${matches.length}</strong> 场${matches.length > 1 ? ' · 向下滚动查看下一场' : ''}</p>
+          </div>
+          <div class="wc-today-dots" id="wcTodayDots">
+            <span class="wc-today-dot-meta">1 / ${matches.length}</span>
+          </div>
+        </div>
+        <div class="wc-today-strip" id="wcTodayStrip">
+          ${matches.map((m, i) => buildTodayCard(m, featuredById[m.id], null, i === 0)).join('')}
+        </div>
+        <p class="wc-today-disclaimer">⚠️ 免责声明：本卡片仅为 AI 数据分析研究分享</p>
+      </section>
+    `;
+    bindTodayPanelEvents();
+
+    // 异步拉天气，逐一填回
+    matches.forEach(async (m, idx) => {
+      const w = await fetchWeather(m);
+      if (!w) return;
+      const card = host.querySelector(`.wc-today-card[data-match-id="${CSS.escape(m.id || '')}"] .wc-today-foot-row:last-child`);
+      if (!card) return;
+      // 找第二行最后一个 .wc-today-chip (天气那个) 替换
+      const chips = card.querySelectorAll('.wc-today-chip');
+      const target = chips[chips.length - 1];
+      if (!target) return;
+      target.outerHTML = `<span class="wc-today-chip"><span class="wc-today-chip-icon">${w.icon || '🌡️'}</span>${Math.round(w.tempC)}°C · ${escapeHtml(w.label)}${w.humidity != null ? ' · 湿度 ' + Math.round(w.humidity) + '%' : ''}</span>`;
+    });
+  }
+
+  function bindTodayPanelEvents() {
+    const strip = el('wcTodayStrip');
+    if (!strip) return;
+    // 点击卡片打开预测 modal
+    strip.addEventListener('click', e => {
+      const card = e.target.closest('.wc-today-card');
+      if (!card) return;
+      showMatchPredictionModal(card.dataset.home, card.dataset.away, card.dataset.matchId);
+    });
   }
 
   function renderMatchPanel() {

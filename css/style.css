@@ -4902,6 +4902,26 @@ body.theme-worldcup .app-toast {
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.03), 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
+.theme-worldcup .wc-hero-title {
+  font-family: var(--font-heading);
+  font-size: clamp(2.4rem, 5.5vw, 4.2rem);
+  font-weight: 900;
+  line-height: 1.05;
+  background: linear-gradient(90deg, #ff4757 0%, #ffa502 35%, #2ed573 65%, #36c5f0 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  margin-bottom: 6px;
+}
+
+.theme-worldcup .wc-hero-sub {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 0.95rem !important;
+  font-weight: 500;
+  max-width: 72ch;
+}
+
 .theme-worldcup .wc-match-card {
   border-left: 3px solid var(--front-start); /* Mexico Green */
   border-right: 3px solid var(--back-start); /* USA Blue */
@@ -4932,6 +4952,267 @@ body.theme-worldcup .app-toast {
   color: var(--accent) !important;
   box-shadow: 0 0 12px rgba(255, 71, 87, 0.25) !important;
 }
+
+/* ========== Today Match Panel (大卡片 + 轮播) ========== */
+.wc-today-panel-host {
+  margin-top: var(--space-lg);
+}
+
+.wc-today {
+  position: relative;
+  padding: var(--space-lg) var(--space-lg) var(--space-md) var(--space-lg);
+  background: linear-gradient(180deg, rgba(20, 27, 51, 0.85) 0%, rgba(13, 18, 34, 0.6) 100%);
+  border: 1px solid rgba(255, 71, 87, 0.18);
+  overflow: hidden;
+}
+
+.wc-today-head-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.wc-today-h2 {
+  font-family: var(--font-heading);
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0 0 4px 0;
+  background: linear-gradient(90deg, #ff4757 0%, #ffa502 50%, #2ed573 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+.wc-today-sub {
+  margin: 0;
+  color: var(--text-muted, #8a93a6);
+  font-size: 0.85rem;
+}
+
+.wc-today-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.wc-today-dot-meta {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.55);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.wc-today-strip {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding-bottom: var(--space-sm);
+}
+
+.wc-today-card {
+  background: linear-gradient(135deg, rgba(255, 71, 87, 0.06) 0%, rgba(47, 128, 237, 0.08) 100%), rgba(13, 18, 34, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg) var(--space-lg) var(--space-md) var(--space-lg);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+}
+
+.wc-today-card.is-featured {
+  background: linear-gradient(135deg, rgba(255, 71, 87, 0.12) 0%, rgba(47, 128, 237, 0.16) 100%), rgba(13, 18, 34, 0.65);
+  border-color: rgba(255, 71, 87, 0.35);
+  box-shadow: 0 12px 40px rgba(255, 71, 87, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.wc-today-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 71, 87, 0.4);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 71, 87, 0.2);
+}
+
+.wc-today-head {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: var(--space-md);
+}
+
+.wc-today-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent, #ff4757);
+}
+
+.wc-today-kicker svg {
+  width: 14px;
+  height: 14px;
+}
+
+.wc-today-stage {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) 0 var(--space-lg) 0;
+}
+
+.wc-today-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.wc-today-team.is-home {
+  align-items: flex-end;
+}
+.wc-today-team.is-away {
+  align-items: flex-start;
+}
+
+.wc-today-team-flag {
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  line-height: 1;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.3));
+}
+
+.wc-today-team-name {
+  font-family: var(--font-heading);
+  font-size: clamp(1.6rem, 3.2vw, 2.4rem);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.wc-today-team-code {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.wc-today-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0 var(--space-md);
+}
+
+.wc-today-featured-score {
+  font-family: var(--font-heading);
+  font-size: clamp(2.6rem, 5.5vw, 4.2rem);
+  font-weight: 900;
+  line-height: 1;
+  background: linear-gradient(90deg, #36c5f0 0%, #ff4757 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  letter-spacing: -0.02em;
+}
+
+.wc-today-question {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.5);
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.5);
+}
+
+.wc-today-featured-score.wc-today-pending {
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  color: var(--text-muted, #8a93a6);
+  -webkit-text-fill-color: var(--text-muted, #8a93a6);
+}
+
+.wc-today-score small {
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.wc-today-foot {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: var(--space-md);
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.wc-today-foot-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.wc-today-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.wc-today-chip.is-muted {
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+}
+
+.wc-today-chip-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.wc-today-nav {
+  display: none;
+}
+
+.wc-today-disclaimer {
+  margin: var(--space-md) 0 0 0;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+}
+
+.wc-today-empty {
+  text-align: center;
+  padding: var(--space-2xl) var(--space-lg);
+}
+
+.wc-today-empty-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary, #fff);
+  margin-bottom: 8px;
+}
+
+.wc-today-empty-sub {
+  color: var(--text-muted, #8a93a6);
+  font-size: 0.9rem;
+}
+
+/* 小屏: 主队居左,客队居右,比分居中(保留现布局) — 卡片已经够紧凑,无需特殊断点 */
 
 /* ========== H2H Modal: 4-source Ensemble Card ========== */
 .wc-h2h-meta {
