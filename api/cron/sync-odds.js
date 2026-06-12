@@ -166,18 +166,56 @@ async function fetchPolymarketOutright() {
 
 // ============================================================
 // The Odds API
+// 已知错误码（来自 https://the-odds-api.com/liveapi/guides/v4/api-error-codes.html）：
+//   401 INVALID_KEY              - key 失效或配错
+//   401 EXCEEDED_Free_TIER_LIMIT - 到达免费层月配额（500/月）
+//   401 OUT_OF_USAGE_CREDITS     - 付费层配额用完
+//   422 UNDEFINED_SPORT_KEY      - sport key 不存在（可能改名）
+//   429 TOO_MANY_REQUESTS        - 速率限制
 // ============================================================
 async function fetchOddsAPI() {
   const apiKey = process.env.ODDS_API_KEY;
-  if (!apiKey) return { skipped: true, reason: 'ODDS_API_KEY not set' };
+  if (!apiKey) return { skipped: true, reason: 'ODDS_API_KEY not set in Vercel env' };
 
   const sport = process.env.ODDS_SPORT_KEY || 'soccer_fifa_world_cup';
   const regions = process.env.ODDS_REGIONS || 'us,uk,eu';
   const markets = process.env.ODDS_MARKETS || 'h2h,spreads,totals';
   const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${apiKey}&regions=${regions}&markets=${markets}&oddsFormat=decimal`;
 
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`The Odds API HTTP ${res.status}`);
+  // 8s 超时，避免 Vercel 函数被上游 hang 死
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), 8000);
+
+  let res;
+  try {
+    res = await fetch(url, { signal: ctrl.signal });
+  } catch (e) {
+    clearTimeout(tid);
+    if (e?.name === 'AbortError') {
+      throw new Error(`The Odds API fetch timeout (>8s) for sport=${sport}`);
+    }
+    throw new Error(`The Odds API fetch failed: ${e?.message || e}`);
+  }
+  clearTimeout(tid);
+
+  if (!res.ok) {
+    // 把 Odds API 的 error_code / message 透出来, 方便 Vercel log 排查
+    let detail = '';
+    try {
+      const body = await res.json();
+      detail = `${body?.error_code || ''} ${body?.message || ''}`.trim();
+    } catch (_) {
+      detail = res.statusText || '';
+    }
+    // 提示开发者最常见的 2 种原因
+    const hint = res.status === 401 && detail.includes('FREE_TIER')
+      ? ' — free tier 月配额 500 次可能用完，需升级或换 key'
+      : res.status === 422
+      ? ` — sport_key "${sport}" 可能改名，可查 https://the-odds-api.com/liveapi/guides/v4/api-error-codes.html`
+      : '';
+    throw new Error(`The Odds API HTTP ${res.status} ${detail}${hint}`);
+  }
+
   const events = await res.json();
 
   return {
@@ -201,7 +239,10 @@ async function fetchOddsAPI() {
         }))
       }))
     })),
-    source: 'the-odds-api-v4'
+    source: 'the-odds-api-v4',
+    sport,
+    regions,
+    markets
   };
 }
 
@@ -285,6 +326,17 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // 鉴权：Vercel Cron 调用时带 `Authorization: Bearer ${CRON_SECRET}`
+  // 手动 GET 触发也要求带 token；未配 CRON_SECRET 视为未授权（防止误用公共路由）
+  const auth = req.headers?.authorization || '';
+  const expected = process.env.CRON_SECRET;
+  if (!expected) {
+    return res.status(503).json({ error: 'CRON_SECRET not configured' });
+  }
+  if (auth !== `Bearer ${expected}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   const sourceParam = req.query?.source;
   const targets = sourceParam
     ? { [sourceParam]: SOURCES[sourceParam] }
@@ -321,7 +373,15 @@ export default async function handler(req, res) {
     finishedAt: new Date().toISOString(),
     kvEnabled: !!redis,
     results: Object.fromEntries(
-      Object.entries(results).map(([k, v]) => [k, v.ok ? 'ok' : (v.error?.includes('not set') || v.error?.includes('!= true') ? 'skipped' : 'error')])
+      Object.entries(results).map(([k, v]) => {
+        if (v.ok) return [k, 'ok'];
+        if (v.error?.includes('not set') || v.error?.includes('!= true')) return [k, 'skipped'];
+        return [k, 'error'];
+      })
+    ),
+    // 完整错误信息（不脱敏, dev 用, 前端 banner 拉这个展示给开发者）
+    errors: Object.fromEntries(
+      Object.entries(results).filter(([, v]) => !v.ok).map(([k, v]) => [k, v.error])
     )
   };
   if (redis) {

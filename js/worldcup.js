@@ -564,6 +564,14 @@
         // 用 info 替代 warn — 缺源是部署/配置问题, 不阻塞用户
         console.info('ℹ️ [odds] 部分源缺失（部署侧配置问题）:', state.oddsHealth.issues);
       }
+      // 把 meta.errors 里的具体源失败原因暴露到 issues
+      // 让开发者看到 "the-odds-api: HTTP 401 EXCEEDED_Free_TIER_LIMIT" 而不是模糊的"数据源异常"
+      if (payload && payload.meta && payload.meta.errors) {
+        const errs = payload.meta.errors;
+        Object.keys(errs).forEach(src => {
+          state.oddsHealth.issues.push(`${src}: ${errs[src]}`);
+        });
+      }
       // 拉到新数据后重渲染：market tab 用到了 polymarket-outright
       if (state.loaded) render();
     } catch (e) {
