@@ -946,19 +946,27 @@
       ? `<span class="wc-today-featured-score">${featured.goalsA} - ${featured.goalsB}<span class="wc-today-question">?</span></span>`
       : `<span class="wc-today-featured-score wc-today-pending">VS</span>`;
 
-    // 综合推荐 chip + 校准胜率 chip
-    const recChip = (extras && extras.recLabel && extras.recPct != null)
-      ? `<span class="wc-today-chip is-rec" title="4 源综合推荐">
-           <span class="wc-today-chip-icon">📊</span>
-           推荐 ${escapeHtml(extras.recLabel)} ${extras.recPct}%
-         </span>`
-      : '';
-    const calChip = (extras && extras.calPct != null && extras.calSet)
-      ? `<span class="wc-today-chip is-cal" title="Conformal 校准后（${escapeHtml(extras.calSet)}）" style="border-color:${extras.calColor || '#faad14'};color:${extras.calColor || '#faad14'}">
-           <span class="wc-today-chip-icon">🛡</span>
-           校准胜率 ${extras.calPct}%
-         </span>`
-      : '';
+    // 跟推荐比分同优先级的两个胜率卡片：左 = 推荐胜率（综合），中 = 推荐比分，右 = 校准胜率
+    const recCell = (extras && extras.recLabel && extras.recPct != null)
+      ? `<div class="wc-today-pct-cell is-rec" title="4 源综合推荐">
+           <span class="wc-today-pct-label">📊 推荐胜率</span>
+           <span class="wc-today-pct-value">${extras.recPct}%</span>
+           <span class="wc-today-pct-sub">${escapeHtml(extras.recLabel)}</span>
+         </div>`
+      : `<div class="wc-today-pct-cell is-rec is-empty">
+           <span class="wc-today-pct-label">📊 推荐胜率</span>
+           <span class="wc-today-pct-value">--</span>
+         </div>`;
+    const calCell = (extras && extras.calPct != null && extras.calSet)
+      ? `<div class="wc-today-pct-cell is-cal" title="校准后 (${escapeHtml(extras.calSet)})">
+           <span class="wc-today-pct-label">🛡 校准胜率</span>
+           <span class="wc-today-pct-value" style="color:${extras.calColor || '#6ee7b7'}">${extras.calPct}%</span>
+           <span class="wc-today-pct-sub">${escapeHtml(extras.calSet)}</span>
+         </div>`
+      : `<div class="wc-today-pct-cell is-cal is-empty">
+           <span class="wc-today-pct-label">🛡 校准胜率</span>
+           <span class="wc-today-pct-value">--</span>
+         </div>`;
 
     const weatherLine = weather
       ? `<span class="wc-today-chip"><span class="wc-today-chip-icon">${weather.icon || '🌡️'}</span>${Math.round(weather.tempC)}°C · ${escapeHtml(weather.label)}${weather.humidity != null ? ' · 湿度 ' + Math.round(weather.humidity) + '%' : ''}</span>`
@@ -982,10 +990,12 @@
             <div class="wc-today-team-name">${escapeHtml(homeCn)}</div>
             <div class="wc-today-team-code">${homeCode}</div>
           </div>
+          ${recCell}
           <div class="wc-today-score">
             ${featuredLine}
             <small>AI 预测比分</small>
           </div>
+          ${calCell}
           <div class="wc-today-team is-away">
             <div class="wc-today-team-flag">${awayFlag}</div>
             <div class="wc-today-team-name">${escapeHtml(awayCn)}</div>
@@ -993,10 +1003,6 @@
           </div>
         </div>
         <footer class="wc-today-foot">
-          <div class="wc-today-foot-row">
-            ${recChip}
-            ${calChip}
-          </div>
           <div class="wc-today-foot-row">
             <span class="wc-today-chip is-venue">
               <span class="wc-today-chip-icon">📍</span>
