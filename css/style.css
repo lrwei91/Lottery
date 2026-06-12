@@ -5639,7 +5639,9 @@ body.theme-worldcup .app-toast {
   font-size: 11px;
 }
 
-.wc-ensemble-sources,
+.wc-ensemble-sources.is-complete,
+.wc-ensemble-sources.is-partial,
+.wc-ensemble-sources.is-weak,
 .wc-ensemble-agreement {
   display: inline-flex;
   align-items: center;
