@@ -5063,7 +5063,7 @@ body.theme-worldcup .app-toast {
 
 .wc-today-stage {
   display: grid;
-  grid-template-columns: 1fr auto auto auto 1fr;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: var(--space-md);
   padding: var(--space-md) 0 var(--space-lg) 0;
@@ -5082,18 +5082,6 @@ body.theme-worldcup .app-toast {
 }
 .wc-today-team.is-away {
   align-items: flex-start;
-}
-
-@media (max-width: 640px) {
-  .wc-today-stage {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-sm);
-  }
-  .wc-today-team { align-items: center !important; }
-  .wc-today-stage > .wc-today-score,
-  .wc-today-stage > .wc-today-pct-cell {
-    grid-column: span 1;
-  }
 }
 
 .wc-today-team-flag {
@@ -5159,53 +5147,78 @@ body.theme-worldcup .app-toast {
   color: rgba(255, 255, 255, 0.45);
 }
 
-/* 两个胜率卡片：跟推荐比分同优先级，左右对称 */
-.wc-today-pct-cell {
-  display: flex;
-  flex-direction: column;
+/* 北京时间 - 跟 AI 预测比分同列竖排, 在比分下面 */
+.wc-today-bj-time {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 4px;
-  min-width: 96px;
-  padding: 10px 12px;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.03);
+  margin-top: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
-.wc-today-pct-cell.is-rec {
-  border-color: rgba(255, 71, 87, 0.4);
-  background: linear-gradient(180deg, rgba(255, 71, 87, 0.12), rgba(255, 71, 87, 0.04));
-}
-
-.wc-today-pct-cell.is-cal {
-  border-color: rgba(46, 213, 115, 0.4);
-  background: linear-gradient(180deg, rgba(46, 213, 115, 0.12), rgba(46, 213, 115, 0.04));
-}
-
-.wc-today-pct-label {
-  font-size: 0.68rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
-  font-weight: 700;
-}
-
-.wc-today-pct-value {
-  font-family: var(--font-heading);
-  font-size: clamp(1.3rem, 2.4vw, 1.7rem);
-  font-weight: 800;
+.wc-today-bj-time .wc-today-chip-icon {
+  font-size: 0.95rem;
   line-height: 1;
+}
+
+/* footer 一行布局: 左下 3 个胜率 + 当地 + 天气 chip */
+.wc-today-foot-row--left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.wc-today-pct-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  white-space: nowrap;
+}
+
+.wc-today-pct-inline.is-rec {
+  background: linear-gradient(180deg, rgba(255, 71, 87, 0.18), rgba(255, 71, 87, 0.06));
+  border-color: rgba(255, 71, 87, 0.4);
+  color: #ff8a98;
+  font-weight: 600;
+}
+
+.wc-today-pct-inline.is-cal {
+  background: linear-gradient(180deg, rgba(46, 213, 115, 0.14), rgba(46, 213, 115, 0.04));
+  border-color: rgba(46, 213, 115, 0.4);
+  color: #6ee7b7;
+  font-weight: 600;
+}
+
+.wc-today-pct-inline-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  opacity: 0.85;
+}
+
+.wc-today-pct-inline-value {
+  font-family: var(--font-heading);
+  font-size: 0.95rem;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
 
-.wc-today-pct-cell.is-rec .wc-today-pct-value { color: #ff8a98; }
-.wc-today-pct-cell.is-cal .wc-today-pct-value { color: #6ee7b7; }
-
-.wc-today-pct-sub {
+.wc-today-pct-inline-sub {
   font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 600;
+  opacity: 0.75;
 }
 
 .wc-today-foot {

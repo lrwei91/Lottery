@@ -754,7 +754,7 @@
       </div>
 
       <div class="wc-tabs" id="worldcupTabs">
-        <button class="wc-tab active" data-wc-tab="matches">今日比赛</button>
+        <button class="wc-tab active" data-wc-tab="matches">最近比赛</button>
         <button class="wc-tab" data-wc-tab="champion">冠军概率</button>
         <button class="wc-tab" data-wc-tab="factor">因子拆解</button>
         <button class="wc-tab" data-wc-tab="mystic">玄学分析</button>
@@ -792,7 +792,7 @@
   }
 
   // ============================================================
-  // 今日比赛面板 (UTC+8)
+  // 最近比赛面板 (UTC+8, 今天 + 明天)
   // - 顶部 hero 风格大卡片，1 张主推 + 多场横向 scroll-snap 轮播
   // - 比分预测: 复用 scorePredictions() 的 featured
   // - 天气: /api/weather（Open-Meteo + Upstash 缓存），失败时降级到 WBGT
@@ -806,17 +806,35 @@
     return fmt.format(new Date()); // en-CA 输出 YYYY-MM-DD
   }
 
-  function getTodayMatches() {
+  // 北京日期 + N 天, 返回 YYYY-MM-DD
+  function getBeijingDateOffset(days) {
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() + days);
+    const fmt = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    });
+    return fmt.format(d);
+  }
+
+  // 最近比赛 = 今天 + 明天 (UTC+8 当日)
+  // 用 getMatchBeijingTime 把 m.date+time+venue 换算成北京日历日,再跟 today/tomorrow 比较
+  // 原因: m.date 是当地日历日, 跨日比赛(当地晚 23:00 ↔ 北京次日)容易漏
+  function getUpcomingMatches() {
     const md = state.matchesData;
     if (!md || !md.groups) return [];
     const todayKey = getBeijingDateKey();
+    const tomorrowKey = getBeijingDateOffset(1);
+    const allowed = new Set([todayKey, tomorrowKey]);
     const all = [];
     Object.values(md.groups).forEach(g => {
       (g.matches || []).forEach(m => {
-        if (!m.date) return;
-        // m.date 是当地场馆日期（Y 或 Y-MM-DD），time 是当地 HH:MM
-        // 因为比赛日期是当地日历日而不是 UTC，这里直接按 m.date 比较即可
-        if (m.date === todayKey) {
+        if (!m.date || !m.time || !m.venue) return;
+        const t = getMatchBeijingTime(m.venue, m.date, m.time);
+        // t.date 是 "MM-DD",要拼成 "YYYY-MM-DD" — 用 todayKey 的年份
+        const year = todayKey.slice(0, 4);
+        const beijingKey = `${year}-${t.date}`;
+        if (allowed.has(beijingKey)) {
           all.push({ ...m, _group: g.teams ? g.teams[0] : '' });
         }
       });
@@ -827,6 +845,11 @@
       return ta.localeCompare(tb);
     });
     return all;
+  }
+
+  // 兼容旧引用
+  function getTodayMatches() {
+    return getUpcomingMatches();
   }
 
   // 复用 modal 里的逻辑：从 scorePredictions 拿 featured 主推比分
@@ -946,27 +969,31 @@
       ? `<span class="wc-today-featured-score">${featured.goalsA} - ${featured.goalsB}<span class="wc-today-question">?</span></span>`
       : `<span class="wc-today-featured-score wc-today-pending">VS</span>`;
 
-    // 跟推荐比分同优先级的两个胜率卡片：左 = 推荐胜率（综合），中 = 推荐比分，右 = 校准胜率
-    const recCell = (extras && extras.recLabel && extras.recPct != null)
-      ? `<div class="wc-today-pct-cell is-rec" title="4 源综合推荐">
-           <span class="wc-today-pct-label">📊 推荐胜率</span>
-           <span class="wc-today-pct-value">${extras.recPct}%</span>
-           <span class="wc-today-pct-sub">${escapeHtml(extras.recLabel)}</span>
-         </div>`
-      : `<div class="wc-today-pct-cell is-rec is-empty">
-           <span class="wc-today-pct-label">📊 推荐胜率</span>
-           <span class="wc-today-pct-value">--</span>
-         </div>`;
-    const calCell = (extras && extras.calPct != null && extras.calSet)
-      ? `<div class="wc-today-pct-cell is-cal" title="校准后 (${escapeHtml(extras.calSet)})">
-           <span class="wc-today-pct-label">🛡 校准胜率</span>
-           <span class="wc-today-pct-value" style="color:${extras.calColor || '#6ee7b7'}">${extras.calPct}%</span>
-           <span class="wc-today-pct-sub">${escapeHtml(extras.calSet)}</span>
-         </div>`
-      : `<div class="wc-today-pct-cell is-cal is-empty">
-           <span class="wc-today-pct-label">🛡 校准胜率</span>
-           <span class="wc-today-pct-value">--</span>
-         </div>`;
+    // 推荐胜率 / 校准胜率 chip (左下一行)
+    const recChip = (extras && extras.recLabel && extras.recPct != null)
+      ? `<span class="wc-today-pct-inline is-rec" title="4 源综合推荐">
+           <span class="wc-today-pct-inline-label">📊 推荐</span>
+           <span class="wc-today-pct-inline-value">${extras.recPct}%</span>
+           <span class="wc-today-pct-inline-sub">${escapeHtml(extras.recLabel)}</span>
+         </span>`
+      : '';
+    const calChip = (extras && extras.calPct != null && extras.calSet)
+      ? `<span class="wc-today-pct-inline is-cal" title="校准后 (${escapeHtml(extras.calSet)})">
+           <span class="wc-today-pct-inline-label">🛡 校准</span>
+           <span class="wc-today-pct-inline-value" style="color:${extras.calColor || '#6ee7b7'}">${extras.calPct}%</span>
+           <span class="wc-today-pct-inline-sub">${escapeHtml(extras.calSet)}</span>
+         </span>`
+      : '';
+
+    // 当地时间 / 天气 chip (左下一行, 跟胜率并排)
+    const localChip = `<span class="wc-today-chip is-venue">
+        <span class="wc-today-chip-icon">📍</span>
+        ${escapeHtml(venueCityZh)} · 当地
+      </span>
+      <span class="wc-today-chip is-time">
+        <span class="wc-today-chip-icon">🕒</span>
+        ${escapeHtml(localTime)}
+      </span>`;
 
     const weatherLine = weather
       ? `<span class="wc-today-chip"><span class="wc-today-chip-icon">${weather.icon || '🌡️'}</span>${Math.round(weather.tempC)}°C · ${escapeHtml(weather.label)}${weather.humidity != null ? ' · 湿度 ' + Math.round(weather.humidity) + '%' : ''}</span>`
@@ -990,12 +1017,14 @@
             <div class="wc-today-team-name">${escapeHtml(homeCn)}</div>
             <div class="wc-today-team-code">${homeCode}</div>
           </div>
-          ${recCell}
           <div class="wc-today-score">
             ${featuredLine}
             <small>AI 预测比分</small>
+            <span class="wc-today-bj-time" title="北京时间">
+              <span class="wc-today-chip-icon">🇨🇳</span>
+              ${escapeHtml(beijingTime)}
+            </span>
           </div>
-          ${calCell}
           <div class="wc-today-team is-away">
             <div class="wc-today-team-flag">${awayFlag}</div>
             <div class="wc-today-team-name">${escapeHtml(awayCn)}</div>
@@ -1003,21 +1032,10 @@
           </div>
         </div>
         <footer class="wc-today-foot">
-          <div class="wc-today-foot-row">
-            <span class="wc-today-chip is-venue">
-              <span class="wc-today-chip-icon">📍</span>
-              ${escapeHtml(venueCityZh)} · 当地
-            </span>
-            <span class="wc-today-chip is-time">
-              <span class="wc-today-chip-icon">🕒</span>
-              ${escapeHtml(localTime)}
-            </span>
-          </div>
-          <div class="wc-today-foot-row">
-            <span class="wc-today-chip is-bj">
-              <span class="wc-today-chip-icon">🇨🇳</span>
-              北京时间 ${escapeHtml(beijingTime)}
-            </span>
+          <div class="wc-today-foot-row wc-today-foot-row--left">
+            ${recChip}
+            ${calChip}
+            ${localChip}
             ${weatherLine}
           </div>
         </footer>
@@ -1047,8 +1065,8 @@
       <section class="wc-today card">
         <div class="wc-today-head-bar">
           <div>
-            <h2 class="wc-today-h2">今日比赛</h2>
-            <p class="wc-today-sub">UTC+8 当天 · 共 <strong>${matches.length}</strong> 场${matches.length > 1 ? ' · 向下滚动查看下一场' : ''}</p>
+            <h2 class="wc-today-h2">最近比赛</h2>
+            <p class="wc-today-sub">UTC+8 今天 + 明天 · 共 <strong>${matches.length}</strong> 场${matches.length > 1 ? ' · 向下滚动查看下一场' : ''}</p>
           </div>
           <div class="wc-today-dots" id="wcTodayDots">
             <span class="wc-today-dot-meta">1 / ${matches.length}</span>
