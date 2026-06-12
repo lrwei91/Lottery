@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-11T21:30:10.306152+00:00",
+    "lastUpdated": "2026-06-12T21:05:13.145239+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-11",
+    "sourceDataDate": "2026-06-12",
     "note": "Official FIFA World Cup 2026 group-stage fixtures and score status.",
     "teamCount": 48,
     "matchCount": 72
@@ -76,11 +76,30 @@
           "away": "Czech Republic",
           "homeId": "43822",
           "awayId": "43995",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 2,
+          "awayScore": 1,
+          "status": "unknown",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 1,
+            "draws": 0,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 2,
+            "goalsAway": 1,
+            "matches": [
+              {
+                "date": "2026-06-12",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "South Korea",
+                "away": "Czech Republic",
+                "homeScore": 2,
+                "awayScore": 1
+              }
+            ]
+          }
         },
         {
           "id": "400021440",
@@ -250,11 +269,30 @@
           "away": "Bosnia-Herzegovina",
           "homeId": "43899",
           "awayId": "44037",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 1,
+          "awayScore": 1,
+          "status": "unknown",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 0,
+            "draws": 1,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 1,
+            "goalsAway": 1,
+            "matches": [
+              {
+                "date": "2026-06-12",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Canada",
+                "away": "Bosnia-Herzegovina",
+                "homeScore": 1,
+                "awayScore": 1
+              }
+            ]
+          }
         },
         {
           "id": "400021447",
