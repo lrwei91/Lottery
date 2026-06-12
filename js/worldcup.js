@@ -831,36 +831,57 @@
 
   // 复用 modal 里的逻辑：从 scorePredictions 拿 featured 主推比分
   // scorePredictions 在当前分支尚未完工（返回 undefined），我们自己用 Poisson + 算主推比分
-  function pickFeaturedScore(match) {
+  // 给 today 卡用的精选比分 + 综合推荐 + 校准胜率
+  // 跟 modal 里同源（用 scorePredictions + ensemblePredict + Conformal）
+  function computeTodayExtras(match) {
+    const out = { featured: null, recLabel: null, recPct: null, calPct: null, calColor: null, calSet: null };
     try {
       const teamA = findTeam(match.home);
       const teamB = findTeam(match.away);
-      if (!teamA || !teamB) return null;
-      // 用 team.mod_elo / elo 算期望进球
-      const eloA = teamA.mod_elo || teamA.elo || 1700;
-      const eloB = teamB.mod_elo || teamB.elo || 1700;
-      // 主场优势 65 Elo 来自 KimiBenchmarks（无则 0）
-      const b = bench();
-      const homeAdv = (b && window.KimiBenchmarks && window.KimiBenchmarks.homeAdvantageElo)
-        ? window.KimiBenchmarks.homeAdvantageElo(b) : 65;
-      const diff = (eloA + homeAdv) - eloB;  // 主队是 match.home
-      // Elo diff → 期望进球差 (粗略: 1.3 base + 0.5x diff/400)
-      let lambdaA = 1.3 + diff / 800;
-      let lambdaB = 1.3 - diff / 800;
-      lambdaA = Math.max(0.3, Math.min(4, lambdaA));
-      lambdaB = Math.max(0.3, Math.min(4, lambdaB));
-      // 0..5 进球格点扫一遍, 选概率最高的比分
-      let best = { goalsA: 1, goalsB: 1, prob: 0 };
-      for (let ga = 0; ga <= 5; ga++) {
-        for (let gb = 0; gb <= 5; gb++) {
-          const p = poisson(ga, lambdaA) * poisson(gb, lambdaB);
-          if (p > best.prob) best = { goalsA: ga, goalsB: gb, prob: p };
-        }
+      if (!teamA || !teamB) return out;
+      const matchCtx = (window.KimiBenchmarks && window.KimiBenchmarks.buildMatchContext)
+        ? window.KimiBenchmarks.buildMatchContext(match.venue, 'A')
+        : { home: 'A' };
+      const scores = scorePredictions(teamA, teamB, matchCtx);
+      if (scores && scores.featured) {
+        out.featured = scores.featured;
       }
-      return best;
+      // 综合推荐（4 源融合）
+      const oddsMarket = extractH2HMarket(findOddsApiMatch(match.home, match.away));
+      const polymarketEvent = findPolymarketByCountry(match.home, match.away);
+      const llmPred = findLLMPrediction(match.id);
+      const h2hResult = h2hCalc(teamA, teamB, matchCtx);
+      const ens = ensemblePredict(h2hResult, oddsMarket, polymarketEvent, llmPred);
+      if (ens && ens.final) {
+        const maxKey = ens.final.home >= ens.final.draw && ens.final.home >= ens.final.away ? 'home'
+                     : ens.final.away >= ens.final.draw ? 'away' : 'draw';
+        out.recLabel = maxKey === 'home' ? `${countryName(match.home)} 胜`
+                     : maxKey === 'away' ? `${countryName(match.away)} 胜` : '平局';
+        out.recPct = Math.round((ens.final[maxKey] || 0) * 100);
+      }
+      // 校准胜率（Conformal 校准后）
+      const cp = state.h2hConformal?.[teamA.country]?.[teamB.country];
+      if (cp && ens && ens.final) {
+        const adj = window.WorldCupConformal.conformalCalibrateProbs(
+          ens.final.home, ens.final.draw, ens.final.away, cp.prediction_set,
+          {
+            confidence: cp.confidence,
+            qhat: cp._qhat,
+            ensembleAgreement: ens.ensembleAgreement,
+            drawFloor: 0.15
+          }
+        );
+        const maxKey = adj.home >= adj.draw && adj.home >= adj.away ? 'home'
+                     : adj.away >= adj.draw ? 'away' : 'draw';
+        out.calPct = Math.round((adj[maxKey] || 0) * 100);
+        const size = cp.set_size;
+        out.calColor = size === 1 ? '#00a86b' : size === 2 ? '#faad14' : '#ff4757';
+        out.calSet = cp.prediction_set.join('/');
+      }
     } catch (e) {
-      return null;
+      // 静默 — 单场失败不影响主流程
     }
+    return out;
   }
 
   // WBGT 等级（已有 KimiBenchmarks,失败时前端用基础分级）
@@ -892,7 +913,7 @@
     }
   }
 
-  function buildTodayCard(match, featured, weather, isFeatured) {
+  function buildTodayCard(match, extras, weather, isFeatured) {
     const homeCn = countryName(match.home);
     const awayCn = countryName(match.away);
     const homeCode = code(match.home);
@@ -920,16 +941,28 @@
     const groupKey = match.group || match._group || '';
     const roundLabel = groupKey ? `${groupKey} 组 · 小组赛` : '小组赛';
 
+    const featured = extras && extras.featured;
     const featuredLine = featured
       ? `<span class="wc-today-featured-score">${featured.goalsA} - ${featured.goalsB}<span class="wc-today-question">?</span></span>`
       : `<span class="wc-today-featured-score wc-today-pending">VS</span>`;
 
+    // 综合推荐 chip + 校准胜率 chip
+    const recChip = (extras && extras.recLabel && extras.recPct != null)
+      ? `<span class="wc-today-chip is-rec" title="4 源综合推荐">
+           <span class="wc-today-chip-icon">📊</span>
+           推荐 ${escapeHtml(extras.recLabel)} ${extras.recPct}%
+         </span>`
+      : '';
+    const calChip = (extras && extras.calPct != null && extras.calSet)
+      ? `<span class="wc-today-chip is-cal" title="Conformal 校准后（${escapeHtml(extras.calSet)}）" style="border-color:${extras.calColor || '#faad14'};color:${extras.calColor || '#faad14'}">
+           <span class="wc-today-chip-icon">🛡</span>
+           校准胜率 ${extras.calPct}%
+         </span>`
+      : '';
+
     const weatherLine = weather
       ? `<span class="wc-today-chip"><span class="wc-today-chip-icon">${weather.icon || '🌡️'}</span>${Math.round(weather.tempC)}°C · ${escapeHtml(weather.label)}${weather.humidity != null ? ' · 湿度 ' + Math.round(weather.humidity) + '%' : ''}</span>`
-      : (() => {
-          const fb = wbgtFallbackLabel(null);
-          return `<span class="wc-today-chip is-muted"><span class="wc-today-chip-icon">⏳</span>天气加载中</span>`;
-        })();
+      : `<span class="wc-today-chip is-muted"><span class="wc-today-chip-icon">⏳</span>天气加载中</span>`;
 
     return `
       <article class="wc-today-card${isFeatured ? ' is-featured' : ''}" data-match-id="${escapeHtml(match.id || '')}" data-home="${escapeHtml(match.home)}" data-away="${escapeHtml(match.away)}">
@@ -960,6 +993,10 @@
           </div>
         </div>
         <footer class="wc-today-foot">
+          <div class="wc-today-foot-row">
+            ${recChip}
+            ${calChip}
+          </div>
           <div class="wc-today-foot-row">
             <span class="wc-today-chip is-venue">
               <span class="wc-today-chip-icon">📍</span>
@@ -998,8 +1035,8 @@
     }
 
     // 骨架先渲染（不等天气，避免延迟感）
-    const featuredById = {};
-    matches.forEach(m => { featuredById[m.id] = pickFeaturedScore(m); });
+    const extrasById = {};
+    matches.forEach(m => { extrasById[m.id] = computeTodayExtras(m); });
     host.innerHTML = `
       <section class="wc-today card">
         <div class="wc-today-head-bar">
@@ -1012,7 +1049,7 @@
           </div>
         </div>
         <div class="wc-today-strip" id="wcTodayStrip">
-          ${matches.map((m, i) => buildTodayCard(m, featuredById[m.id], null, i === 0)).join('')}
+          ${matches.map((m, i) => buildTodayCard(m, extrasById[m.id], null, i === 0)).join('')}
         </div>
         <p class="wc-today-disclaimer">⚠️ 免责声明：本卡片仅为 AI 数据分析研究分享</p>
       </section>
@@ -2050,18 +2087,16 @@
       const ph = (p.probs.home * 100).toFixed(1);
       const pd = (p.probs.draw * 100).toFixed(1);
       const pa = (p.probs.away * 100).toFixed(1);
-      // 段太窄（<10%）不显示数字，避免溢出/截断
-      const showText = (n) => parseFloat(n) >= 10;
       return `<div class="wc-ensemble-source">
         <div class="wc-ensemble-source-head">
           <span class="wc-ensemble-icon">${p.icon}</span>
           <span class="wc-ensemble-name">${escapeHtml(p.name)}</span>
           <span class="wc-ensemble-weight">${actualWeight.toFixed(0)}% 权重</span>
         </div>
-        <div class="wc-ensemble-bars">
-          <span style="width:${ph}%" title="主胜 ${ph}%">${showText(ph) ? '主 ' + ph + '%' : ''}</span>
-          <i style="width:${pd}%" title="平 ${pd}%">${showText(pd) ? '平 ' + pd + '%' : ''}</i>
-          <b style="width:${pa}%" title="客胜 ${pa}%">${showText(pa) ? '客 ' + pa + '%' : ''}</b>
+        <div class="wc-ensemble-pct-grid">
+          <span class="wc-ensemble-pct is-home" title="主胜 ${ph}%">主 ${ph}%</span>
+          <span class="wc-ensemble-pct is-draw" title="平 ${pd}%">平 ${pd}%</span>
+          <span class="wc-ensemble-pct is-away" title="客胜 ${pa}%">客 ${pa}%</span>
         </div>
       </div>`;
     }).join('');
@@ -2103,11 +2138,6 @@
             <span class="wc-expected-team">${escapeHtml(awayName)} 胜</span>
             <span class="wc-expected-pct">${awayPct}%</span>
           </div>
-        </div>
-        <div class="wc-winbar wc-ensemble-winbar">
-          <span style="width:${homePct}%">${homePct}%</span>
-          <i style="width:${drawPct}%">${drawPct}%</i>
-          <b style="width:${awayPct}%">${awayPct}%</b>
         </div>
         <h4>各源贡献分解</h4>
         <div class="wc-ensemble-sources">${sourceRows}</div>
@@ -2341,7 +2371,7 @@
               <div class="wc-ensemble-card cp-calibrated">
                 <div class="wc-ensemble-banner">
                   <div class="wc-ensemble-rec">
-                    <span class="wc-ensemble-rec-label">🛡 Conformal 校正后</span>
+                    <span class="wc-ensemble-rec-label">🛡 校准胜率</span>
                     <strong style="color:${setColor}">${setLbl}</strong>
                   </div>
                   <div class="wc-ensemble-conf">
@@ -2352,12 +2382,21 @@
                 <div class="cp-raw-compare">
                   <span>4 维融合: 主 ${rawPh}% / 平 ${rawPd}% / 客 ${rawPa}%</span>
                   <span class="cp-arrow">→</span>
-                  <span>校正后: 主 ${ph}% / 平 ${pd}% / 客 ${pa}%</span>
+                  <span>校准后: 主 ${ph}% / 平 ${pd}% / 客 ${pa}%</span>
                 </div>
-                <div class="wc-winbar wc-ensemble-winbar cp-calibrated-bar">
-                  <span style="width:${ph}%" title="校正后主胜 ${ph}%">主 ${ph}%</span>
-                  <i style="width:${pd}%" title="校正后平 ${pd}%">平 ${pd}%</i>
-                  <b style="width:${pa}%" title="校正后客胜 ${pa}%">客 ${pa}%</b>
+                <div class="wc-expected-grid">
+                  <div class="wc-expected-card is-home" title="校准后主胜概率">
+                    <span class="wc-expected-team">${escapeHtml(countryName(teamA.country))} 胜</span>
+                    <span class="wc-expected-pct">${ph}%</span>
+                  </div>
+                  <div class="wc-expected-card is-draw" title="校准后平局概率">
+                    <span class="wc-expected-team">平局</span>
+                    <span class="wc-expected-pct">${pd}%</span>
+                  </div>
+                  <div class="wc-expected-card is-away" title="校准后客胜概率">
+                    <span class="wc-expected-team">${escapeHtml(countryName(teamB.country))} 胜</span>
+                    <span class="wc-expected-pct">${pa}%</span>
+                  </div>
                 </div>
                 <div class="cp-delta-row">
                   <span>主 ${fmtDelta(dHome)}</span>

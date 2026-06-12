@@ -5179,6 +5179,18 @@ body.theme-worldcup .app-toast {
   font-style: italic;
 }
 
+.wc-today-chip.is-rec {
+  background: linear-gradient(180deg, rgba(255, 71, 87, 0.18), rgba(255, 71, 87, 0.08));
+  border-color: rgba(255, 71, 87, 0.45);
+  color: #ff8a98;
+  font-weight: 600;
+}
+
+.wc-today-chip.is-cal {
+  background: rgba(0, 168, 107, 0.08);
+  font-weight: 600;
+}
+
 .wc-today-chip-icon {
   font-size: 0.95rem;
   line-height: 1;
@@ -5315,7 +5327,14 @@ body.theme-worldcup .app-toast {
 
 .wc-ensemble-sources {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .wc-ensemble-sources {
+    grid-template-columns: 1fr;
+  }
 }
 
 .wc-ensemble-source {
@@ -5353,43 +5372,39 @@ body.theme-worldcup .app-toast {
   border-radius: 99px;
 }
 
-.wc-ensemble-bars {
-  display: flex;
-  height: 36px;
-  overflow: hidden;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.04);
-  margin-bottom: 6px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+.wc-ensemble-pct-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
-.wc-ensemble-bars span,
-.wc-ensemble-bars i,
-.wc-ensemble-bars b {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-  color: #0a1410;
-  font-style: normal;
-  font-size: 0.85rem;
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.15);
-  overflow: hidden;
+.wc-ensemble-pct {
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: var(--radius-sm);
+  color: #fff;
   white-space: nowrap;
 }
 
-.wc-ensemble-bars span {
-  background: linear-gradient(180deg, #34d399, #10b981);
+.wc-ensemble-pct.is-home {
+  background: linear-gradient(180deg, rgba(52, 211, 153, 0.22), rgba(16, 185, 129, 0.14));
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  color: #6ee7b7;
 }
 
-.wc-ensemble-bars i {
-  background: linear-gradient(180deg, #fbbf24, #f59e0b);
+.wc-ensemble-pct.is-draw {
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.22), rgba(245, 158, 11, 0.14));
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  color: #fcd34d;
 }
 
-.wc-ensemble-bars b {
-  background: linear-gradient(180deg, #60a5fa, #3b82f6);
+.wc-ensemble-pct.is-away {
+  background: linear-gradient(180deg, rgba(96, 165, 250, 0.22), rgba(59, 130, 246, 0.14));
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  color: #93c5fd;
 }
 
 .wc-ensemble-detail {
