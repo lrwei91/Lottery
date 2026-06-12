@@ -22,10 +22,10 @@ jobs:
           node-version: '20'
 
       - name: Fetch DLT Data
-        run: node scripts/scraper.js
+        run: node scripts/scraper.cjs
 
       - name: Fetch PL3 Data
-        run: node scripts/scraper_pl3.js
+        run: node scripts/scraper_pl3.cjs
 
       - name: Commit and Push Changes
         run: |

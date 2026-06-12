@@ -41,6 +41,7 @@ const KV_KEYS = {
   'football-data': 'odds:snapshot:football-data',
   meta: 'odds:snapshot:_meta'
 };
+const SNAPSHOT_TTL_SECONDS = 60 * 60 * 24;
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -358,7 +359,7 @@ export default async function handler(req, res) {
       const data = await fetcher();
       results[name] = { ok: true, data };
       if (redis && data && !data.skipped) {
-        await redis.set(KV_KEYS[name], data, { ex: 60 * 60 * 6 }); // 6h TTL
+        await redis.set(KV_KEYS[name], data, { ex: SNAPSHOT_TTL_SECONDS });
         // 同步累积历史快照（仅 the-odds-api）
         if (name === 'the-odds-api' && Array.isArray(data.events)) {
           await writeOddsHistory(redis, 'the-odds-api', data.events);
@@ -376,6 +377,7 @@ export default async function handler(req, res) {
     kvEnabled: !!redis,
     results: Object.fromEntries(
       Object.entries(results).map(([k, v]) => {
+        if (v.ok && v.data?.skipped) return [k, 'skipped'];
         if (v.ok) return [k, 'ok'];
         if (v.error?.includes('not set') || v.error?.includes('!= true')) return [k, 'skipped'];
         return [k, 'error'];
@@ -383,11 +385,13 @@ export default async function handler(req, res) {
     ),
     // 完整错误信息（不脱敏, dev 用, 前端 banner 拉这个展示给开发者）
     errors: Object.fromEntries(
-      Object.entries(results).filter(([, v]) => !v.ok).map(([k, v]) => [k, v.error])
+      Object.entries(results)
+        .filter(([, v]) => !v.ok || v.data?.skipped)
+        .map(([k, v]) => [k, v.error || v.data?.reason || 'skipped'])
     )
   };
   if (redis) {
-    try { await redis.set(KV_KEYS.meta, meta, { ex: 60 * 60 * 24 }); } catch (_) {}
+    try { await redis.set(KV_KEYS.meta, meta, { ex: SNAPSHOT_TTL_SECONDS }); } catch (_) {}
   }
 
   return res.status(200).json({ meta, results });

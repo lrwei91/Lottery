@@ -503,7 +503,7 @@
   }
 
   // 实时数据快照（Polymarket / The Odds API / football-data / Polymarket outright）
-  // 由 Vercel Cron 每天 0:00 UTC 写入 KV，前端直接 fetch
+  // 由 Vercel Cron 每 6h 写入 KV，前端直接 fetch
   async function loadOddsSnapshots() {
     try {
       const res = await fetch('/api/odds/snapshots', { headers: { accept: 'application/json' } });

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * scripts/check-env.js
+ * scripts/check-env.cjs
  *
  * 扫一遍 Vercel / 本地 / GitHub Actions 环境里 ticai 项目需要的 env 变量
  * 给出按"必须 / 推荐 / 可选"三档的分级诊断 + 获取链接
@@ -8,9 +8,9 @@
  * 不需要任何 npm 依赖，纯 Node 18+ stdlib。
  *
  * 用法:
- *   node scripts/check-env.js               # 只读 process.env
- *   node scripts/check-env.js --vercel      # 提示 Vercel Dashboard 位置
- *   node scripts/check-env.js --strict      # 推荐项缺失也 fail
+ *   node scripts/check-env.cjs               # 只读 process.env
+ *   node scripts/check-env.cjs --vercel      # 提示 Vercel Dashboard 位置
+ *   node scripts/check-env.cjs --strict      # 推荐项缺失也 fail
  *
  * 输出: 人类可读 (CLI)
  * 退出码: 0 = 全部 OK 或只有可选缺失, 1 = 必需项缺失
