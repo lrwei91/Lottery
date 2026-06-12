@@ -178,8 +178,10 @@ async function fetchOddsAPI() {
   if (!apiKey) return { skipped: true, reason: 'ODDS_API_KEY not set in Vercel env' };
 
   const sport = process.env.ODDS_SPORT_KEY || 'soccer_fifa_world_cup';
-  const regions = process.env.ODDS_REGIONS || 'us,uk,eu';
-  const markets = process.env.ODDS_MARKETS || 'h2h,spreads,totals';
+  // 默认只取 h2h 单 region, 1 quota/次 (us,uk,eu × h2h,spreads,totals = 9 quota/次, 月配额 500 扛不住)
+  // 想加 markets / regions 时, 通过 env 自配, 自行评估 quota
+  const regions = process.env.ODDS_REGIONS || 'us';
+  const markets = process.env.ODDS_MARKETS || 'h2h';
   const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${apiKey}&regions=${regions}&markets=${markets}&oddsFormat=decimal`;
 
   // 8s 超时，避免 Vercel 函数被上游 hang 死
