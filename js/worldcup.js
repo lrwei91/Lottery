@@ -276,7 +276,12 @@
     return 'is-neutral';
   }
 
-  // 场馆 → 当地 IANA 时区（用于把 FIFA date+time 当地时间换算到 UTC 再到 UTC+8）
+  // 场馆 → 当地 IANA 时区（用于把 FIFA m.time 当地 wall time 转成 UTC）
+  // 校验: 19:00 UTC + America/Mexico_City(UTC-6) = 13:00 当地 ✓ (FIFA 官方页面"13:00 (Mexico City)")
+  // 校验: 02:00 UTC + America/Mexico_City(UTC-6) = 20:00 当地前一天
+  // ⚠ 重要: 实际 FIFA 公开 API 的 m.time 已是 UTC, 不需要再减偏移
+  // 之前我理解错了:以为 m.time 是当地, 导致 19:00 "当地" +14h = 09:00 北京 (错)
+  // 正确: 19:00 UTC 直接转 = 03:00 北京次日
   const VENUE_TZ = {
     'Mexico City Stadium, Mexico City': 'America/Mexico_City',
     'Guadalajara Stadium, Guadalajara': 'America/Mexico_City',
@@ -296,15 +301,11 @@
     'Toronto Stadium, Toronto': 'America/Toronto'
   };
 
+  // FIFA 公开 calendar API 的 m.time 实际是 UTC（已与官方页面 kick-off 时间交叉验证）
+  // 直接当作 UTC 解析，再格式化到 Asia/Shanghai
   function getBeijingTimeInfo(date, time) {
     try {
-      // FIFA date+time 是当地场馆时间。优先从 venue 查 IANA 时区,
-      // 没匹配则把原 date+time 当 UTC 处理（与旧逻辑兼容）。
-      const tz = (date && time && arguments.length >= 1) ? null : null;
-      let d;
-      // 当前调用方没传 venue — 老路径就当 UTC。
-      d = new Date(date + 'T' + time + ':00Z');
-
+      const d = new Date(date + 'T' + time + ':00Z');
       const formatter = new Intl.DateTimeFormat('zh-CN', {
         timeZone: 'Asia/Shanghai',
         month: '2-digit',
@@ -342,53 +343,10 @@
     }
   }
 
-  // 给 today panel 用：根据 venue 当地 IANA 时区, 把当地 date+time 转成北京 (UTC+8) 显示
+  // 给 today panel 用: m.time 是 UTC, 直接转北京
+  // 保留 venue 参数仅为可能的未来扩展(目前不需要做时区补偿)
   function getMatchBeijingTime(venue, date, time) {
-    const tz = VENUE_TZ[venue];
-    if (!tz || !date || !time) {
-      return getBeijingTimeInfo(date, time);  // 兜底走原 UTC 假设
-    }
-    try {
-      // 把当地 wall time 当成 tz 时区的本地时间,直接格式化到 Asia/Shanghai
-      const localFmt = new Intl.DateTimeFormat('en-CA', {
-        timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', hour12: false
-      });
-      // Intl 不能从 wall time 解析,必须用 wall time 转 UTC 时刻
-      // 取当地年月日 → 当作那天 00:00,再用 time 累加
-      const [hh, mm] = (time || '00:00').split(':').map(n => parseInt(n, 10) || 0);
-      // 用 America/Toronto 2026-06-12 19:00 → 直接造 ISO local 然后说 "this is in tz"
-      // 招数: 拼接 ISO 然后 + offset via Intl
-      const localISO = `${date}T${pad2(hh)}:${pad2(mm)}:00`;
-      // 探测当地当天与 UTC 的偏移 (分钟)
-      const probe = new Date(localISO + 'Z');  // 假装是 UTC
-      const tzWall = new Intl.DateTimeFormat('en-US', {
-        timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', hour12: false
-      }).formatToParts(probe);
-      const get = t => parseInt(tzWall.find(p => p.type === t).value, 10);
-      const probeWall = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour'), get('minute'));
-      const offsetMin = (probeWall - probe.getTime()) / 60000;  // tz 实际 wall - UTC wall
-      // 真正的 UTC 时刻 = localWallTime - offset
-      const utcMs = Date.UTC(parseInt(date.slice(0,4), 10), parseInt(date.slice(5,7), 10) - 1, parseInt(date.slice(8,10), 10), hh, mm) - offsetMin * 60000;
-      const d = new Date(utcMs);
-      const sh = new Intl.DateTimeFormat('zh-CN', {
-        timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false
-      });
-      const parts = sh.formatToParts(d);
-      const get2 = t => parts.find(p => p.type === t).value;
-      let weekday = get2('weekday');
-      if (weekday.length === 1) weekday = '周' + weekday;
-      return {
-        date: get2('month') + '-' + get2('day'),
-        dateStr: get2('month') + '月' + get2('day') + '日',
-        time: get2('hour') + ':' + get2('minute'),
-        day: weekday
-      };
-    } catch (e) {
-      return getBeijingTimeInfo(date, time);
-    }
+    return getBeijingTimeInfo(date, time);
   }
 
   function sortedTeams() {
@@ -580,7 +538,7 @@
   }
 
   // 赔率数据健康度：检查 4 个源是否拉到了正确类型的数据
-  // - the-odds-api.events 应有 sport_key 含 'world_cup' 或 'fifa'
+  // - the-odds-api.events 应有 sport_key 含 'world_cup' 或 'fifa' (实际 API 字段是 sport_key/sport_title, 不是 sport)
   // - polymarket.events 标题应含 'World Cup' / 'FIFA' / '2026' 之一
   // - polymarket-outright.countries 至少 ≥ 20 个国家
   // - football-data.matches 应非空
@@ -591,15 +549,19 @@
     // the-odds-api
     const oddsApi = payload['the-odds-api'];
     if (!oddsApi) {
-      issues.push('the-odds-api 源缺失');
+      issues.push('the-odds-api 源缺失（KV 没数据）');
     } else if (!Array.isArray(oddsApi.events) || oddsApi.events.length === 0) {
       issues.push('the-odds-api 0 场赔率');
     } else {
-      const hasWorldCup = oddsApi.events.some(ev =>
-        (ev.sport || '').toLowerCase().includes('world_cup') ||
-        (ev.sport || '').toLowerCase().includes('fifa')
-      );
-      if (!hasWorldCup) issues.push(`the-odds-api sport 异常: ${oddsApi.events[0]?.sport || 'N/A'}`);
+      // 实际字段是 sport_key, 兼容老 snapshot 里误写成 sport 的情况
+      const hasWorldCup = oddsApi.events.some(ev => {
+        const sk = (ev.sport_key || ev.sport || ev.sport_title || '').toLowerCase();
+        return sk.includes('world_cup') || sk.includes('fifa');
+      });
+      if (!hasWorldCup) {
+        const sample = oddsApi.events[0] || {};
+        issues.push(`the-odds-api sport 异常: 第一场 sport_key=${sample.sport_key || 'N/A'}`);
+      }
     }
 
     // polymarket
@@ -952,7 +914,6 @@
     const homeFlag = flag(match.home);
     const awayFlag = flag(match.away);
     const timeInfo = getMatchBeijingTime(match.venue, match.date, match.time);
-    const localTime = `${match.date} ${match.time}`;
     const beijingTime = `${timeInfo.dateStr} ${timeInfo.day} ${timeInfo.time}`;
     // 场馆城市中文 (从 venue 字符串里抓逗号前的 "Stadium" 部分 → 实在不行就原样)
     const venueCityZh = (() => {
@@ -993,14 +954,10 @@
          </span>`
       : '';
 
-    // 当地时间 / 天气 chip (左下一行, 跟胜率并排)
+    // 左下一行 chip: 场馆城市 + 天气 (北京时间在 stage 中央比分下面)
     const localChip = `<span class="wc-today-chip is-venue">
         <span class="wc-today-chip-icon">📍</span>
-        ${escapeHtml(venueCityZh)} · 当地
-      </span>
-      <span class="wc-today-chip is-time">
-        <span class="wc-today-chip-icon">🕒</span>
-        ${escapeHtml(localTime)}
+        ${escapeHtml(venueCityZh)}
       </span>`;
 
     const weatherLine = weather

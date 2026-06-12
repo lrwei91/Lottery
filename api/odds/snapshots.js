@@ -44,6 +44,38 @@ export default async function handler(req, res) {
     });
   }
 
+  // ?probe=the-odds-api: 现场打一次, 立刻返最近 HTTP 状态 + body, 排查 401/422/429
+  // 不消耗 Upstash 配额, 不影响 KV
+  const probe = (req.query?.probe || '').toLowerCase();
+  if (probe === 'the-odds-api') {
+    const apiKey = process.env.ODDS_API_KEY;
+    if (!apiKey) {
+      return res.status(200).json({ ok: false, error: 'ODDS_API_KEY not set in Vercel env' });
+    }
+    const sport = process.env.ODDS_SPORT_KEY || 'soccer_fifa_world_cup';
+    const url = `https://api.the-odds-api.com/v4/sports/${sport}/odds/?apiKey=${apiKey}&regions=us&markets=h2h&oddsFormat=decimal`;
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 8000);
+    let resp, body = null;
+    try {
+      resp = await fetch(url, { signal: ctrl.signal });
+      try { body = await resp.json(); } catch (_) {}
+    } catch (e) {
+      clearTimeout(tid);
+      return res.status(200).json({ ok: false, error: `fetch failed: ${e?.message || e}`, sport });
+    }
+    clearTimeout(tid);
+    return res.status(200).json({
+      ok: resp.ok,
+      status: resp.status,
+      sport,
+      eventCount: Array.isArray(body) ? body.length : 0,
+      sample: Array.isArray(body) ? body.slice(0, 2) : body,
+      remainingQuota: resp.headers.get('x-requests-remaining'),
+      usedQuota: resp.headers.get('x-requests-used')
+    });
+  }
+
   try {
     const [meta, polymarket, polymarketOutright, theOddsApi, footballData] = await Promise.all([
       redis.get('odds:snapshot:_meta'),
