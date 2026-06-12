@@ -10,7 +10,7 @@
  *       ]   // 最新在前，最多 28 个点
  *     }
  *
- * 数据由 /api/cron/sync-odds 在每次 the-odds-api 拉取后追加（保留 7 天 TTL）。
+ * 数据由 /api/cron/sync-odds 在每次 the-odds-api 拉取后追加（保留约 35 天 TTL）。
  */
 
 import { Redis } from '@upstash/redis';

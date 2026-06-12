@@ -41,7 +41,7 @@ const KV_KEYS = {
   'football-data': 'odds:snapshot:football-data',
   meta: 'odds:snapshot:_meta'
 };
-const SNAPSHOT_TTL_SECONDS = 60 * 60 * 24;
+const SNAPSHOT_TTL_SECONDS = 60 * 60 * 24 * 3;
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -249,7 +249,7 @@ async function fetchOddsAPI() {
   };
 }
 
-// 把 the-odds-api 拉到的 events 追加到历史 list（最多 28 个点 = 约 7 天 @ 4 次/天）
+// 把 the-odds-api 拉到的 events 追加到历史 list（最多 28 个点 = 约 28 天 @ daily cron）
 // 旧点自动 expire，方便前端看 24h / 一周趋势
 async function writeOddsHistory(redis, source, events) {
   if (!redis) return;
@@ -262,7 +262,7 @@ async function writeOddsHistory(redis, source, events) {
   try {
     await redis.lpush(key, point);
     await redis.ltrim(key, 0, 27);
-    await redis.expire(key, 7 * 24 * 60 * 60);
+    await redis.expire(key, 35 * 24 * 60 * 60);
   } catch (err) {
     console.error(`[sync-odds] history write ${source} failed:`, err?.message || err);
   }

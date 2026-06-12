@@ -487,7 +487,7 @@
     }
   }
 
-  // 赔率历史快照（cron 每 6h 累积一次，保留最近 28 个点 = 约 7 天）
+  // 赔率历史快照（cron 每天累积一次，保留最近 28 个点 = 约 28 天）
   async function loadOddsHistory() {
     try {
       const res = await fetch('/api/odds/history?source=the-odds-api', { headers: { accept: 'application/json' } });
@@ -503,7 +503,7 @@
   }
 
   // 实时数据快照（Polymarket / The Odds API / football-data / Polymarket outright）
-  // 由 Vercel Cron 每 6h 写入 KV，前端直接 fetch
+  // 由 Vercel Cron 每天写入 KV，前端直接 fetch
   async function loadOddsSnapshots() {
     try {
       const res = await fetch('/api/odds/snapshots', { headers: { accept: 'application/json' } });

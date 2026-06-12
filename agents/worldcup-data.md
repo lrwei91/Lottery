@@ -33,7 +33,7 @@ const ENSEMBLE_WEIGHTS = { h2h: 0.30, odds: 0.30, poly: 0.20, llm: 0.20 };
 - `odds:snapshot:<source>` → 最新一份快照（Hash / String JSON）
 - `odds:history:the-odds-api` → 最近 28 个时间点的历史（List），供前端"赔率趋势"小图用
 
-历史只保留 28 个点 = **约 28 天的 hourly 抓取**；超过的 `LTRIM` 截断。
+历史只保留 28 个点 = **约 28 天的 daily 抓取**；超过的 `LTRIM` 截断。
 
 ## 4. The Odds API 字段映射
 
