@@ -19,14 +19,11 @@
     activeTab: 'matches',
     selectedSquad: '',
     selectedGroup: 'TIME',
-    countdownTimerId: null,
     llmPredictions: null,   // { generatedAt, model, predictions: [{matchId, ...}] } — h2h 单场
     llmOutright: null,      // { generatedAt, model, predictions: [{country, winProb, ...}] } — 冠军 outright
     oddsSnapshots: null,    // { meta, polymarket, 'the-odds-api', 'football-data' }
     oddsHistory: null       // { 'the-odds-api': [{ fetchedAt, events: [...] }, ...] } — 最近 28 个时间点
   };
-
-  const WORLD_CUP_START = new Date('2026-06-11T19:00:00Z');
 
   const COUNTRY_CODE = {
     Argentina: 'AR',
@@ -756,38 +753,8 @@
         <div class="wc-top-strip" id="wcTopStrip"></div>
       </div>
 
-      <div id="wcTodayPanel" class="wc-today-panel-host"></div>
-
-      <div class="countdown wc-countdown card" id="wcCountdownCard">
-        <div class="card-header">
-          <h2>世界杯开赛倒计时</h2>
-          <span class="countdown-label" id="wcCountdownLabel">--</span>
-        </div>
-        <div class="countdown-timer" id="wcCountdownTimer">
-          <div class="countdown-unit">
-            <span class="countdown-value" id="wcCdDays">0</span>
-            <span class="countdown-text">天</span>
-          </div>
-          <div class="countdown-sep">:</div>
-          <div class="countdown-unit">
-            <span class="countdown-value" id="wcCdHours">00</span>
-            <span class="countdown-text">时</span>
-          </div>
-          <div class="countdown-sep">:</div>
-          <div class="countdown-unit">
-            <span class="countdown-value" id="wcCdMinutes">00</span>
-            <span class="countdown-text">分</span>
-          </div>
-          <div class="countdown-sep">:</div>
-          <div class="countdown-unit">
-            <span class="countdown-value" id="wcCdSeconds">00</span>
-            <span class="countdown-text">秒</span>
-          </div>
-        </div>
-      </div>
-
       <div class="wc-tabs" id="worldcupTabs">
-        <button class="wc-tab active" data-wc-tab="matches">对战表</button>
+        <button class="wc-tab active" data-wc-tab="matches">今日比赛</button>
         <button class="wc-tab" data-wc-tab="champion">冠军概率</button>
         <button class="wc-tab" data-wc-tab="factor">因子拆解</button>
         <button class="wc-tab" data-wc-tab="mystic">玄学分析</button>
@@ -797,7 +764,7 @@
           : ''}
       </div>
 
-      <div class="wc-panel active" id="wcPanelMatches">${renderMatchPanel()}</div>
+      <div class="wc-panel active" id="wcPanelMatches"><div id="wcTodayPanel" class="wc-today-panel-host"></div></div>
       <div class="wc-panel" id="wcPanelChampion">${renderMarketPanel()}</div>
       <div class="wc-panel" id="wcPanelFactor">${renderFactorPanel()}</div>
       <div class="wc-panel" id="wcPanelMystic">${renderMysticPanel()}</div>
@@ -806,74 +773,9 @@
 
     bindPanelEvents();
     renderTopStrip();
-    startWorldCupCountdown();
     switchTab(state.activeTab);
     updateSquad();
     renderTodayPanel();
-  }
-
-  function resetWorldCupCountdownMarkup() {
-    const timer = el('wcCountdownTimer');
-    if (!timer) return;
-
-    timer.innerHTML = `
-      <div class="countdown-unit">
-        <span class="countdown-value" id="wcCdDays">0</span>
-        <span class="countdown-text">天</span>
-      </div>
-      <div class="countdown-sep">:</div>
-      <div class="countdown-unit">
-        <span class="countdown-value" id="wcCdHours">00</span>
-        <span class="countdown-text">时</span>
-      </div>
-      <div class="countdown-sep">:</div>
-      <div class="countdown-unit">
-        <span class="countdown-value" id="wcCdMinutes">00</span>
-        <span class="countdown-text">分</span>
-      </div>
-      <div class="countdown-sep">:</div>
-      <div class="countdown-unit">
-        <span class="countdown-value" id="wcCdSeconds">00</span>
-        <span class="countdown-text">秒</span>
-      </div>
-    `;
-  }
-
-  function startWorldCupCountdown() {
-    if (state.countdownTimerId !== null) {
-      clearInterval(state.countdownTimerId);
-    }
-
-    const updateCountdown = () => {
-      const timer = el('wcCountdownTimer');
-      const label = el('wcCountdownLabel');
-      if (!timer || !label) return;
-
-      const diff = WORLD_CUP_START.getTime() - Date.now();
-      if (diff <= 0) {
-        timer.innerHTML = '<div class="countdown-live">世界杯进行中</div>';
-        label.textContent = '2026年6月11日 墨西哥城开幕';
-        return;
-      }
-
-      if (!el('wcCdDays')) {
-        resetWorldCupCountdownMarkup();
-      }
-
-      const days = Math.floor(diff / 86400000);
-      const hours = Math.floor((diff % 86400000) / 3600000);
-      const minutes = Math.floor((diff % 3600000) / 60000);
-      const seconds = Math.floor((diff % 60000) / 1000);
-
-      el('wcCdDays').textContent = days;
-      el('wcCdHours').textContent = pad2(hours);
-      el('wcCdMinutes').textContent = pad2(minutes);
-      el('wcCdSeconds').textContent = pad2(seconds);
-      label.textContent = '6月12日 周五 03:00 北京时间';
-    };
-
-    updateCountdown();
-    state.countdownTimerId = setInterval(updateCountdown, 1000);
   }
 
   function renderTopStrip() {
@@ -1089,7 +991,7 @@
       host.innerHTML = `
         <section class="wc-today-empty card">
           <div class="wc-today-empty-title">今天没有比赛</div>
-          <div class="wc-today-empty-sub">看看其他日期的对战表 ↓</div>
+          <div class="wc-today-empty-sub">看看其他 tab 里的深度分析 ↓</div>
         </section>
       `;
       return;
@@ -1140,183 +1042,6 @@
       if (!card) return;
       showMatchPredictionModal(card.dataset.home, card.dataset.away, card.dataset.matchId);
     });
-  }
-
-  function renderMatchPanel() {
-    const md = state.matchesData;
-    if (!md || !md.groups) {
-      return '<div class="card"><div class="empty-state">暂无比赛数据。</div></div>';
-    }
-
-    const lastUpdated = md.metadata?.lastUpdated ? (() => {
-      try {
-        const d = new Date(md.metadata.lastUpdated);
-        if (Number.isNaN(d.getTime())) return '';
-        return '数据更新于 ' + d.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-      } catch { return ''; }
-    })() : '';
-
-    const groupLabels = Object.keys(md.groups).sort();
-
-    function matchRow(match) {
-      const homeCn = countryName(match.home);
-      const awayCn = countryName(match.away);
-      const homeCode = code(match.home);
-      const awayCode = code(match.away);
-      const homeFlag = flag(match.home);
-      const awayFlag = flag(match.away);
-      const isScheduled = match.status === 'scheduled';
-      const isCompleted = match.status === 'completed';
-
-      // 综合预测徽章（4 源融合：Elo + The Odds API + Polymarket + LLM）
-      const ensembleBadge = formatEnsembleBadge(match);
-
-      // The Odds API 赔率徽章（h2h 主盘，The Odds API 数据未同步时不显示）
-      const oddsApiEventForBadge = findOddsApiMatch(match.home, match.away);
-      const oddsMarketForBadge = extractH2HMarket(oddsApiEventForBadge);
-      const oddsBadge = formatOddsBadge(oddsMarketForBadge);
-
-      let scoreHtml;
-      if (isCompleted && match.homeScore != null) {
-        scoreHtml = '<div class="wc-match-score-badge">' + match.homeScore + ' - ' + match.awayScore + '</div>';
-      } else {
-        scoreHtml = '<div class="wc-match-vs-badge">VS</div>';
-      }
-
-      const timeInfo = getBeijingTimeInfo(match.date, match.time);
-
-      // Beautiful SVG Stadium Icon
-      const stadiumIconSvg = '<svg class="wc-venue-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-        '<circle cx="12" cy="12" r="10"/>' +
-        '<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>' +
-        '<path d="M2 12h20"/>' +
-        '</svg>';
-
-      return '<div class="wc-match-card is-clickable" data-match-id="' + escapeHtml(match.id || '') + '" data-home="' + escapeHtml(match.home) + '" data-away="' + escapeHtml(match.away) + '" title="点击查看对战预测分析">' +
-        '<div class="wc-match-header">' +
-          '<div class="wc-match-time-badge">' +
-            '<span class="wc-match-date">' + timeInfo.date + '</span>' +
-            '<span class="wc-match-day">' + timeInfo.day + '</span>' +
-            '<span class="wc-match-time">' + timeInfo.time + '</span>' +
-          '</div>' +
-          (isScheduled ? '<span class="wc-match-status is-scheduled">未开始</span>' : '') +
-          (isCompleted && match.homeScore != null ? '<span class="wc-match-status is-final">已结束</span>' : '') +
-          oddsBadge +
-          ensembleBadge +
-        '</div>' +
-        '<div class="wc-match-body">' +
-          '<div class="wc-match-team is-home">' +
-            '<span class="wc-match-name">' + escapeHtml(homeCn) + '</span>' +
-            '<span class="wc-match-badge">' + homeFlag + ' <small class="wc-match-code">' + homeCode + '</small></span>' +
-          '</div>' +
-          scoreHtml +
-          '<div class="wc-match-team is-away">' +
-            '<span class="wc-match-badge"><small class="wc-match-code">' + awayCode + '</small> ' + awayFlag + '</span>' +
-            '<span class="wc-match-name">' + escapeHtml(awayCn) + '</span>' +
-          '</div>' +
-        '</div>' +
-        '<div class="wc-match-footer">' +
-          stadiumIconSvg +
-          '<span class="wc-match-venue" title="' + escapeHtml(match.venue) + '">' + escapeHtml(match.venue) + '</span>' +
-        '</div>' +
-      '</div>';
-    }
-
-    function groupBlock(label) {
-      const g = md.groups[label];
-      if (!g) return '';
-      const teams = g.teams || [];
-      const matches = g.matches || [];
-
-      // Initially open based on active filter
-      const isSelected = state.selectedGroup === 'ALL' || state.selectedGroup === label;
-      const hiddenClass = isSelected ? '' : ' is-hidden';
-      const isOpen = (state.selectedGroup === label || state.selectedGroup === 'ALL') ? ' open' : '';
-
-      return '<details class="wc-match-group letter-group-block' + hiddenClass + '"' + isOpen + ' data-group="' + label + '">' +
-        '<summary>' +
-          '<span class="wc-group-badge">' + label + ' 组</span>' +
-          '<span class="wc-group-teams">' + teams.map(t => escapeHtml(countryName(t))).join(' · ') + '</span>' +
-        '</summary>' +
-        '<div class="wc-match-grid">' +
-          matches.map(matchRow).join('') +
-        '</div>' +
-      '</details>';
-    }
-
-    // Build Time-based blocks
-    const allMatches = [];
-    groupLabels.forEach(label => {
-      const g = md.groups[label];
-      if (g && g.matches) {
-        allMatches.push(...g.matches);
-      }
-    });
-
-    allMatches.sort((a, b) => {
-      const timeA = new Date(a.date + 'T' + a.time + ':00Z').getTime();
-      const timeB = new Date(b.date + 'T' + b.time + ':00Z').getTime();
-      return timeA - timeB;
-    });
-
-    const matchesByDate = {};
-    allMatches.forEach(match => {
-      const timeInfo = getBeijingTimeInfo(match.date, match.time);
-      const dateKey = timeInfo.date; // e.g. "06-11"
-      const dateStr = timeInfo.dateStr; // e.g. "6月11日"
-      const weekday = timeInfo.day; // e.g. "周四"
-      
-      if (!matchesByDate[dateKey]) {
-        matchesByDate[dateKey] = {
-          dateStr: dateStr,
-          weekday: weekday,
-          matches: []
-        };
-      }
-      matchesByDate[dateKey].matches.push(match);
-    });
-
-    const sortedDateKeys = Object.keys(matchesByDate).sort();
-
-    function timeGroupBlock(dateKey) {
-      const g = matchesByDate[dateKey];
-      const matches = g.matches;
-      
-      const isSelected = state.selectedGroup === 'TIME';
-      const hiddenClass = isSelected ? '' : ' is-hidden';
-      const isOpen = isSelected ? ' open' : '';
-
-      return '<details class="wc-match-group time-group-block' + hiddenClass + '"' + isOpen + ' data-group="TIME" data-date="' + dateKey + '">' +
-        '<summary>' +
-          '<span class="wc-group-badge">' + g.dateStr + ' ' + g.weekday + '</span>' +
-          '<span class="wc-group-teams">' + matches.length + ' 场比赛 · ' + matches.map(m => escapeHtml(countryName(m.home)) + ' vs ' + escapeHtml(countryName(m.away))).slice(0, 3).join(', ') + (matches.length > 3 ? '等' : '') + '</span>' +
-        '</summary>' +
-        '<div class="wc-match-grid">' +
-          matches.map(matchRow).join('') +
-        '</div>' +
-      '</details>';
-    }
-
-    const groupTabsHtml = '<div class="wc-group-selector" id="wcGroupSelector">' +
-      '<button class="wc-group-tab" data-group="TIME">按时间</button>' +
-      '<button class="wc-group-tab" data-group="ALL">全部小组</button>' +
-      groupLabels.map(label => '<button class="wc-group-tab" data-group="' + label + '">' + label + ' 组</button>').join('') +
-      '</div>';
-
-    return '<div class="card">' +
-      '<div class="card-header wc-matches-header">' +
-        '<div>' +
-          '<h2>2026 世界杯 · 小组赛赛程</h2>' +
-          '<p class="wc-desc">数据每日从 FIFA 官方赛程接口更新，展示小组赛对战、场馆与比分状态。共 12 组 72 场小组赛。</p>' +
-        '</div>' +
-        (lastUpdated ? '<span class="wc-update-badge">' + lastUpdated + '</span>' : '') +
-      '</div>' +
-      groupTabsHtml +
-      '<div class="wc-match-board">' +
-        sortedDateKeys.map(timeGroupBlock).join('') +
-        groupLabels.map(groupBlock).join('') +
-      '</div>' +
-    '</div>';
   }
 
   function renderChampionPanel() {
@@ -2096,7 +1821,17 @@
       }
     }
 
-    const useDC = b && window.KimiBenchmarks.flags.useDixonColes;
+    // Poisson 矩阵 0..5: 算每个 (goalsA, goalsB) 概率, 排序
+    const raw = [];
+    for (let ga = 0; ga <= 5; ga++) {
+      for (let gb = 0; gb <= 5; gb++) {
+        const prob = poisson(ga, lambdaA) * poisson(gb, lambdaB);
+        raw.push({ goalsA: ga, goalsB: gb, prob, total: ga + gb });
+      }
+    }
+    const sorted = raw.slice().sort((a, b) => b.prob - a.prob);
+    const featured = sorted[0] || { goalsA: 1, goalsB: 1, prob: 0 };
+
     return {
       lambdaA,
       lambdaB,
