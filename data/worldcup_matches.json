@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-13T07:16:39.732625+00:00",
+    "lastUpdated": "2026-06-13T20:40:20.547457+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
@@ -306,10 +306,10 @@
           "away": "Switzerland",
           "homeId": "43834",
           "awayId": "43971",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 0,
+          "awayScore": 1,
+          "status": "live",
+          "sourceStatus": 3,
           "headToHead": null
         },
         {
