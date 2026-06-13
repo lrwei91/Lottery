@@ -7,7 +7,11 @@
   "crons": [
     {
       "path": "/api/cron/sync-odds",
-      "schedule": "0 0 * * *"
+      "schedule": "0 */6 * * *"
+    },
+    {
+      "path": "/api/cron/sync-matches",
+      "schedule": "0 */6 * * *"
     }
   ]
 }

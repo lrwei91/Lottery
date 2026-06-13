@@ -5041,8 +5041,10 @@ body.theme-worldcup .app-toast {
 
 .wc-today-head {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: var(--space-md);
+  gap: var(--space-sm);
 }
 
 .wc-today-kicker {
@@ -5138,6 +5140,42 @@ body.theme-worldcup .app-toast {
   font-size: clamp(1.6rem, 3vw, 2.4rem);
   color: var(--text-muted, #8a93a6);
   -webkit-text-fill-color: var(--text-muted, #8a93a6);
+}
+
+/* 已结束比赛: 真实比分 (FIFA 官方) — 高亮但降饱和 */
+.wc-today-featured-score.wc-today-real-score {
+  background: linear-gradient(90deg, #00a86b 0%, #5d6c7f 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 已结束卡片整体: 略降 opacity, 标明状态 */
+.wc-today-card.is-finished {
+  opacity: 0.85;
+  border-color: rgba(0, 168, 107, 0.25);
+}
+.wc-today-card.is-finished:hover {
+  opacity: 1;
+}
+
+/* 已结束角标 (右上) */
+.wc-today-finished-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(0, 168, 107, 0.12);
+  color: #00a86b;
+  border: 1px solid rgba(0, 168, 107, 0.35);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .wc-today-score small {

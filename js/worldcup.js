@@ -720,14 +720,30 @@
   }
 
   async function loadMatches() {
+    // 优先 /api/matches (Vercel Cron 6h 写入 Redis, 含真实比分)
+    // fallback: data/worldcup_matches.json (git-tracked, build-time 数据)
+    let payload = null;
     try {
-      const res = await fetch(MATCHES_URL + '?t=' + Date.now(), { cache: 'no-cache' });
-      if (!res.ok) throw new Error("HTTP " + res.status);
-      const payload = await res.json();
+      const r = await fetch('/api/matches?_t=' + Date.now(), { cache: 'no-cache' });
+      if (r.ok) payload = await r.json();
+    } catch (e) {
+      // 网络错误, 走 fallback
+    }
+    if (!payload || !payload.groups) {
+      try {
+        const res = await fetch(MATCHES_URL + '?t=' + Date.now(), { cache: 'no-cache' });
+        if (res.ok) payload = await res.json();
+      } catch (error) {
+        console.info('[matches] fallback failed:', error?.message || error);
+      }
+    }
+    if (payload && payload.groups) {
       state.matchesData = payload;
       state.matchesLoaded = true;
-    } catch (error) {
-      console.error("Match schedule load failed:", error);
+      // 标记数据来源, 渲染时能告诉用户"数据每 6h 更新"
+      state.matchesSource = payload?.metadata?.lastUpdated ? 'api' : 'static';
+    } else {
+      console.info('[matches] both API and fallback failed, no match data');
       state.matchesData = null;
       state.matchesLoaded = true;
     }
@@ -960,7 +976,13 @@
     const roundLabel = groupKey ? `${groupKey} 组 · 小组赛` : '小组赛';
 
     const featured = extras && extras.featured;
-    const featuredLine = featured
+    // 已结束的比赛: 显示真实比分 + 右上角"已结束"标识
+    const isFinished = match.status === 'completed'
+      && match.homeScore != null && match.awayScore != null;
+    const realScore = isFinished ? `${match.homeScore} - ${match.awayScore}` : null;
+    const featuredLine = isFinished
+      ? `<span class="wc-today-featured-score wc-today-real-score" title="真实比分 (FIFA 官方)">${realScore}</span>`
+      : featured
       ? `<span class="wc-today-featured-score">${featured.goalsA} - ${featured.goalsB}<span class="wc-today-question">?</span></span>`
       : `<span class="wc-today-featured-score wc-today-pending">VS</span>`;
 
@@ -991,16 +1013,17 @@
       : `<span class="wc-today-chip is-muted"><span class="wc-today-chip-icon">⏳</span>天气加载中</span>`;
 
     return `
-      <article class="wc-today-card${isFeatured ? ' is-featured' : ''}" data-match-id="${escapeHtml(match.id || '')}" data-home="${escapeHtml(match.home)}" data-away="${escapeHtml(match.away)}">
+      <article class="wc-today-card${isFeatured ? ' is-featured' : ''}${isFinished ? ' is-finished' : ''}" data-match-id="${escapeHtml(match.id || '')}" data-home="${escapeHtml(match.home)}" data-away="${escapeHtml(match.away)}">
         <header class="wc-today-head">
           <span class="wc-today-kicker">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <circle cx="12" cy="12" r="10"/>
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-              <path d="M2 12h20"/>
+              <path d="M 2 12h20"/>
             </svg>
             FIFA WORLD CUP 2026 · ${escapeHtml(roundLabel)}
           </span>
+          ${isFinished ? `<span class="wc-today-finished-badge" title="${escapeHtml(match.status || 'completed')}">${match.homeScore > match.awayScore ? `${escapeHtml(homeCn)} 胜` : match.homeScore < match.awayScore ? `${escapeHtml(awayCn)} 胜` : '平局'} · 已结束</span>` : ''}
         </header>
         <div class="wc-today-stage">
           <div class="wc-today-team is-home">
