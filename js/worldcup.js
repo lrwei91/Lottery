@@ -830,8 +830,9 @@
   }
 
   // 最近比赛 = 今天 + 明天 (UTC+8 当日)
-  // 用 getMatchBeijingTime 把 m.date+time+venue 换算成北京日历日,再跟 today/tomorrow 比较
+  // 用 getMatchBeijingTime 把 m.date+time 换算成北京日历日,再跟 today/tomorrow 比较
   // 原因: m.date 是当地日历日, 跨日比赛(当地晚 23:00 ↔ 北京次日)容易漏
+  // venue 是 optional (FIFA v3 calendar API 不返 venue, 静态 data/worldcup_matches.json 才有)
   function getUpcomingMatches() {
     const md = state.matchesData;
     if (!md || !md.groups) return [];
@@ -841,8 +842,10 @@
     const all = [];
     Object.values(md.groups).forEach(g => {
       (g.matches || []).forEach(m => {
-        if (!m.date || !m.time || !m.venue) return;
-        const t = getMatchBeijingTime(m.venue, m.date, m.time);
+        if (!m.date || !m.time) return;
+        // m.time 是 UTC (FIFA v3) / 当地 (static data) — 统一当作 UTC 处理
+        // 之前 static data 也是 UTC, getBeijingTimeInfo 内部会加 8h 算北京
+        const t = getMatchBeijingTime(m.venue || '', m.date, m.time);
         // t.date 是 "MM-DD",要拼成 "YYYY-MM-DD" — 用 todayKey 的年份
         const year = todayKey.slice(0, 4);
         const beijingKey = `${year}-${t.date}`;
