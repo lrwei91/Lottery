@@ -1072,16 +1072,30 @@
     bindTodayPanelEvents();
 
     // 异步拉天气，逐一填回
+    // 同时设 8s 兜底：超时后还停在"⏳ 加载中"的卡片改成"未取到"，避免永久 loading
     matches.forEach(async (m, idx) => {
-      const w = await fetchWeather(m);
-      if (!w) return;
-      const card = host.querySelector(`.wc-today-card[data-match-id="${CSS.escape(m.id || '')}"] .wc-today-foot-row:last-child`);
-      if (!card) return;
-      // 找第二行最后一个 .wc-today-chip (天气那个) 替换
-      const chips = card.querySelectorAll('.wc-today-chip');
-      const target = chips[chips.length - 1];
-      if (!target) return;
-      target.outerHTML = `<span class="wc-today-chip"><span class="wc-today-chip-icon">${w.icon || '🌡️'}</span>${Math.round(w.tempC)}°C · ${escapeHtml(w.label)}${w.humidity != null ? ' · 湿度 ' + Math.round(w.humidity) + '%' : ''}</span>`;
+      const settle = (html) => {
+        const card = host.querySelector(`.wc-today-card[data-match-id="${CSS.escape(m.id || '')}"] .wc-today-foot-row:last-child`);
+        if (!card) return;
+        const chips = card.querySelectorAll('.wc-today-chip');
+        const target = chips[chips.length - 1];
+        if (target) target.outerHTML = html;
+      };
+      const timeoutId = setTimeout(() => {
+        settle(`<span class="wc-today-chip is-muted" title="天气数据未取到"><span class="wc-today-chip-icon">⚠️</span>天气未取到</span>`);
+      }, 8000);
+      try {
+        const w = await fetchWeather(m);
+        clearTimeout(timeoutId);
+        if (!w) {
+          settle(`<span class="wc-today-chip is-muted" title="天气数据未取到"><span class="wc-today-chip-icon">⚠️</span>天气未取到</span>`);
+          return;
+        }
+        settle(`<span class="wc-today-chip"><span class="wc-today-chip-icon">${w.icon || '🌡️'}</span>${Math.round(w.tempC)}°C · ${escapeHtml(w.label)}${w.humidity != null ? ' · 湿度 ' + Math.round(w.humidity) + '%' : ''}</span>`);
+      } catch (e) {
+        clearTimeout(timeoutId);
+        settle(`<span class="wc-today-chip is-muted" title="天气数据未取到"><span class="wc-today-chip-icon">⚠️</span>天气未取到</span>`);
+      }
     });
   }
 

@@ -102,7 +102,16 @@ export default async function handler(req, res) {
   }
 
   const coords = loadCoords();
-  const vc = coords[venue];
+  let vc = coords[venue];
+  let matchedVenue = venue;
+  // 兼容: worldcup_matches.json 里的 venue 字段是 "Stadium, City" 形式
+  // (e.g. "Mexico City Stadium, Mexico City"), 但 venue_coords.json 用 short form 作 key
+  // → 取逗号前一段再查一次
+  if (!vc && venue.includes(',')) {
+    const short = venue.split(',')[0].trim();
+    vc = coords[short];
+    if (vc) matchedVenue = short;
+  }
   if (!vc) {
     return res.status(200).json({ ok: false, reason: `venue not found: ${venue}` });
   }
@@ -113,7 +122,7 @@ export default async function handler(req, res) {
   if (!hourISO) {
     return res.status(200).json({ ok: false, reason: 'invalid date/time' });
   }
-  const cacheKey = `weather:${venue}:${hourISO}`;
+  const cacheKey = `weather:${matchedVenue}:${hourISO}`;
 
   // 1) 查缓存
   const redis = getRedis();
@@ -186,7 +195,7 @@ export default async function handler(req, res) {
 
   const payload = {
     ok: true,
-    venue,
+    venue: matchedVenue,
     city: vc.label_zh || vc.city,
     country: vc.country,
     date,
