@@ -633,8 +633,10 @@ const FIFA_TEAM_ALIASES = {
   'Korea Republic': 'South Korea',
   'Türkiye': 'Turkey'
 };
+// FIFA v3 calendar API MatchStatus: 0=finished(历史), 1=scheduled, 3-9/15-17=live, 10-12=completed
 const FIFA_STATUS_MAP = {
-  0: 'unknown', 1: 'scheduled', 2: 'scheduled',
+  0: 'completed',
+  1: 'scheduled', 2: 'scheduled',
   3: 'live', 4: 'live', 5: 'live', 6: 'live', 7: 'live', 8: 'live', 9: 'live',
   10: 'completed', 11: 'completed', 12: 'completed',
   13: 'abandoned',
@@ -653,23 +655,32 @@ function _fifaNormalizeTeam(team) {
   return FIFA_TEAM_ALIASES[raw] || raw;
 }
 function _fifaNormalizeMatch(raw) {
-  const homeTeam = raw.HomeTeam || raw.homeTeam;
-  const awayTeam = raw.AwayTeam || raw.awayTeam;
-  const groupRaw = raw.GroupName || raw.groupName || (raw.Group && raw.Group.GroupName) || '';
+  // FIFA v3 calendar 字段:
+  //   raw.Home / raw.Away       →  nested team objects
+  //   raw.HomeTeamScore         →  直接数字
+  //   raw.Date                  →  ISO 8601 UTC
+  //   raw.GroupName             →  array of {Locale, Description}
+  const homeTeam = raw.Home || raw.HomeTeam || raw.homeTeam;
+  const awayTeam = raw.Away || raw.AwayTeam || raw.awayTeam;
+  const groupRaw = _fifaPickLocalized(raw.GroupName)
+    || (raw.Group && raw.Group.GroupName)
+    || raw.GroupLetter || raw.groupLetter
+    || '';
   const group = typeof groupRaw === 'string' ? groupRaw : '';
   const sourceStatus = Number(raw.MatchStatus ?? raw.matchStatus ?? 0);
   const homeScore = (raw.HomeTeamScore ?? raw.homeTeamScore);
   const awayScore = (raw.AwayTeamScore ?? raw.awayTeamScore);
-  // 防御: groupLetter 抽取要 safe-call (group 不一定是 string)
+  const dateStr = (raw.Date || raw.MatchDate || raw.matchDate || '').slice(0, 10);
+  const timeStr = (raw.Date || raw.MatchTime || raw.matchTime || '').slice(11, 16);
   const letterMatch = typeof group === 'string' ? group.match(/Group\s+([A-Z])/i) : null;
   return {
-    id: String(raw.Id || raw.MatchId || raw.matchId || ''),
+    id: String(raw.IdMatch || raw.Id || raw.MatchId || raw.matchId || ''),
     matchNumber: raw.MatchNumber || raw.matchNumber || null,
     group,
     groupLetter: raw.GroupLetter || raw.groupLetter || (letterMatch?.[1] || ''),
     matchDay: raw.MatchDay || raw.matchDay || null,
-    date: (raw.MatchDate || raw.matchDate || '').slice(0, 10),
-    time: (raw.MatchTime || raw.matchTime || '').slice(0, 5),
+    date: dateStr,
+    time: timeStr,
     venue: raw.StadiumName || raw.stadiumName || '',
     city: raw.CityName || raw.cityName || '',
     home: _fifaNormalizeTeam(homeTeam),
@@ -678,7 +689,7 @@ function _fifaNormalizeMatch(raw) {
     awayScore: awayScore != null ? Number(awayScore) : null,
     status: FIFA_STATUS_MAP[sourceStatus] || 'unknown',
     sourceStatus,
-    stage: raw.StageName || raw.stageName || '',
+    stage: _fifaPickLocalized(raw.StageName) || raw.stageName || '',
     lastUpdated: raw.UpdatedDate || raw.updatedDate || null
   };
 }
