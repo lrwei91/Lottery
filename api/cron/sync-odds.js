@@ -655,15 +655,18 @@ function _fifaNormalizeTeam(team) {
 function _fifaNormalizeMatch(raw) {
   const homeTeam = raw.HomeTeam || raw.homeTeam;
   const awayTeam = raw.AwayTeam || raw.awayTeam;
-  const group = raw.GroupName || raw.groupName || (raw.Group && raw.Group.GroupName) || '';
+  const groupRaw = raw.GroupName || raw.groupName || (raw.Group && raw.Group.GroupName) || '';
+  const group = typeof groupRaw === 'string' ? groupRaw : '';
   const sourceStatus = Number(raw.MatchStatus ?? raw.matchStatus ?? 0);
   const homeScore = (raw.HomeTeamScore ?? raw.homeTeamScore);
   const awayScore = (raw.AwayTeamScore ?? raw.awayTeamScore);
+  // 防御: groupLetter 抽取要 safe-call (group 不一定是 string)
+  const letterMatch = typeof group === 'string' ? group.match(/Group\s+([A-Z])/i) : null;
   return {
     id: String(raw.Id || raw.MatchId || raw.matchId || ''),
     matchNumber: raw.MatchNumber || raw.matchNumber || null,
     group,
-    groupLetter: raw.GroupLetter || raw.groupLetter || (group.match(/Group\s+([A-Z])/i)?.[1] || ''),
+    groupLetter: raw.GroupLetter || raw.groupLetter || (letterMatch?.[1] || ''),
     matchDay: raw.MatchDay || raw.matchDay || null,
     date: (raw.MatchDate || raw.matchDate || '').slice(0, 10),
     time: (raw.MatchTime || raw.matchTime || '').slice(0, 5),
