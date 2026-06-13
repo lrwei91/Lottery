@@ -2302,17 +2302,8 @@
     const fdMatch = findFootballDataMatch(matchId);
     const llmPred = findLLMPrediction(matchId);
 
-    // Polymarket h2h event（按 country 匹配，title 含双方国家名）
-    const polymarketEvent = (() => {
-      const payload = state.oddsSnapshots?.polymarket;
-      if (!payload || !Array.isArray(payload.events)) return null;
-      return payload.events.find(ev => {
-        const t = (ev.title || '').toLowerCase();
-        const nameA = countryName(teamA.country).toLowerCase();
-        const nameB = countryName(teamB.country).toLowerCase();
-        return t.includes(nameA) && t.includes(nameB);
-      }) || null;
-    })();
+    // Polymarket h2h event（用 1X2 单场源，按 ticai 名精确匹配）
+    const polymarketEvent = findPolymarketByCountry(teamA.country, teamB.country);
 
     // LLM / Odds 数据可用性标记（已移除实时数据徽章）
     // const meta = state.oddsSnapshots?.meta || null;
