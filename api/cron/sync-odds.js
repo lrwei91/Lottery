@@ -673,6 +673,12 @@ function _fifaNormalizeMatch(raw) {
   const dateStr = (raw.Date || raw.MatchDate || raw.matchDate || '').slice(0, 10);
   const timeStr = (raw.Date || raw.MatchTime || raw.matchTime || '').slice(11, 16);
   const letterMatch = typeof group === 'string' ? group.match(/Group\s+([A-Z])/i) : null;
+  // FIFA v3 字段: raw.Stadium = { Name: [{Locale,Description}], CityName: [{Locale,Description}] }
+  // 也兼容顶层 StadiumName / CityName (新版本可能 flatten)
+  const stadium = raw.Stadium || {};
+  const venueName = _fifaPickLocalized(stadium.Name) || raw.StadiumName || raw.stadiumName || '';
+  const cityName = _fifaPickLocalized(stadium.CityName) || raw.CityName || raw.cityName || '';
+  const venue = [venueName, cityName].filter(Boolean).join(', ');
   return {
     id: String(raw.IdMatch || raw.Id || raw.MatchId || raw.matchId || ''),
     matchNumber: raw.MatchNumber || raw.matchNumber || null,
@@ -681,8 +687,8 @@ function _fifaNormalizeMatch(raw) {
     matchDay: raw.MatchDay || raw.matchDay || null,
     date: dateStr,
     time: timeStr,
-    venue: raw.StadiumName || raw.stadiumName || '',
-    city: raw.CityName || raw.cityName || '',
+    venue,
+    city: cityName,
     home: _fifaNormalizeTeam(homeTeam),
     away: _fifaNormalizeTeam(awayTeam),
     homeScore: homeScore != null ? Number(homeScore) : null,

@@ -1036,7 +1036,7 @@
           </div>
           <div class="wc-today-score">
             ${featuredLine}
-            <small>AI 预测比分</small>
+            <small>${isFinished ? '真实比分 (FIFA 官方)' : 'AI 预测比分'}</small>
             <span class="wc-today-bj-time" title="北京时间">
               <span class="wc-today-chip-icon">🇨🇳</span>
               ${escapeHtml(beijingTime)}
