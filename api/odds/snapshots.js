@@ -4,7 +4,8 @@
  * GET /api/odds/snapshots
  *   → {
  *       meta: { startedAt, finishedAt, kvEnabled, results },
- *       polymarket:           {...} | null,   // h2h 单场
+ *       'polymarket-h2h':     {...} | null,   // 72 场 1X2 单场（series 11433）
+ *       polymarket:           {...} | null,   // tag 102350 衍生品（向后兼容）
  *       'polymarket-outright':{...} | null,   // 冠军 outright 二元市场
  *       'the-odds-api':       {...} | null,
  *       'football-data':      {...} | null,
@@ -77,8 +78,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const [meta, polymarket, polymarketOutright, theOddsApi, footballData] = await Promise.all([
+    const [meta, polymarketH2H, polymarket, polymarketOutright, theOddsApi, footballData] = await Promise.all([
       redis.get('odds:snapshot:_meta'),
+      redis.get('odds:snapshot:polymarket-h2h'),
       redis.get('odds:snapshot:polymarket'),
       redis.get('odds:snapshot:polymarket-outright'),
       redis.get('odds:snapshot:the-odds-api'),
@@ -87,6 +89,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       meta,
+      'polymarket-h2h': polymarketH2H,
       polymarket,
       'polymarket-outright': polymarketOutright,
       'the-odds-api': theOddsApi,

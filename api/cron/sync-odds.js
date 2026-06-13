@@ -5,7 +5,8 @@
  *   GET  /api/cron/sync-odds?source=…              # 手动触发单个
  *
  * 数据源：
- *   - polymarket          （POLYMARKET_PUBLIC_ENABLED=true，h2h 单场）
+ *   - polymarket-h2h      （POLYMARKET_PUBLIC_ENABLED=true，72 场 1X2 单场；series_id=11433）
+ *   - polymarket          （POLYMARKET_PUBLIC_ENABLED=true，tag 102350 衍生品，向后兼容）
  *   - polymarket-outright （POLYMARKET_PUBLIC_ENABLED=true，冠军 outright 独立二元）
  *   - the-odds-api        （ODDS_API_KEY）
  *   - football-data       （FOOTBALL_DATA_API_KEY）
@@ -15,7 +16,8 @@
  *   - 没配置 env var 整源跳过
  *
  * 输出到 Vercel KV（@upstash/redis client）：
- *   odds:snapshot:polymarket           → 最新 h2h 单场
+ *   odds:snapshot:polymarket-h2h       → 72 场 1X2 单场（前端 ensemble 主用）
+ *   odds:snapshot:polymarket           → tag 102350 衍生品（历史兼容）
  *   odds:snapshot:polymarket-outright  → 最新冠军 outright（每国一个二元 Yes/No）
  *   odds:snapshot:the-odds-api         → 最新赔率
  *   odds:snapshot:football-data        → 最新赛程+比分
@@ -35,6 +37,7 @@ function getRedis() {
 }
 
 const KV_KEYS = {
+  'polymarket-h2h': 'odds:snapshot:polymarket-h2h',
   polymarket: 'odds:snapshot:polymarket',
   'polymarket-outright': 'odds:snapshot:polymarket-outright',
   'the-odds-api': 'odds:snapshot:the-odds-api',
@@ -50,7 +53,213 @@ function setCors(res) {
 }
 
 // ============================================================
+// Polymarket 单场 1X2 h2h（series 11433 = "FIFA World Cup" soccer-fifwc）
+// 每个 game 是一个 parent event（slug = `fifwc-{home}-{away}-{YYYY-MM-DD}`），
+// 里面有 3 个 market：home 胜 / 平 / away 胜，各自 Yes/No。
+// 1X2 隐含概率 = 各 market 的 Yes price（Yes + No = 1.0，已是 fair price，无需 devig）
+// ============================================================
+// Polymarket 的 FIFA 三字母代码 → ticai 国家名（用于落库标准化，前端按 ticai 名查）
+// 覆盖 2026 WC 全部 48 队。ticai 内部名以 data/worldcup_2026.json 的 team.country 为准
+const FIFA3_TO_TICAI = {
+  // A
+  alg: 'Algeria', arg: 'Argentina', aus: 'Australia', aut: 'Austria',
+  // B
+  bel: 'Belgium', bih: 'Bosnia and Herzegovina', bra: 'Brazil',
+  // C
+  can: 'Canada', cvi: 'Cape Verde', cdr: 'DR Congo', che: 'Switzerland',
+  chi: 'Chile', col: 'Colombia', cze: 'Czech Republic',
+  // D
+  den: 'Denmark', deu: 'Germany',
+  // E
+  ecu: 'Ecuador', egy: 'Egypt', eng: 'England', esp: 'Spain',
+  // F
+  fra: 'France',
+  // G
+  gbr: 'United Kingdom', ger: 'Germany', gha: 'Ghana',
+  // H
+  hai: 'Haiti', hrv: 'Croatia',
+  // I
+  irn: 'Iran', irq: 'Iraq', irl: 'Ireland', isl: 'Iceland', isr: 'Israel', ita: 'Italy',
+  // J
+  jam: 'Jamaica', jpn: 'Japan', jor: 'Jordan',
+  // K
+  kor: 'South Korea', ksa: 'Saudi Arabia',
+  // L
+  mex: 'Mexico', mar: 'Morocco',
+  // N
+  ned: 'Netherlands', nga: 'Nigeria', nld: 'Netherlands', nor: 'Norway', nzl: 'New Zealand',
+  // P
+  pan: 'Panama', par: 'Paraguay', per: 'Peru', pol: 'Poland', prt: 'Portugal',
+  // Q
+  qat: 'Qatar',
+  // R
+  rou: 'Romania', rsa: 'South Africa', rus: 'Russia',
+  // S
+  sco: 'Scotland', sen: 'Senegal', srb: 'Serbia', svk: 'Slovakia', svn: 'Slovenia',
+  swe: 'Sweden',
+  // T
+  tun: 'Tunisia', tur: 'Turkey', turkiye: 'Turkey',
+  // U
+  uga: 'Uganda', ukr: 'Ukraine', uru: 'Uruguay', usa: 'USA', uzb: 'Uzbekistan',
+  // W
+  wal: 'Wales'
+};
+
+// slug 解析: "fifwc-mex-rsa-2026-06-11" → { home: 'Mexico', away: 'South Africa', date: '2026-06-11' }
+// 注意: polymarket 的 slug FIFA3 代码偶尔跟 markets 里的 groupItemTitle 不一致
+// (例: slug `ger-kor-...` 但 markets 实际是 Germany vs Curaçao) — 不能完全相信 slug
+// 最终以 parent event title (e.g. "Mexico vs. South Africa") + markets.question 为准
+function parseFifwcSlug(slug) {
+  if (!slug) return null;
+  const m = String(slug).match(/^fifwc-([a-z]{3})-([a-z]{3})-(\d{4}-\d{2}-\d{2})$/);
+  if (!m) return null;
+  return { slugHome: m[1], slugAway: m[2], date: m[3] };
+}
+
+// title 解析: "Mexico vs. South Africa" → { home: 'Mexico', away: 'South Africa' }
+// 处理 vs. / vs / v. / v 等变体
+function parseFifwcTitle(title) {
+  if (!title) return null;
+  const m = String(title).match(/^(.+?)\s+(?:vs\.?|v\.?)\s+(.+?)$/i);
+  if (!m) return null;
+  return { home: m[1].trim(), away: m[2].trim() };
+}
+
+// 把 polymarket 国家名 ("Türkiye" / "Cabo Verde" / "IR Iran" / "Czechia" / "United States" / "Korea Republic" ...)
+// 映射到 ticai 名 ("Turkey" / "Cape Verde" / "Iran" / "Czech Republic" / "USA" / "South Korea" ...)
+// 这是 ticai 跟 polymarket 名差异的**全集**，复用前向/反向都能用
+const POLY_TO_TICAI_COUNTRY = {
+  'United States': 'USA',
+  'USA': 'USA',
+  'Türkiye': 'Turkey',
+  'Turkiye': 'Turkey',
+  'Turkey': 'Turkey',
+  'Cabo Verde': 'Cape Verde',
+  'Cape Verde': 'Cape Verde',
+  'IR Iran': 'Iran',
+  'Iran': 'Iran',
+  'Czechia': 'Czech Republic',
+  'Czech Republic': 'Czech Republic',
+  'Korea Republic': 'South Korea',
+  'South Korea': 'South Korea',
+  'Korea DPR': 'North Korea',
+  'Bosnia & Herzegovina': 'Bosnia and Herzegovina',
+  'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
+  'DR Congo': 'DR Congo',
+  'Congo DR': 'DR Congo',
+  'Ivory Coast': 'Ivory Coast',
+  "Côte d'Ivoire": 'Ivory Coast',
+  'Curacao': 'Curaçao',
+  'Curaçao': 'Curaçao'
+};
+
+function polyToTicaiCountry(name) {
+  if (!name) return null;
+  return POLY_TO_TICAI_COUNTRY[name] || name;
+}
+
+async function fetchPolymarketH2H() {
+  const enabled = process.env.POLYMARKET_PUBLIC_ENABLED === 'true';
+  if (!enabled) return { skipped: true, reason: 'POLYMARKET_PUBLIC_ENABLED != true' };
+
+  // series 11433 = "FIFA World Cup" (soccer-fifwc)，包含全部 64 场小组赛 + 淘汰赛
+  // parent event slug = `fifwc-{home}-{away}-{date}`，里面有 3 个 1X2 market (home/draw/away Yes/No)
+  const seriesId = process.env.POLYMARKET_H2H_SERIES_ID || '11433';
+  const limit = process.env.POLYMARKET_H2H_LIMIT || '200';
+  const allEvents = [];
+  // gamma 翻页: offset 一次 50, 一直翻到空
+  for (let offset = 0; offset < 500; offset += 50) {
+    const url = `https://gamma-api.polymarket.com/events?series_id=${seriesId}&active=true&closed=false&limit=50&offset=${offset}`;
+    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error(`Polymarket H2H HTTP ${res.status}`);
+    const page = await res.json();
+    if (!Array.isArray(page) || page.length === 0) break;
+    allEvents.push(...page);
+    if (page.length < 50) break;
+  }
+
+  // 标准化: 过滤 parent event（slug 匹配 fifwc-XXX-YYY-YYYY-MM-DD），从 3 个 1X2 market 提 Yes price
+  // home/away 以 parent event title (e.g. "Mexico vs. South Africa") 为准，slug FIFA3 代码只用来识别 date
+  const games = [];
+  const skipped = { noSlug: 0, noTitle: 0, missingMarkets: 0 };
+
+  for (const ev of allEvents) {
+    const slugParsed = parseFifwcSlug(ev.slug);
+    if (!slugParsed) {
+      if (ev.slug && ev.slug.startsWith('fifwc-')) skipped.noSlug++;
+      continue;
+    }
+    const titleParsed = parseFifwcTitle(ev.title);
+    if (!titleParsed) { skipped.noTitle++; continue; }
+    // 标准化 polymarket 名 → ticai 名 (例: "Türkiye" → "Turkey", "Cabo Verde" → "Cape Verde")
+    const home = polyToTicaiCountry(titleParsed.home);
+    const away = polyToTicaiCountry(titleParsed.away);
+    const date = slugParsed.date;
+
+    // parent event 期望 3 个 market: home / draw / away，各自有 Yes/No
+    // groupItemTitle 可能是 "Mexico" / "Draw (Mexico vs. South Africa)" / "South Africa"
+    // 也可能是 "Will Mexico win on 2026-06-11?" 形式的 question
+    const markets = (ev.markets || []);
+    let homeYes = null, drawYes = null, awayYes = null;
+    for (const m of markets) {
+      const outs = parseJsonArray(m.outcomes);
+      const prices = parseJsonArray(m.outcomePrices);
+      if (!outs || !prices || outs.length !== prices.length || !outs.includes('Yes')) continue;
+      const yesPrice = Number(prices[outs.indexOf('Yes')] ?? 0);
+      if (!Number.isFinite(yesPrice) || yesPrice <= 0 || yesPrice >= 1) continue;
+
+      // 用 groupItemTitle 判定这是 home / draw / away (groupItemTitle 多态，先用 poly 名归一化再比)
+      const gRaw = (m.groupItemTitle || '').replace(/\s*\(.*?\)\s*$/, '').trim(); // 去 "Draw (X vs Y)" 括号尾巴
+      const gNormalized = polyToTicaiCountry(gRaw);
+      const q = (m.question || '').toLowerCase();
+      const homeLower = home.toLowerCase();
+      const awayLower = away.toLowerCase();
+      if (gNormalized === home || q.startsWith(`will ${homeLower} win`)) {
+        homeYes = yesPrice;
+      } else if (gRaw.toLowerCase().startsWith('draw') || q.includes(' end in a draw')) {
+        drawYes = yesPrice;
+      } else if (gNormalized === away || q.startsWith(`will ${awayLower} win`)) {
+        awayYes = yesPrice;
+      }
+    }
+
+    if (homeYes == null || awayYes == null) {
+      skipped.missingMarkets++;
+      continue;
+    }
+    // draw market 不存在（pre-game 偶尔没开）→ 落 0
+    if (drawYes == null) drawYes = 0;
+
+    games.push({
+      id: ev.id,
+      slug: ev.slug,
+      home,
+      away,
+      date,
+      // 1X2 隐含概率（Yes price，已是 fair）
+      homeProb: homeYes,
+      drawProb: drawYes,
+      awayProb: awayYes,
+      volume: ev.volume ?? null,
+      liquidity: ev.liquidity ?? null
+    });
+  }
+
+  return {
+    fetchedAt: new Date().toISOString(),
+    type: 'h2h',
+    games,
+    gameCount: games.length,
+    skipped,
+    source: 'polymarket-gamma-api-series-11433'
+  };
+}
+
+// ============================================================
 // Polymarket 公开模式（无需 API key）
+// tag 102350 = "2026 FIFA World Cup"，包含 group winner / player props / outright 衍生品
+// 注意：单场 h2h 在另一个 series (11433) 里，由 fetchPolymarketH2H 单独抓
+// 保留这个源是为了向后兼容（前端如有 tag-based 衍生品渲染会用到）
 // ============================================================
 async function fetchPolymarket() {
   const enabled = process.env.POLYMARKET_PUBLIC_ENABLED === 'true';
@@ -316,6 +525,7 @@ async function fetchFootballData() {
 // 主调度
 // ============================================================
 const SOURCES = {
+  'polymarket-h2h': fetchPolymarketH2H,
   polymarket: fetchPolymarket,
   'polymarket-outright': fetchPolymarketOutright,
   'the-odds-api': fetchOddsAPI,

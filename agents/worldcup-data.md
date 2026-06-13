@@ -9,7 +9,7 @@
 |---|---|---|---|---|
 | `h2h` | Elo 推演 | 内部计算 | 静态（依赖 `data/worldcup_2026.json`） | 不存 state，每次 `predictH2H(matchId)` 算 |
 | `odds` | The Odds API | 外部 | Vercel Cron 抓 → Redis `odds:snapshot:the-odds-api` | `state.oddsSnapshots['the-odds-api']` |
-| `poly` | Polymarket | 外部 | Vercel Cron 抓 → Redis `odds:snapshot:polymarket` | `state.oddsSnapshots.polymarket` |
+| `poly` | Polymarket 单场 1X2 | 外部 | Vercel Cron 抓 → Redis `odds:snapshot:polymarket-h2h` | `state.oddsSnapshots['polymarket-h2h']` |
 | `llm` | LLM 预测 | 静态 JSON | 手动跑 `node scripts/llm-predict.js` | `state.llmPredictions` / `state.llmOutright` |
 
 ## 2. 融合权重（核心）
@@ -75,29 +75,75 @@ The Odds API 返回的 `events[]` 里关键字段：
 
 ## 5. Polymarket 字段映射
 
-Polymarket 走 Gamma API，**单场 h2h**（不是 outright）的事件结构：
+### 5.1 单场 1X2 h2h（主源，前端 ensemble 用这个）
+
+数据走 **Gamma API `series_id=11433`**（soccer-fifwc = "FIFA World Cup" series），里面是 72 场世界杯单场游戏的 **parent events**。每个 parent event slug 形式为：
+
+```
+fifwc-{home3}-{away3}-{YYYY-MM-DD}     # 例如 fifwc-mex-rsa-2026-06-11
+```
+
+`home3` / `away3` 是 FIFA 三字母国家代码（`mex` = Mexico, `rsa` = South Africa, `kor` = South Korea, `cvi` = Cape Verde, `ksa` = Saudi Arabia, `usa` = USA, `tur` = Turkey ...）。
+
+每个 parent event 内部有 **3 个 market**（1X2），各自 Yes/No：
 
 ```json
 {
-  "id": "poly-event-123",
-  "slug": "fra-vs-bra-2026-06-15",
-  "title": "France vs Brazil",
-  "outcomes": "[\"France\", \"Brazil\"]",  // 字符串化的 JSON 数组
-  "outcomePrices": "[\"0.55\", \"0.45\"]" // 字符串化的 JSON 数组
+  "id": "351715",
+  "slug": "fifwc-mex-rsa-2026-06-11",
+  "title": "Mexico vs. South Africa",
+  "markets": [
+    { "id": "1897034", "question": "Will Mexico win on 2026-06-11?",
+      "groupItemTitle": "Mexico", "outcomes": "[\"Yes\",\"No\"]", "outcomePrices": "[\"0.685\",\"0.315\"]" },
+    { "id": "1897035", "question": "Will Mexico vs. South Africa end in a draw?",
+      "groupItemTitle": "Draw (Mexico vs. South Africa)", "outcomes": "[\"Yes\",\"No\"]", "outcomePrices": "[\"0.205\",\"0.795\"]" },
+    { "id": "1897036", "question": "Will South Africa win on 2026-06-11?",
+      "groupItemTitle": "South Africa", "outcomes": "[\"Yes\",\"No\"]", "outcomePrices": "[\"0.105\",\"0.895\"]" }
+  ]
 }
 ```
 
-`outcomes` 和 `outcomePrices` 都是**字符串**的 JSON 数组，前端消费时 `JSON.parse` 一下：
+**1X2 隐含概率 = 各 market 的 Yes price**（Yes + No = 1.0，已经是 fair price，不需要 devig）。
 
-```js
-// js/worldcup.js
-const outcomes = JSON.parse(polymarketEvent.outcomes);     // ["France", "Brazil"]
-const prices   = JSON.parse(polymarketEvent.outcomePrices); // ["0.55", "0.45"]
+#### 标准化后存到 Redis（`odds:snapshot:polymarket-h2h`）
+
+`sync-odds.js` 的 `fetchPolymarketH2H()` 把 parent event 拍平：
+
+```json
+{
+  "fetchedAt": "2026-06-11T18:43:00.000Z",
+  "type": "h2h",
+  "gameCount": 67,
+  "games": [
+    {
+      "id": "351715",
+      "slug": "fifwc-mex-rsa-2026-06-11",
+      "home": "Mexico",
+      "away": "South Africa",
+      "date": "2026-06-11",
+      "homeProb": 0.685,
+      "drawProb": 0.205,
+      "awayProb": 0.105
+    }
+  ],
+  "source": "polymarket-gamma-api-series-11433"
+}
 ```
 
-**Polymarket h2h 通常只有主/客，没有平局**——`ensemblePredict` 里 `draw` 概率就 0 或来自其他源。
+- `home` / `away` 是 **ticai 国家名**（不是 FIFA 三字母代码），跟 `data/worldcup_2026.json` 的 `team.country` 一致
+- FIFA 三字母代码 → ticai 名映射表在 `sync-odds.js` 的 `FIFA3_TO_TICAI` 顶部
 
-**Outright 单独 key**：`odds:snapshot:polymarket-outright`（注意带 `-outright` 后缀），结构是 `{ country: yesPrice }` 映射，给"冠军" Tab 用：
+#### 前端使用
+
+`js/worldcup.js:570` 的 `findPolymarketByCountry(home, away)` 直接 `event.home === homeCountry && event.away === awayCountry` 查（用 ticai 名精确匹配，不再走中文/英文模糊匹配）。`buildPolymarketProbs` 直接读 `homeProb / drawProb / awayProb`。
+
+### 5.2 衍生品（向后兼容，保留 `odds:snapshot:polymarket`）
+
+tag_id=102350 拉的是 group winner / player props / outright 二元衍生品，前端目前不直接用，**保留仅用于健康度提示**。schema 不变（参见下方旧版本）。
+
+### 5.3 冠军 outright（独立 key）
+
+`odds:snapshot:polymarket-outright`（带 `-outright` 后缀），结构是 `{ country: yesPrice }` 映射，给"冠军" Tab 用：
 
 ```json
 {
@@ -160,3 +206,11 @@ LLM 缺场（`llmPred` null）→ 该项不参与融合；前端会显示"🤖 L
 2. 同步更新 `agents/llm-predict.md` 第 10 节里的权重表。
 3. 如果新增第 5 个数据源：在 `state` 加一个字段 → `api/cron/sync-odds.js` 加抓取 → `ensemblePredict` 加分支 + 权重 → Redis 加 key → 前端 state 加载逻辑更新。
 4. 不要触碰 `js/odds-utils.js` 的 `devig` / `EV` / `Kelly`（AGENTS.md 规则 5）——那是**算**价值/EV 的工具，不是融合用的。
+
+## 10. 变更日志
+
+- **2026-06-12**：接入 Polymarket 单场 1X2 h2h 源。Polymarket 把每场 WC 比赛做成 `fifwc-{home}-{away}-{date}` parent event（series 11433），里面 3 个 1X2 market（home/draw/away Yes/No）。`sync-odds.js` 加 `fetchPolymarketH2H()` 拉 + 标准化成 `{home, away, homeProb, drawProb, awayProb}`（ticai 国家名，不是 FIFA 三字母代码）→ Redis `odds:snapshot:polymarket-h2h`。前端 `findPolymarketByCountry` 改用 ticai 名精确匹配；`buildPolymarketProbs` 跳过 devig 直接用 Yes price。
+  - 修复前：poly 源永远 `null`，4 源融合缺 1 源（只用 Elo + The Odds API + LLM）
+  - 修复后：poly 源拉满 67 场，4 源齐
+  - 旧 `odds:snapshot:polymarket`（tag 102350 衍生品）保留，向后兼容
+- 2026-06-08：初版。基础项目背景 + 4 源 = Elo + The Odds API + Polymarket (衍生品) + LLM。

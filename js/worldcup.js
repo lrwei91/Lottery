@@ -21,7 +21,7 @@
     selectedGroup: 'TIME',
     llmPredictions: null,   // { generatedAt, model, predictions: [{matchId, ...}] } — h2h 单场
     llmOutright: null,      // { generatedAt, model, predictions: [{country, winProb, ...}] } — 冠军 outright
-    oddsSnapshots: null,    // { meta, polymarket, 'the-odds-api', 'football-data' }
+    oddsSnapshots: null,    // { meta, 'polymarket-h2h', polymarket, 'polymarket-outright', 'the-odds-api', 'football-data' }
     oddsHistory: null       // { 'the-odds-api': [{ fetchedAt, events: [...] }, ...] } — 最近 28 个时间点
   };
 
@@ -564,16 +564,24 @@
       }
     }
 
-    // polymarket
+    // polymarket-h2h（主源，前端 ensemble 实际用这个）
+    const pmH2H = payload['polymarket-h2h'];
+    if (!pmH2H) {
+      issues.push('polymarket-h2h 源缺失（单场 1X2 没拉到）');
+    } else if (Array.isArray(pmH2H.games) && pmH2H.gameCount < 30) {
+      issues.push(`polymarket-h2h 单场数偏少: ${pmH2H.gameCount}（预期 60+）`);
+    }
+
+    // polymarket（tag 102350 衍生品，保留用于健康度提示 / 历史兼容）
     const pm = payload.polymarket;
     if (!pm) {
-      issues.push('polymarket 源缺失');
+      issues.push('polymarket 衍生品源缺失');
     } else if (Array.isArray(pm.events) && pm.events.length > 0) {
       const hasWorldCup = pm.events.some(ev =>
         /world cup|fifa|2026/i.test(ev.title || '')
       );
       if (!hasWorldCup) {
-        issues.push(`polymarket 标题异常（前 3）: ${pm.events.slice(0,3).map(e => e.title || '?').join(' | ').slice(0, 120)}`);
+        issues.push(`polymarket 衍生品标题异常（前 3）: ${pm.events.slice(0,3).map(e => e.title || '?').join(' | ').slice(0, 120)}`);
       }
     }
 
@@ -608,16 +616,34 @@
     return state.llmPredictions?.predictions?.find(p => p.matchId === matchId) || null;
   }
 
-  // Polymarket h2h event（按 country 匹配，title 含双方国家名）
+  // Polymarket 单场 1X2 game（按 home/away ticai 名精确匹配）
+  // 数据源：odds:snapshot:polymarket-h2h，schema 标准化为 { games: [{home, away, homeProb, drawProb, awayProb, ...}] }
+  // 优先用 h2h key（series 11433，72 场 1X2 单场）；回退到旧 polymarket key（按 title 模糊匹配，已弃用）
   function findPolymarketByCountry(homeCountry, awayCountry) {
-    const payload = state.oddsSnapshots?.polymarket;
-    if (!payload || !Array.isArray(payload.events)) return null;
-    const nameA = countryName(homeCountry).toLowerCase();
-    const nameB = countryName(awayCountry).toLowerCase();
-    return payload.events.find(ev => {
-      const t = (ev.title || '').toLowerCase();
-      return t.includes(nameA) && t.includes(nameB);
-    }) || null;
+    if (!homeCountry || !awayCountry) return null;
+    // 主路径: h2h 标准化数据
+    const h2hPayload = state.oddsSnapshots?.['polymarket-h2h'];
+    if (h2hPayload && Array.isArray(h2hPayload.games)) {
+      const game = h2hPayload.games.find(g =>
+        g && g.home === homeCountry && g.away === awayCountry
+      );
+      if (game) return {
+        source: 'polymarket-h2h',
+        id: game.id,
+        slug: game.slug,
+        home: game.home,
+        away: game.away,
+        homeProb: game.homeProb,
+        drawProb: game.drawProb,
+        awayProb: game.awayProb,
+        outcomes: [
+          { name: game.home, price: game.homeProb },
+          { name: 'Draw', price: game.drawProb },
+          { name: game.away, price: game.awayProb }
+        ]
+      };
+    }
+    return null;
   }
 
   // 给定一场比赛，调全部 4 源（Elo + The Odds API + Polymarket + LLM）算综合预测
@@ -1903,14 +1929,17 @@
   }
 
   function buildPolymarketProbs(event) {
-    // Polymarket 通常 2 outcome (Up/Down)，归一化到 home/away
-    if (!event || !Array.isArray(event.outcomes) || event.outcomes.length < 2) return null;
-    const odds = event.outcomes.map(o => ({ decimalOdds: o.decimalOdds || 1 }));
-    const fair = window.OddsUtils.devig.proportionalDevig(odds);
+    // Polymarket 单场 1X2 已经是 fair 概率（每个 Yes/No market，Yes+No=1），
+    // 直接用 homeProb / drawProb / awayProb 字段即可，不需要 devig
+    if (!event) return null;
+    const h = Number(event.homeProb);
+    const d = Number(event.drawProb);
+    const a = Number(event.awayProb);
+    if (![h, a].every(v => Number.isFinite(v) && v >= 0 && v <= 1)) return null;
     return {
-      home: fair[0]?.fairProbability ?? 0,
-      draw: 0,
-      away: 1 - (fair[0]?.fairProbability ?? 0)
+      home: h,
+      draw: Number.isFinite(d) ? d : 0,
+      away: a
     };
   }
 
