@@ -93,12 +93,17 @@ def read_upstream_fetch_date(source_dir: Path) -> str:
 
 def export_upstream_payload(source_dir: Path, python_bin: str) -> dict:
     output_path = Path(tempfile.mkstemp(prefix="worldcup-export-", suffix=".json")[1])
+    # upstream _load_analysis (v4.2.1+) 返回 6 个值:
+    #   (results, ucl_data, h2h_conformal_map, match_fixtures, match_results, friendly_results)
+    # 我们只需要 teams + ucl — 改用 * 解包后只取前 2 个
     helper = (
         "import json, sys\n"
         "from pathlib import Path\n"
         "sys.path.insert(0, str(Path.cwd()))\n"
         "from src.dashboard.mobile_ui import _load_analysis\n"
-        "teams, ucl = _load_analysis()\n"
+        "result = _load_analysis()\n"
+        "teams = result[0] if isinstance(result, tuple) and len(result) >= 1 else result\n"
+        "ucl = result[1] if isinstance(result, tuple) and len(result) >= 2 else {}\n"
         "Path(sys.argv[1]).write_text(\n"
         "    json.dumps({'teams': teams, 'ucl': ucl}, ensure_ascii=False),\n"
         "    encoding='utf-8'\n"

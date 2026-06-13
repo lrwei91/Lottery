@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-12T21:05:13.145239+00:00",
+    "lastUpdated": "2026-06-13T07:16:39.732625+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-12",
+    "sourceDataDate": "2026-06-13",
     "note": "Official FIFA World Cup 2026 group-stage fixtures and score status.",
     "teamCount": 48,
     "matchCount": 72
@@ -636,19 +636,28 @@
           "away": "Paraguay",
           "homeId": "43921",
           "awayId": "43928",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 4,
+          "awayScore": 1,
+          "status": "unknown",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
-            "wHome": 2,
+            "wHome": 3,
             "draws": 0,
             "wAway": 0,
-            "total": 2,
-            "goalsHome": 5,
-            "goalsAway": 1,
+            "total": 3,
+            "goalsHome": 9,
+            "goalsAway": 2,
             "matches": [
+              {
+                "date": "2026-06-13",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "USA",
+                "away": "Paraguay",
+                "homeScore": 4,
+                "awayScore": 1
+              },
               {
                 "date": "2025-11-15",
                 "competition": "Friendlies",
