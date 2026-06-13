@@ -250,7 +250,7 @@ async function fetchPolymarketH2H() {
     type: 'h2h',
     games,
     gameCount: games.length,
-    skipped,
+    stats: skipped,  // { noSlug, noTitle, missingMarkets } - 跟顶层 data.skipped (boolean) 区分开
     source: 'polymarket-gamma-api-series-11433'
   };
 }
