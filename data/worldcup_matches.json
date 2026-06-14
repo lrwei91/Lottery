@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-13T20:40:20.547457+00:00",
+    "lastUpdated": "2026-06-14T20:40:35.325683+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-13",
+    "sourceDataDate": "2026-06-14",
     "note": "Official FIFA World Cup 2026 group-stage fixtures and score status.",
     "teamCount": 48,
     "matchCount": 72
@@ -306,11 +306,30 @@
           "away": "Switzerland",
           "homeId": "43834",
           "awayId": "43971",
-          "homeScore": 0,
+          "homeScore": 1,
           "awayScore": 1,
-          "status": "live",
-          "sourceStatus": 3,
-          "headToHead": null
+          "status": "unknown",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 0,
+            "draws": 1,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 1,
+            "goalsAway": 1,
+            "matches": [
+              {
+                "date": "2026-06-13",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Qatar",
+                "away": "Switzerland",
+                "homeScore": 1,
+                "awayScore": 1
+              }
+            ]
+          }
         },
         {
           "id": "400021446",
@@ -425,11 +444,30 @@
           "away": "Scotland",
           "homeId": "43908",
           "awayId": "43967",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 0,
+          "awayScore": 1,
+          "status": "unknown",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 0,
+            "draws": 0,
+            "wAway": 1,
+            "total": 1,
+            "goalsHome": 0,
+            "goalsAway": 1,
+            "matches": [
+              {
+                "date": "2026-06-14",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Haiti",
+                "away": "Scotland",
+                "homeScore": 0,
+                "awayScore": 1
+              }
+            ]
+          }
         },
         {
           "id": "400021456",
@@ -443,19 +481,28 @@
           "away": "Morocco",
           "homeId": "43924",
           "awayId": "43872",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 1,
+          "awayScore": 1,
+          "status": "unknown",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
             "wHome": 1,
-            "draws": 0,
+            "draws": 1,
             "wAway": 1,
-            "total": 2,
-            "goalsHome": 4,
-            "goalsAway": 2,
+            "total": 3,
+            "goalsHome": 5,
+            "goalsAway": 3,
             "matches": [
+              {
+                "date": "2026-06-13",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Brazil",
+                "away": "Morocco",
+                "homeScore": 1,
+                "awayScore": 1
+              },
               {
                 "date": "2023-03-25",
                 "competition": "Friendlies",
@@ -691,11 +738,30 @@
           "away": "Turkey",
           "homeId": "43976",
           "awayId": "43972",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 2,
+          "awayScore": 0,
+          "status": "unknown",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 1,
+            "draws": 0,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 2,
+            "goalsAway": 0,
+            "matches": [
+              {
+                "date": "2026-06-14",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Australia",
+                "away": "Turkey",
+                "homeScore": 2,
+                "awayScore": 0
+              }
+            ]
+          }
         },
         {
           "id": "400021460",
@@ -856,11 +922,30 @@
           "away": "Curaçao",
           "homeId": "43948",
           "awayId": "1895293",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 7,
+          "awayScore": 1,
+          "status": "unknown",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 1,
+            "draws": 0,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 7,
+            "goalsAway": 1,
+            "matches": [
+              {
+                "date": "2026-06-14",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Germany",
+                "away": "Curaçao",
+                "homeScore": 7,
+                "awayScore": 1
+              }
+            ]
+          }
         },
         {
           "id": "400021469",
@@ -975,10 +1060,10 @@
           "away": "Japan",
           "homeId": "43960",
           "awayId": "43819",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 0,
+          "awayScore": 0,
+          "status": "live",
+          "sourceStatus": 3,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
             "wHome": 1,
