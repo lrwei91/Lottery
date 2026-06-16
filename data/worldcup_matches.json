@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-15T21:50:19.503178+00:00",
+    "lastUpdated": "2026-06-16T21:47:45.297002+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-15",
+    "sourceDataDate": "2026-06-16",
     "note": "Official FIFA World Cup 2026 group-stage fixtures and score status.",
     "teamCount": 48,
     "matchCount": 72
@@ -1355,11 +1355,30 @@
           "away": "New Zealand",
           "homeId": "43817",
           "awayId": "43978",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 2,
+          "awayScore": 2,
+          "status": "unknown",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 0,
+            "draws": 1,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 2,
+            "goalsAway": 2,
+            "matches": [
+              {
+                "date": "2026-06-16",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Iran",
+                "away": "New Zealand",
+                "homeScore": 2,
+                "awayScore": 2
+              }
+            ]
+          }
         },
         {
           "id": "400021478",
@@ -1520,19 +1539,28 @@
           "away": "Uruguay",
           "homeId": "43835",
           "awayId": "43930",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 1,
+          "awayScore": 1,
+          "status": "unknown",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
             "wHome": 0,
-            "draws": 0,
+            "draws": 1,
             "wAway": 1,
-            "total": 1,
-            "goalsHome": 0,
-            "goalsAway": 1,
+            "total": 2,
+            "goalsHome": 1,
+            "goalsAway": 2,
             "matches": [
+              {
+                "date": "2026-06-15",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Saudi Arabia",
+                "away": "Uruguay",
+                "homeScore": 1,
+                "awayScore": 1
+              },
               {
                 "date": "2018-06-20",
                 "competition": "FIFA World Cup™",
@@ -1732,19 +1760,28 @@
           "away": "Senegal",
           "homeId": "43946",
           "awayId": "43879",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 3,
+          "awayScore": 1,
+          "status": "unknown",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
-            "wHome": 0,
+            "wHome": 1,
             "draws": 0,
             "wAway": 1,
-            "total": 1,
-            "goalsHome": 0,
-            "goalsAway": 1,
+            "total": 2,
+            "goalsHome": 3,
+            "goalsAway": 2,
             "matches": [
+              {
+                "date": "2026-06-16",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "France",
+                "away": "Senegal",
+                "homeScore": 3,
+                "awayScore": 1
+              },
               {
                 "date": "2002-05-31",
                 "competition": "FIFA World Cup™",
