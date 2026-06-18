@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-17T21:20:26.610327+00:00",
+    "lastUpdated": "2026-06-18T21:28:13.482030+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-17",
+    "sourceDataDate": "2026-06-18",
     "note": "Official FIFA World Cup 2026 group-stage fixtures and score status.",
     "teamCount": 48,
     "matchCount": 72
@@ -113,19 +113,28 @@
           "away": "South Africa",
           "homeId": "43995",
           "awayId": "43883",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 1,
+          "awayScore": 1,
+          "status": "unknown",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
             "wHome": 0,
-            "draws": 1,
+            "draws": 2,
             "wAway": 0,
-            "total": 1,
-            "goalsHome": 2,
-            "goalsAway": 2,
+            "total": 2,
+            "goalsHome": 3,
+            "goalsAway": 3,
             "matches": [
+              {
+                "date": "2026-06-18",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Czech Republic",
+                "away": "South Africa",
+                "homeScore": 1,
+                "awayScore": 1
+              },
               {
                 "date": "1997-12-13",
                 "competition": "FIFA Confederations Cup™",
@@ -343,11 +352,30 @@
           "away": "Bosnia-Herzegovina",
           "homeId": "43971",
           "awayId": "44037",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 4,
+          "awayScore": 1,
+          "status": "unknown",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 1,
+            "draws": 0,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 4,
+            "goalsAway": 1,
+            "matches": [
+              {
+                "date": "2026-06-18",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Switzerland",
+                "away": "Bosnia-Herzegovina",
+                "homeScore": 4,
+                "awayScore": 1
+              }
+            ]
+          }
         },
         {
           "id": "400021450",
@@ -363,8 +391,8 @@
           "awayId": "43834",
           "homeScore": null,
           "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "status": "completed",
+          "sourceStatus": 12,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
             "wHome": 1,
@@ -2192,11 +2220,30 @@
           "away": "Colombia",
           "homeId": "44005",
           "awayId": "43926",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 1,
+          "awayScore": 3,
+          "status": "unknown",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 0,
+            "draws": 0,
+            "wAway": 1,
+            "total": 1,
+            "goalsHome": 1,
+            "goalsAway": 3,
+            "matches": [
+              {
+                "date": "2026-06-18",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Uzbekistan",
+                "away": "Colombia",
+                "homeScore": 1,
+                "awayScore": 3
+              }
+            ]
+          }
         },
         {
           "id": "400021503",
@@ -2292,11 +2339,30 @@
           "away": "Panama",
           "homeId": "43860",
           "awayId": "43914",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 1,
+          "awayScore": 0,
+          "status": "unknown",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 1,
+            "draws": 0,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 1,
+            "goalsAway": 0,
+            "matches": [
+              {
+                "date": "2026-06-17",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Ghana",
+                "away": "Panama",
+                "homeScore": 1,
+                "awayScore": 0
+              }
+            ]
+          }
         },
         {
           "id": "400021507",
@@ -2310,19 +2376,28 @@
           "away": "Croatia",
           "homeId": "43942",
           "awayId": "43938",
-          "homeScore": 3,
+          "homeScore": 4,
           "awayScore": 2,
-          "status": "live",
-          "sourceStatus": 3,
+          "status": "unknown",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
-            "wHome": 3,
+            "wHome": 4,
             "draws": 1,
             "wAway": 1,
-            "total": 5,
-            "goalsHome": 12,
-            "goalsAway": 5,
+            "total": 6,
+            "goalsHome": 16,
+            "goalsAway": 7,
             "matches": [
+              {
+                "date": "2026-06-17",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "England",
+                "away": "Croatia",
+                "homeScore": 4,
+                "awayScore": 2
+              },
               {
                 "date": "2018-11-18",
                 "competition": "UEFA Nations League",
@@ -2358,15 +2433,6 @@
                 "away": "Croatia",
                 "homeScore": 5,
                 "awayScore": 1
-              },
-              {
-                "date": "2008-09-10",
-                "competition": "FIFA World Cup™ Qualifiers",
-                "stage": "First Stage",
-                "home": "Croatia",
-                "away": "England",
-                "homeScore": 1,
-                "awayScore": 4
               }
             ]
           }
