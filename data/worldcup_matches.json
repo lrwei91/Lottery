@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-18T21:28:13.482030+00:00",
+    "lastUpdated": "2026-06-19T20:46:01.404834+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-18",
+    "sourceDataDate": "2026-06-19",
     "note": "Official FIFA World Cup 2026 group-stage fixtures and score status.",
     "teamCount": 48,
     "matchCount": 72
@@ -159,19 +159,28 @@
           "away": "South Korea",
           "homeId": "43911",
           "awayId": "43822",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 1,
+          "awayScore": 0,
+          "status": "unknown",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
-            "wHome": 2,
+            "wHome": 3,
             "draws": 1,
             "wAway": 2,
-            "total": 5,
-            "goalsHome": 11,
+            "total": 6,
+            "goalsHome": 12,
             "goalsAway": 11,
             "matches": [
+              {
+                "date": "2026-06-19",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Mexico",
+                "away": "South Korea",
+                "homeScore": 1,
+                "awayScore": 0
+              },
               {
                 "date": "2025-09-10",
                 "competition": "Friendlies",
@@ -207,15 +216,6 @@
                 "away": "Mexico",
                 "homeScore": 1,
                 "awayScore": 3
-              },
-              {
-                "date": "1948-08-02",
-                "competition": "Olympic Football Tournament Final",
-                "stage": "Round of 16",
-                "home": "Mexico",
-                "away": "South Korea",
-                "homeScore": 3,
-                "awayScore": 5
               }
             ]
           }
@@ -389,19 +389,28 @@
           "away": "Qatar",
           "homeId": "43899",
           "awayId": "43834",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "completed",
-          "sourceStatus": 12,
+          "homeScore": 6,
+          "awayScore": 0,
+          "status": "unknown",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
-            "wHome": 1,
+            "wHome": 2,
             "draws": 0,
             "wAway": 0,
-            "total": 1,
-            "goalsHome": 2,
+            "total": 2,
+            "goalsHome": 8,
             "goalsAway": 0,
             "matches": [
+              {
+                "date": "2026-06-18",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Canada",
+                "away": "Qatar",
+                "homeScore": 6,
+                "awayScore": 0
+              },
               {
                 "date": "2022-09-23",
                 "competition": "Friendlies",
@@ -821,10 +830,10 @@
           "away": "Australia",
           "homeId": "43921",
           "awayId": "43976",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 2,
+          "awayScore": 0,
+          "status": "live",
+          "sourceStatus": 3,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
             "wHome": 1,
