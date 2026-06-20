@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-20T16:50:52.184111+00:00",
+    "lastUpdated": "2026-06-20T20:40:57.023255+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
@@ -1071,10 +1071,10 @@
           "away": "Ivory Coast",
           "homeId": "43948",
           "awayId": "43854",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 0,
+          "awayScore": 1,
+          "status": "completed",
+          "sourceStatus": 3,
           "headToHead": null
         },
         {
@@ -1255,19 +1255,28 @@
           "away": "Sweden",
           "homeId": "43960",
           "awayId": "43970",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 5,
+          "awayScore": 1,
+          "status": "completed",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
-            "wHome": 4,
+            "wHome": 5,
             "draws": 3,
             "wAway": 1,
-            "total": 8,
-            "goalsHome": 16,
-            "goalsAway": 12,
+            "total": 9,
+            "goalsHome": 21,
+            "goalsAway": 13,
             "matches": [
+              {
+                "date": "2026-06-20",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Netherlands",
+                "away": "Sweden",
+                "homeScore": 5,
+                "awayScore": 1
+              },
               {
                 "date": "2017-10-10",
                 "competition": "FIFA World Cup™ Qualifiers",
@@ -1303,15 +1312,6 @@
                 "away": "Sweden",
                 "homeScore": 1,
                 "awayScore": 3
-              },
-              {
-                "date": "1924-06-08",
-                "competition": "Olympic Football Tournament Final",
-                "stage": "Bronze Medal Match",
-                "home": "Netherlands",
-                "away": "Sweden",
-                "homeScore": 1,
-                "awayScore": 1
               }
             ]
           }
