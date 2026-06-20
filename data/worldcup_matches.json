@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-19T20:46:01.404834+00:00",
+    "lastUpdated": "2026-06-20T16:50:52.184111+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-19",
+    "sourceDataDate": "2026-06-20",
     "note": "Official FIFA World Cup 2026 group-stage fixtures and score status.",
     "teamCount": 48,
     "matchCount": 72
@@ -32,7 +32,7 @@
           "awayId": "43883",
           "homeScore": 2,
           "awayScore": 0,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -78,7 +78,7 @@
           "awayId": "43995",
           "homeScore": 2,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -115,7 +115,7 @@
           "awayId": "43883",
           "homeScore": 1,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -161,7 +161,7 @@
           "awayId": "43822",
           "homeScore": 1,
           "awayScore": 0,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -280,7 +280,7 @@
           "awayId": "44037",
           "homeScore": 1,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -317,7 +317,7 @@
           "awayId": "43971",
           "homeScore": 1,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -354,7 +354,7 @@
           "awayId": "44037",
           "homeScore": 4,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -391,7 +391,7 @@
           "awayId": "43834",
           "homeScore": 6,
           "awayScore": 0,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -483,7 +483,7 @@
           "awayId": "43967",
           "homeScore": 0,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -520,7 +520,7 @@
           "awayId": "43872",
           "homeScore": 1,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -573,11 +573,30 @@
           "away": "Haiti",
           "homeId": "43924",
           "awayId": "43908",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 3,
+          "awayScore": 0,
+          "status": "completed",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 1,
+            "draws": 0,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 3,
+            "goalsAway": 0,
+            "matches": [
+              {
+                "date": "2026-06-20",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Brazil",
+                "away": "Haiti",
+                "homeScore": 3,
+                "awayScore": 0
+              }
+            ]
+          }
         },
         {
           "id": "400021454",
@@ -591,19 +610,28 @@
           "away": "Morocco",
           "homeId": "43967",
           "awayId": "43872",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 0,
+          "awayScore": 1,
+          "status": "completed",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
             "wHome": 0,
             "draws": 0,
-            "wAway": 1,
-            "total": 1,
+            "wAway": 2,
+            "total": 2,
             "goalsHome": 0,
-            "goalsAway": 3,
+            "goalsAway": 4,
             "matches": [
+              {
+                "date": "2026-06-19",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Scotland",
+                "away": "Morocco",
+                "homeScore": 0,
+                "awayScore": 1
+              },
               {
                 "date": "1998-06-23",
                 "competition": "FIFA World Cup™",
@@ -722,7 +750,7 @@
           "awayId": "43928",
           "homeScore": 4,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -777,7 +805,7 @@
           "awayId": "43972",
           "homeScore": 2,
           "awayScore": 0,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -812,11 +840,30 @@
           "away": "Paraguay",
           "homeId": "43972",
           "awayId": "43928",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 0,
+          "awayScore": 1,
+          "status": "completed",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 0,
+            "draws": 0,
+            "wAway": 1,
+            "total": 1,
+            "goalsHome": 0,
+            "goalsAway": 1,
+            "matches": [
+              {
+                "date": "2026-06-20",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Turkey",
+                "away": "Paraguay",
+                "homeScore": 0,
+                "awayScore": 1
+              }
+            ]
+          }
         },
         {
           "id": "400021462",
@@ -832,17 +879,26 @@
           "awayId": "43976",
           "homeScore": 2,
           "awayScore": 0,
-          "status": "live",
-          "sourceStatus": 3,
+          "status": "completed",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
-            "wHome": 1,
+            "wHome": 2,
             "draws": 0,
             "wAway": 0,
-            "total": 1,
-            "goalsHome": 2,
+            "total": 2,
+            "goalsHome": 4,
             "goalsAway": 1,
             "matches": [
+              {
+                "date": "2026-06-19",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "USA",
+                "away": "Australia",
+                "homeScore": 2,
+                "awayScore": 0
+              },
               {
                 "date": "2025-10-15",
                 "competition": "Friendlies",
@@ -943,7 +999,7 @@
           "awayId": "43927",
           "homeScore": 1,
           "awayScore": 0,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -980,7 +1036,7 @@
           "awayId": "1895293",
           "homeScore": 7,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -1118,7 +1174,7 @@
           "awayId": "43819",
           "homeScore": 2,
           "awayScore": 2,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -1164,7 +1220,7 @@
           "awayId": "43888",
           "homeScore": 5,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -1394,7 +1450,7 @@
           "awayId": "43978",
           "homeScore": 2,
           "awayScore": 2,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -1431,7 +1487,7 @@
           "awayId": "43855",
           "homeScore": 1,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -1578,7 +1634,7 @@
           "awayId": "43930",
           "homeScore": 1,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -1624,7 +1680,7 @@
           "awayId": "43850",
           "homeScore": 0,
           "awayScore": 0,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -1799,7 +1855,7 @@
           "awayId": "43879",
           "homeScore": 3,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -1845,7 +1901,7 @@
           "awayId": "43961",
           "homeScore": 1,
           "awayScore": 4,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -2019,7 +2075,7 @@
           "awayId": "43843",
           "homeScore": 3,
           "awayScore": 0,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -2056,7 +2112,7 @@
           "awayId": "43820",
           "homeScore": 3,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -2194,7 +2250,7 @@
           "awayId": "20014",
           "homeScore": 1,
           "awayScore": 1,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -2231,7 +2287,7 @@
           "awayId": "43926",
           "homeScore": 1,
           "awayScore": 3,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -2350,7 +2406,7 @@
           "awayId": "43914",
           "homeScore": 1,
           "awayScore": 0,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
@@ -2387,7 +2443,7 @@
           "awayId": "43938",
           "homeScore": 4,
           "awayScore": 2,
-          "status": "unknown",
+          "status": "completed",
           "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",

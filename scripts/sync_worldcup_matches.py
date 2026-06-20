@@ -156,16 +156,19 @@ def build_match(raw: dict) -> dict:
     city_name = localized(stadium.get("CityName"))
     venue = ", ".join(part for part in [venue_name, city_name] if part)
     status = STATUS_MAP.get(raw.get("MatchStatus"), "unknown")
-    home_score = raw.get("HomeTeamScore")
-    away_score = raw.get("AwayTeamScore")
-    if home_score is not None and away_score is not None and status == "scheduled":
+
+    home = raw.get("Home") or {}
+    away = raw.get("Away") or {}
+
+    # 2026-06-21 修复：FIFA calendar/matches 在实战里更稳定的是嵌套 Home.Score / Away.Score，
+    # 顶层 HomeTeamScore / AwayTeamScore 有时仍是 None，导致 finished 比赛被错误写成 scheduled。
+    home_score = home.get("Score") if home.get("Score") is not None else raw.get("HomeTeamScore")
+    away_score = away.get("Score") if away.get("Score") is not None else raw.get("AwayTeamScore")
+    if home_score is not None and away_score is not None and status in {"unknown", "scheduled", "live"}:
         status = "completed"
 
     group_name = localized(raw.get("GroupName"))
     group = group_name.replace("Group ", "").strip()
-
-    home = raw.get("Home") or {}
-    away = raw.get("Away") or {}
 
     return {
         "id": str(raw.get("IdMatch") or ""),

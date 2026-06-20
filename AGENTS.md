@@ -13,6 +13,10 @@
   - `lottery_data.json` / `pl3_data.json`：历史开奖
   - `worldcup_2026.json` / `worldcup_matches.json` / `worldcup_names.json`：世界杯上游预测 + 赛程
   - `wc_llm_predictions.json` / `wc_llm_outright.json`：LLM 单场 / 冠军预测（**git tracked**）
+- **owner 规则（worldcup_matches.json）**：
+  - canonical writer 只有 `scripts/sync_worldcup_matches.py`
+  - 其他脚本如果发现比分滞后，可以**触发**这个脚本重生成后再 commit/push `data/worldcup_matches.json`
+  - **不要**手改 `worldcup_matches.json` 再 `git add data/`，这会把同仓库其它数据改动一并打包，最容易在 `pull --rebase` 时撞冲突
 
 ## 已知规则（每次必读 / 必须遵守）
 
@@ -31,6 +35,7 @@
 - 新增前端逻辑：放 `js/`，命名小写连字符（参考 `odds-utils.js` / `cloud-sync.js`）。
 - 新增 API endpoint：放 `api/`（Vercel Functions 自动识别），文件名就是路径。
 - 新增 Python 脚本：放 `scripts/`，同步类加前缀 `sync_`。
+- 修改 `worldcup_matches.json` 相关逻辑时，优先改 `scripts/sync_worldcup_matches.py`，不要在多个脚本里复制一份“手改比分字段”的逻辑。
 - 新增爬虫：放 `scripts/`，Node.js 走 `node scripts/xxx.js`，命名 `scraper_*.js`。
 - 数据文件：JSON 放 `data/`，名字用蛇形。
 
