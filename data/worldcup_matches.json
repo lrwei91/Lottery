@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-20T20:40:57.023255+00:00",
+    "lastUpdated": "2026-06-21T20:46:39.959033+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-20",
+    "sourceDataDate": "2026-06-21",
     "note": "Official FIFA World Cup 2026 group-stage fixtures and score status.",
     "teamCount": 48,
     "matchCount": 72
@@ -1071,11 +1071,30 @@
           "away": "Ivory Coast",
           "homeId": "43948",
           "awayId": "43854",
-          "homeScore": 0,
+          "homeScore": 2,
           "awayScore": 1,
           "status": "completed",
-          "sourceStatus": 3,
-          "headToHead": null
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 1,
+            "draws": 0,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 2,
+            "goalsAway": 1,
+            "matches": [
+              {
+                "date": "2026-06-20",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Germany",
+                "away": "Ivory Coast",
+                "homeScore": 2,
+                "awayScore": 1
+              }
+            ]
+          }
         },
         {
           "id": "400021465",
@@ -1089,11 +1108,30 @@
           "away": "Curaçao",
           "homeId": "43927",
           "awayId": "1895293",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 0,
+          "awayScore": 0,
+          "status": "completed",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 0,
+            "draws": 1,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 0,
+            "goalsAway": 0,
+            "matches": [
+              {
+                "date": "2026-06-21",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Ecuador",
+                "away": "Curaçao",
+                "homeScore": 0,
+                "awayScore": 0
+              }
+            ]
+          }
         },
         {
           "id": "400021468",
@@ -1328,19 +1366,28 @@
           "away": "Japan",
           "homeId": "43888",
           "awayId": "43819",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 0,
+          "awayScore": 4,
+          "status": "completed",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
             "wHome": 1,
             "draws": 0,
-            "wAway": 2,
-            "total": 3,
+            "wAway": 3,
+            "total": 4,
             "goalsHome": 3,
-            "goalsAway": 4,
+            "goalsAway": 8,
             "matches": [
+              {
+                "date": "2026-06-21",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Tunisia",
+                "away": "Japan",
+                "homeScore": 0,
+                "awayScore": 4
+              },
               {
                 "date": "2023-10-17",
                 "competition": "Friendlies",
@@ -1531,10 +1578,10 @@
           "away": "Iran",
           "homeId": "43935",
           "awayId": "43817",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 0,
+          "awayScore": 0,
+          "status": "completed",
+          "sourceStatus": 3,
           "headToHead": null
         },
         {
@@ -1733,19 +1780,28 @@
           "away": "Saudi Arabia",
           "homeId": "43969",
           "awayId": "43835",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 4,
+          "awayScore": 0,
+          "status": "completed",
+          "sourceStatus": 0,
           "headToHead": {
             "source": "FIFA head-to-head statistics API",
-            "wHome": 1,
+            "wHome": 2,
             "draws": 0,
             "wAway": 0,
-            "total": 1,
-            "goalsHome": 1,
+            "total": 2,
+            "goalsHome": 5,
             "goalsAway": 0,
             "matches": [
+              {
+                "date": "2026-06-21",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Spain",
+                "away": "Saudi Arabia",
+                "homeScore": 4,
+                "awayScore": 0
+              },
               {
                 "date": "2006-06-23",
                 "competition": "FIFA World Cup™",
