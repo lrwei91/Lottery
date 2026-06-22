@@ -46,6 +46,85 @@
     stdMultiplier: 0.3
   };
 
+  // ============================================================
+  // 元层信号配置（双窗口 trend / transition / bias / 误杀预警）
+  // ============================================================
+
+  // 双窗口频率对比：trendScore 在近 10 期 vs 近 50 期窗口下检测"突然升温"信号
+  const TREND_DUAL_WINDOW_CONFIG = {
+    shortWindow: 10,
+    longWindow: 50,
+    shortMinCount: 2,        // 短窗口至少出现 N 次才可能视为 emergingHot
+    longUnderRatio: 0.7,     // 长窗口出现次数 / 期望 < 此值视为长期偏冷
+    trendBoost: 0.15         // emergingHot 给 trendScore 的加成
+  };
+
+  // transitionSignal：跨号码关系——看近 N 期的区间聚集度，本期反向加权
+  const TRANSITION_CONFIG = {
+    analysisPeriod: 5,       // 统计近 5 期的区间密度（与 BIAS_CONFIG.window 保持一致量级）
+    zoneSize: 7,             // 每个区间 7 个号码 (1-7, 8-14, 15-21, 22-28, 29-35)
+    zoneCount: 5,
+    overHeatRatio: 1.3,      // 密度 > 期望 × 1.3 → 过热 → 本期降权 0.85
+    underHeatRatio: 0.7,     // 密度 < 期望 × 0.7 → 过冷 → 本期升权 1.15
+    adjustFactor: 0.15       // 调整幅度
+  };
+
+  // biasDetector：元层偏态信号——检测最近 N 期的区间/尾数/AC 聚集，触发反聚集
+  const BIAS_CONFIG = {
+    window: 10,
+    zoneOverHeatRatio: 1.5,  // 某区间密度 > 期望 × 1.5 → 区间聚集
+    tailConcentrate: 0.4,    // 某尾数出现占比 > 0.4 → 尾数聚集
+    acThreshold: 3,          // ac <= 此值视为"低 AC"（ac 范围 0-6）
+    acConcentrate: 0.4,      // 窗口内低 AC 占比 > 0.4 → AC 聚集
+    counterBoost: 0.2        // 反聚集权重提升
+  };
+
+  // 元层权重合成：加性 + clamp 到 [-maxAbs, +maxAbs]，避免累乘失控
+  const META_WEIGHT_CONFIG = {
+    maxAbs: 0.40,            // 单个号码最终元层权重偏离基准最大 0.40（即 0.60-1.40）
+    overKillBoost: 0.15      // 误杀预警号码的升权幅度（加性）
+  };
+
+  // 误杀预警层：得分处于 25%-50% 之间的号码标为预警
+  const OVERKILL_CONFIG = {
+    hardKillPercentile: 0.25,  // 低于 25% 分位的号码硬杀
+    warnPercentile: 0.50,      // 25%-50% 分位的号码预警
+    warnBoost: 1.15            // 预警号码在胆码分层选号时被加权
+  };
+
+  // rawComposite 合成：用于误杀预警排序的"号码综合得分"（不依赖具体选号策略）
+  // 由 scoreZone 末尾写入 s.rawComposite，computeOverKillWarn 读取排序
+  const RAW_COMPOSITE_WEIGHTS = {
+    gap: 0.30,
+    freqDev: 0.30,
+    trend: 0.30,
+    statusHot: 0.30,   // 热号 +0.30
+    statusCold: 0.10,  // 冷号 +0.10
+    statusWarm: 0.20   // 温号 +0.20
+  };
+
+  // 误杀预警阈值 runtime 副本（可被 calibrateOverKill 校准）
+  const _overKillRuntime = {
+    hardKillPercentile: OVERKILL_CONFIG.hardKillPercentile,
+    warnPercentile: OVERKILL_CONFIG.warnPercentile,
+    warnBoost: OVERKILL_CONFIG.warnBoost
+  };
+
+  // 后区非硬排决策：默认开启
+  const BACK_SOFT_KILL_DEFAULT = true;
+
+  // 短期冷号 / 近期表现信号配置（v2026-06-22 复盘后加）
+  // 复盘发现：号码 31/18/11 引擎爱选但 0 命中（黑洞），后区 9/6 选 22/25 次 0 命中
+  // 修复：用近 20/30 期窗口做短期频率降权，让"短期超冷"号码被自动边缘化
+  const RECENT_FREQ_CONFIG = {
+    frontWindow: 20,        // 前区近 20 期窗口
+    backWindow: 30,         // 后区近 30 期窗口
+    absentPenalty: 0.5,     // 完全没出现 → 0.5
+    underHalfPenalty: 0.7,  // ratio < 0.5 → 0.7
+    underThirdPenalty: 0.85,// ratio < 0.85 → 0.85
+    overHotBoost: 1.15      // ratio > 1.5 → 1.15（短期热号升权）
+  };
+
   function detectLotteryType(data) {
     if (!data || data.length === 0) return 'dlt';
     return data[0].front.length === 3 ? 'pl3' : 'dlt';
@@ -198,6 +277,8 @@
   // ============================================================
 
   const _freqCache = { sig: null, dataEnd: null, result: null };
+  const _transitionCache = { sig: null, result: null };
+  const _biasCache = { sig: null, result: null };
 
   function _dataSignature(data, dataEnd) {
     const len = dataEnd != null ? dataEnd : data.length;
@@ -282,8 +363,11 @@
         avgExpected = isBackZone ? (total * 2 / 12) : (total * 5 / 35);
       }
 
-      const hotThreshold = Math.ceil(avgExpected * 1.15);
-      const coldThreshold = Math.floor(avgExpected * 0.85);
+      // v2026-06-22: 阈值收紧 1.15/0.85 → 1.5/0.5
+      // 复盘发现 7 期实际开奖 0 个真冷号 (ratio<0.85)、3 个真热号都集中在 13
+      // 1.5/0.5 让 hot/cold 策略真正能选到差异化的号码
+      const hotThreshold = Math.ceil(avgExpected * 1.5);
+      const coldThreshold = Math.floor(avgExpected * 0.5);
 
       for (const [num, count] of freqMap) {
         if (count >= hotThreshold) {
@@ -555,6 +639,263 @@
     return matrix;
   }
 
+  // ============================================================
+  // 元层信号 1：transitionSignal（跨号码关系——区间聚集 → 反向加权）
+  // ============================================================
+
+  /**
+   * 计算每个号码的 transitionSignal 权重
+   * 思路：近 N 期前区在 5 个区间（1-7/8-14/15-21/22-28/29-35）的密度，
+   *       密度过高的区间本期降权，过低的区间本期升权（反聚集）。
+   * @returns {Map<number, number>} 每个号码的 transitionSignal 权重（约 0.85-1.15）
+   */
+  function computeTransitionSignal(data, dataEnd) {
+    updateLotteryParams(detectLotteryType(data));
+    const end = dataEnd != null ? dataEnd : data.length;
+    const sig = `transition:${data.length}:${end}`;
+    if (_transitionCache.sig === sig) return _transitionCache.result;
+
+    const result = new Map();
+    const periods = Math.min(TRANSITION_CONFIG.analysisPeriod, end);
+    const expectedPerZone = (periods * FRONT_COUNT) / TRANSITION_CONFIG.zoneCount;
+
+    // 1) 统计近 N 期每个区间的出现密度
+    const zoneCounts = Array(TRANSITION_CONFIG.zoneCount).fill(0);
+    for (let i = 0; i < periods; i++) {
+      for (const num of data[i].front) {
+        if (num >= FRONT_MIN && num <= FRONT_MAX) {
+          const zoneIdx = Math.min(
+            TRANSITION_CONFIG.zoneCount - 1,
+            Math.floor((num - 1) / TRANSITION_CONFIG.zoneSize)
+          );
+          zoneCounts[zoneIdx]++;
+        }
+      }
+    }
+
+    // 2) 计算每个区间的 transition weight
+    const zoneWeights = zoneCounts.map(count => {
+      const ratio = expectedPerZone > 0 ? count / expectedPerZone : 1.0;
+      if (ratio > TRANSITION_CONFIG.overHeatRatio) {
+        // 过热 → 降权 (1 - adjustFactor)
+        return 1.0 - TRANSITION_CONFIG.adjustFactor;
+      } else if (ratio < TRANSITION_CONFIG.underHeatRatio) {
+        // 过冷 → 升权 (1 + adjustFactor)
+        return 1.0 + TRANSITION_CONFIG.adjustFactor;
+      }
+      return 1.0;
+    });
+
+    // 3) 把区间权重映射到每个号码
+    for (let num = FRONT_MIN; num <= FRONT_MAX; num++) {
+      const zoneIdx = Math.min(
+        TRANSITION_CONFIG.zoneCount - 1,
+        Math.floor((num - 1) / TRANSITION_CONFIG.zoneSize)
+      );
+      result.set(num, zoneWeights[zoneIdx]);
+    }
+    // 后区无 transitionSignal
+    for (let num = BACK_MIN; num <= BACK_MAX; num++) {
+      result.set(num, 1.0);
+    }
+
+    _transitionCache.sig = sig;
+    _transitionCache.result = result;
+    return result;
+  }
+
+  // ============================================================
+  // 元层信号 1.5：recentFrequency（v2026-06-22 复盘后新增）
+  // - 前区：近 20 期出现频率，0/偏少 → 降权，偏高 → 升权
+  // - 后区：近 30 期出现频率（更短窗口但更严的惩罚）
+  // 复盘发现：号码 31/18/11 是引擎爱选但 0 命中的黑洞（近 20 期出现 < 期望一半）
+  //         后区 9/6 选 22/25 次 0 命中
+  // ============================================================
+
+  /**
+   * 计算每个号码的"近期表现权重"
+   * @param {Array} data
+   * @param {number} dataEnd
+   * @param {object} opts - { window, pickCount, min, max, zone }
+   * @returns {Map<number, number>}
+   */
+  function computeRecentFrequency(data, dataEnd, opts) {
+    const min = opts.min;
+    const max = opts.max;
+    const window = Math.min(opts.window, dataEnd != null ? dataEnd : data.length);
+    const pickCount = opts.pickCount;
+    const end = dataEnd != null ? dataEnd : data.length;
+    const expected = window * pickCount / (max - min + 1);
+    const getNumbers = opts.zone === 'back' ? (d) => d.back || [] : (d) => d.front;
+    const result = new Map();
+    for (let num = min; num <= max; num++) {
+      let count = 0;
+      for (let i = 0; i < window; i++) {
+        const nums = getNumbers(data[i]);
+        if (nums && nums.includes(num)) count++;
+      }
+      const ratio = expected > 0 ? count / expected : 1.0;
+      let weight = 1.0;
+      if (count === 0) weight = RECENT_FREQ_CONFIG.absentPenalty;
+      else if (ratio < 0.33) weight = RECENT_FREQ_CONFIG.absentPenalty;
+      else if (ratio < 0.5) weight = RECENT_FREQ_CONFIG.underHalfPenalty;
+      else if (ratio < 0.85) weight = RECENT_FREQ_CONFIG.underThirdPenalty;
+      else if (ratio > 1.5) weight = RECENT_FREQ_CONFIG.overHotBoost;
+      result.set(num, weight);
+    }
+    return result;
+  }
+
+  // ============================================================
+  // 元层信号 2：biasDetector（区间/尾数/AC 聚集 → 反聚集权重）
+  // ============================================================
+
+  /**
+   * 检测最近 N 期的偏态信号
+   * @returns {{ zone: {detected, hotZoneIdx, weight}, tail: {detected, hotTail, weight}, ac: {detected, weight}, severity: number }}
+   */
+  function detectBias(data, dataEnd) {
+    updateLotteryParams(detectLotteryType(data));
+    const end = dataEnd != null ? dataEnd : data.length;
+    const sig = `bias:${data.length}:${end}`;
+    if (_biasCache.sig === sig) return _biasCache.result;
+
+    const window = Math.min(BIAS_CONFIG.window, end);
+    const expectedPerZone = (window * FRONT_COUNT) / TRANSITION_CONFIG.zoneCount;
+
+    // 1) 区间聚集检测
+    const zoneCounts = Array(TRANSITION_CONFIG.zoneCount).fill(0);
+    const tailCounts = new Map();
+    let lowAcCount = 0;
+    for (let i = 0; i < window; i++) {
+      const draw = data[i];
+      for (const num of draw.front) {
+        if (num >= FRONT_MIN && num <= FRONT_MAX) {
+          const zoneIdx = Math.min(
+            TRANSITION_CONFIG.zoneCount - 1,
+            Math.floor((num - 1) / TRANSITION_CONFIG.zoneSize)
+          );
+          zoneCounts[zoneIdx]++;
+          const tail = num % 10;
+          tailCounts.set(tail, (tailCounts.get(tail) || 0) + 1);
+        }
+      }
+      // 复用 calculateACValue（ac 范围 0-6，阈值见 BIAS_CONFIG.acThreshold）
+      if (calculateACValue(draw.front) <= BIAS_CONFIG.acThreshold) lowAcCount++;
+    }
+
+    // 区间聚集
+    let zoneDetected = false;
+    let hotZoneIdx = -1;
+    let zoneBoost = 1.0;
+    for (let i = 0; i < TRANSITION_CONFIG.zoneCount; i++) {
+      if (zoneCounts[i] / expectedPerZone >= BIAS_CONFIG.zoneOverHeatRatio) {
+        zoneDetected = true;
+        hotZoneIdx = i;
+        zoneBoost = 1.0 + BIAS_CONFIG.counterBoost;
+        break;
+      }
+    }
+
+    // 尾数聚集
+    let tailDetected = false;
+    let hotTail = -1;
+    let tailBoost = 1.0;
+    const tailThreshold = window * FRONT_COUNT * BIAS_CONFIG.tailConcentrate;
+    for (const [tail, count] of tailCounts) {
+      if (count >= tailThreshold) {
+        tailDetected = true;
+        hotTail = tail;
+        tailBoost = 1.0 + BIAS_CONFIG.counterBoost;
+        break;
+      }
+    }
+
+    // AC 聚集
+    let acDetected = false;
+    let acBoost = 1.0;
+    if (lowAcCount / window >= BIAS_CONFIG.acConcentrate) {
+      acDetected = true;
+      acBoost = 1.0 + BIAS_CONFIG.counterBoost;
+    }
+
+    const severity = (zoneDetected ? 1 : 0) + (tailDetected ? 1 : 0) + (acDetected ? 1 : 0);
+
+    const result = {
+      zone: { detected: zoneDetected, hotZoneIdx, weight: zoneBoost },
+      tail: { detected: tailDetected, hotTail, weight: tailBoost },
+      ac: { detected: acDetected, weight: acBoost },
+      severity
+    };
+    _biasCache.sig = sig;
+    _biasCache.result = result;
+    return result;
+  }
+
+  // ============================================================
+  // 元层信号 3：computeOverKillWarn（误杀预警层）
+  // ============================================================
+
+  /**
+   * 在评分输出后处理：得分处于 25%-50% 分位的号码标为"误杀预警"
+   * 用 s.rawComposite（号码综合得分，独立于具体选号策略）排序，
+   * 避免之前用 s.composite=0 导致预警集合跟数据无关的 bug。
+   * @param {Map<number, {rawComposite?: number}>} scores
+   * @returns {Set<number>} 误杀预警号码集合
+   */
+  function computeOverKillWarn(scores) {
+    if (!scores || scores.size === 0) return new Set();
+    const values = Array.from(scores.entries())
+      .map(([num, s]) => ({ num, score: s.rawComposite != null ? s.rawComposite : 0 }))
+      .filter(v => Number.isFinite(v.score));
+    if (values.length === 0) return new Set();
+    values.sort((a, b) => a.score - b.score);
+    const hardCutoff = Math.floor(values.length * _overKillRuntime.hardKillPercentile);
+    const warnCutoff = Math.floor(values.length * _overKillRuntime.warnPercentile);
+    const warn = new Set();
+    for (let i = hardCutoff; i < warnCutoff && i < values.length; i++) {
+      warn.add(values[i].num);
+    }
+    return warn;
+  }
+
+  // ============================================================
+  // 误杀预警命中率回写校准
+  // ============================================================
+
+  /**
+   * 根据历史预警命中率反向校准阈值
+   * @param {object} stats - { totalPredictions, totalWarned, totalWarnHit, currentHitRate }
+   *   - totalPredictions: 累计参与回测的预测期数
+   *   - totalWarned: 累计预警号码总数
+   *   - totalWarnHit: 累计预警号码实际开奖命中数
+   *   - currentHitRate: 当前命中率 = totalWarnHit / totalWarned
+   * 校准规则：
+   *   - 命中率 < 30% → 预警太多，缩紧阈值 (warnPercentile 减少 0.05，下限 0.35)
+   *   - 命中率 > 60% → 预警太准，可放宽阈值 (warnPercentile 增加 0.05，上限 0.60)
+   *   - 30% ≤ 命中率 ≤ 60% → 保持不变
+   */
+  function calibrateOverKill(stats) {
+    if (!stats || typeof stats.currentHitRate !== 'number') return _overKillRuntime;
+    const rate = stats.currentHitRate;
+    if (rate < 0.30 && _overKillRuntime.warnPercentile > 0.35) {
+      _overKillRuntime.warnPercentile = Math.max(0.35, _overKillRuntime.warnPercentile - 0.05);
+    } else if (rate > 0.60 && _overKillRuntime.warnPercentile < 0.60) {
+      _overKillRuntime.warnPercentile = Math.min(0.60, _overKillRuntime.warnPercentile + 0.05);
+    }
+    return Object.assign({}, _overKillRuntime);
+  }
+
+  function getOverKillRuntime() {
+    return Object.assign({}, _overKillRuntime);
+  }
+
+  function resetOverKillRuntime() {
+    _overKillRuntime.hardKillPercentile = OVERKILL_CONFIG.hardKillPercentile;
+    _overKillRuntime.warnPercentile = OVERKILL_CONFIG.warnPercentile;
+    _overKillRuntime.warnBoost = OVERKILL_CONFIG.warnBoost;
+  }
+
   function computeScores(data, dataEnd) {
     updateLotteryParams(detectLotteryType(data));
 
@@ -603,6 +944,26 @@
           }).length;
         });
 
+        // 双窗口趋势对比：近 10 期 vs 近 50 期
+        // 若近 10 期出现次数 / 期望 >= 1.5 视为 emergingHot（突然升温）
+        const shortPeriod = Math.min(TREND_DUAL_WINDOW_CONFIG.shortWindow, totalDraws);
+        const longPeriod = Math.min(TREND_DUAL_WINDOW_CONFIG.longWindow, totalDraws);
+        let shortCount = 0;
+        let longCount = 0;
+        for (let i = 0; i < shortPeriod; i++) {
+          const nums = (min <= 12 && max <= 12 && !isPl3) ? data[i].back : data[i].front;
+          if (nums && nums.includes(num)) shortCount++;
+        }
+        for (let i = 0; i < longPeriod; i++) {
+          const nums = (min <= 12 && max <= 12 && !isPl3) ? data[i].back : data[i].front;
+          if (nums && nums.includes(num)) longCount++;
+        }
+        // 期望 longPeriod × pickCount / (max - min + 1)
+        const expectedLong = longPeriod * pickCount / (max - min + 1);
+        const emergingRatio = expectedLong > 0 ? (longCount / expectedLong) : 1.0;
+        const isEmergingHot = shortCount >= TREND_DUAL_WINDOW_CONFIG.shortMinCount
+          && emergingRatio < TREND_DUAL_WINDOW_CONFIG.longUnderRatio;
+
         // 比较最近窗口与之前窗口的趋势
         let trendScore = 0.5; // 中性
         if (windowCounts[0] > windowCounts[1]) {
@@ -613,12 +974,24 @@
         if (windowCounts.length >= 3 && windowCounts[0] > windowCounts[2]) {
           trendScore += 0.1;
         }
+        if (isEmergingHot) {
+          trendScore += TREND_DUAL_WINDOW_CONFIG.trendBoost;
+        }
         trendScore = Math.min(1, Math.max(0, trendScore));
 
         // 冷热状态
         let status = 'warm';
         if (hotColdInfo.hot.includes(num)) status = 'hot';
         else if (hotColdInfo.cold.includes(num)) status = 'cold';
+
+        // rawComposite：号码综合得分（不依赖具体选号策略，供 computeOverKillWarn 排序用）
+        const statusScore = status === 'hot' ? RAW_COMPOSITE_WEIGHTS.statusHot
+          : status === 'cold' ? RAW_COMPOSITE_WEIGHTS.statusCold
+          : RAW_COMPOSITE_WEIGHTS.statusWarm;
+        const rawComposite = gapScore * RAW_COMPOSITE_WEIGHTS.gap
+          + freqDeviationScore * RAW_COMPOSITE_WEIGHTS.freqDev
+          + trendScore * RAW_COMPOSITE_WEIGHTS.trend
+          + statusScore;
 
         scores.set(num, {
           gapScore,
@@ -627,7 +1000,9 @@
           status,
           currentGap: gap.current,
           frequency: freq,
-          composite: 0 // 会根据策略计算
+          rawComposite: Number(rawComposite.toFixed(4)),
+          composite: 0, // 策略级别的最终权重（selectByStrategy 阶段）
+          emergingHot: isEmergingHot
         });
       }
 
@@ -635,10 +1010,81 @@
     }
 
     const effectiveEnd = dataEnd != null ? dataEnd : data.length;
+
+    // 元层信号注入：transitionSignal / biasDetector / overKillWarn / recentFrequency
+    const transitionSignal = computeTransitionSignal(data, dataEnd);
+    const biasReport = detectBias(data, dataEnd);
+    // v2026-06-22: 近 20 期前区 / 近 30 期后区的"短期表现"信号
+    const frontRecentFreq = computeRecentFrequency(data, dataEnd, {
+      window: RECENT_FREQ_CONFIG.frontWindow, pickCount: FRONT_COUNT,
+      min: FRONT_MIN, max: FRONT_MAX, zone: 'front'
+    });
+    const backRecentFreq = isPl3 ? new Map() : computeRecentFrequency(data, dataEnd, {
+      window: RECENT_FREQ_CONFIG.backWindow, pickCount: BACK_COUNT,
+      min: BACK_MIN, max: BACK_MAX, zone: 'back'
+    });
+
+    const injectMetaSignals = (scores, recentFreqMap) => {
+      for (const [num, s] of scores) {
+        s.transitionWeight = transitionSignal.get(num) || 1.0;
+        // bias 应用：尾数聚集 → 同尾号码升权（但要在号码维度再加反向）
+        let biasWeight = 1.0;
+        if (biasReport.tail.detected) {
+          if ((num % 10) === biasReport.tail.hotTail) {
+            // 该号码与聚集尾数同尾 → 反而降权
+            biasWeight *= 0.85;
+          } else {
+            biasWeight *= 1.05;
+          }
+        }
+        if (biasReport.zone.detected) {
+          const zoneIdx = Math.min(
+            TRANSITION_CONFIG.zoneCount - 1,
+            Math.floor((num - 1) / TRANSITION_CONFIG.zoneSize)
+          );
+          if (zoneIdx === biasReport.zone.hotZoneIdx) {
+            biasWeight *= 0.9;
+          }
+        }
+        // AC 聚集 → 升权号码 AC（提高组合复杂度，破坏聚集模式）
+        if (biasReport.ac.detected) {
+          if (num >= 18) biasWeight *= (1.0 + BIAS_CONFIG.counterBoost * 0.5);
+        }
+        s.biasWeight = biasWeight;
+        // v2026-06-22: 近期表现（近 20/30 期窗口）— 短期超冷号码降权
+        s.recentFreqWeight = (recentFreqMap && recentFreqMap.get(num)) || 1.0;
+      }
+      return scores;
+    };
+
+    const frontScores = injectMetaSignals(
+      scoreZone(FRONT_MIN, FRONT_MAX, gapData.front, freqData.front, hotCold.front, effectiveEnd, FRONT_COUNT),
+      frontRecentFreq
+    );
+    const backScores = isPl3
+      ? new Map()
+      : injectMetaSignals(
+        scoreZone(BACK_MIN, BACK_MAX, gapData.back, freqData.back, hotCold.back, effectiveEnd, BACK_COUNT),
+        backRecentFreq
+      );
+
+    // 误杀预警层（在 composite 计算前先标)
+    const frontOverKill = computeOverKillWarn(frontScores);
+    const backOverKill = isPl3 ? new Set() : computeOverKillWarn(backScores);
+    for (const [num, s] of frontScores) {
+      s.overKillWarn = frontOverKill.has(num);
+    }
+    for (const [num, s] of backScores) {
+      s.overKillWarn = backOverKill.has(num);
+    }
+
     return {
-      frontScores: scoreZone(FRONT_MIN, FRONT_MAX, gapData.front, freqData.front, hotCold.front, effectiveEnd, FRONT_COUNT),
-      backScores: isPl3 ? new Map() : scoreZone(BACK_MIN, BACK_MAX, gapData.back, freqData.back, hotCold.back, effectiveEnd, BACK_COUNT),
-      hotCold
+      frontScores,
+      backScores,
+      hotCold,
+      transitionSignal,
+      biasReport,
+      overKillWarn: { front: frontOverKill, back: backOverKill }
     };
   }
 
@@ -761,7 +1207,11 @@
       type,
       frontScores: scoreBundle.frontScores,
       backScores: scoreBundle.backScores,
-      hotCold: scoreBundle.hotCold
+      hotCold: scoreBundle.hotCold,
+      // 元层信号：从 scoreBundle 透传（v2026-06-22）
+      transitionSignal: scoreBundle.transitionSignal,
+      biasReport: scoreBundle.biasReport,
+      overKillWarn: scoreBundle.overKillWarn
     };
 
     if (type === 'pl3') {
@@ -910,6 +1360,31 @@
    * @param {number} count - 选号数量
    * @returns {number[]} 选中号码
    */
+  // 合成元层权重：加性 + clamp，避免累乘失控
+  // 返回 multiplier（约 0.60-1.40）
+  function computeMetaWeight(s) {
+    const transitionDelta = (s.transitionWeight || 1.0) - 1.0;
+    const biasDelta = (s.biasWeight || 1.0) - 1.0;
+    const emergingDelta = s.emergingHot ? 0.10 : 0.0;
+    const overKillDelta = s.overKillWarn ? META_WEIGHT_CONFIG.overKillBoost : 0.0;
+    // v2026-06-22: recentFreqWeight 已直接是 multiplier 形式（0.5-1.15），转 delta
+    const recentFreqDelta = ((s.recentFreqWeight || 1.0) - 1.0);
+    const total = transitionDelta + biasDelta + emergingDelta + overKillDelta + recentFreqDelta;
+    const clamped = Math.max(-META_WEIGHT_CONFIG.maxAbs, Math.min(META_WEIGHT_CONFIG.maxAbs, total));
+    return 1.0 + clamped;
+  }
+
+  // 5 策略风格差异化（v2026-06-22 复盘后加）
+  // 复盘发现 5 个策略选号风格趋同（温 89-98%，冷 0%）— 让 hot/cold/gap 真的偏
+  // 返回 multiplier（hot 选热号升权，cold 选冷号升权，gap 选遗漏大号升权）
+  function getStyleBoost(strategy, s) {
+    if (strategy === 'hot' && s.status === 'hot') return 1.50;
+    if (strategy === 'cold' && s.status === 'cold') return 1.50;
+    if (strategy === 'gap' && (s.gapScore || 0) > 0.6) return 1.40;
+    if (strategy === 'balanced') return 1.0;
+    return 1.0;
+  }
+
   function selectByStrategy(scores, strategy, count, coMatrix = null, rng = Math.random) {
     if (strategy === 'balanced' && count === FRONT_COUNT) {
       // 保持原有黄金比例抽样
@@ -922,7 +1397,9 @@
 
       for (const [num, s] of scores) {
         const baseScore = s.gapScore * weights.gap + s.freqDeviationScore * weights.freqDev + s.trendScore * weights.trend;
-        const item = { value: num, weight: Math.max(0.01, baseScore + rng() * 0.15) };
+        const meta = computeMetaWeight(s);
+        const style = getStyleBoost(strategy, s);
+        const item = { value: num, weight: Math.max(0.01, baseScore * meta * style + rng() * 0.15) };
         if (s.status === 'hot') hotPool.push(item);
         else if (s.status === 'cold') coldPool.push(item);
         else warmPool.push(item);
@@ -946,7 +1423,9 @@
       for (const [num, s] of scores) {
         const baseScore = s.gapScore * w.gap + s.freqDeviationScore * w.freqDev + s.trendScore * w.trend;
         const bonus = w.statusBonus[s.status] || 1.0;
-        pool.push({ value: num, baseWeight: baseScore * bonus });
+        const meta = computeMetaWeight(s);
+        const style = getStyleBoost(strategy, s);
+        pool.push({ value: num, baseWeight: baseScore * bonus * meta * style });
       }
 
       while (selected.length < count) {
@@ -979,9 +1458,75 @@
       const baseScore = s.gapScore * w.gap + s.freqDeviationScore * w.freqDev + s.trendScore * w.trend;
       const bonus = w.statusBonus[s.status] || 1.0;
       const jitter = strategy === 'random' ? rng() * 0.5 : rng() * 0.15;
-      items.push({ value: num, weight: Math.max(0.01, baseScore * bonus + jitter) });
+      const meta = computeMetaWeight(s);
+      const style = getStyleBoost(strategy, s);
+      items.push({ value: num, weight: Math.max(0.01, baseScore * bonus * meta * style + jitter) });
     }
     return weightedSample(items, count, rng);
+  }
+
+  // ============================================================
+  // 胆码分层选号：先选 1-2 个胆码 → 围绕胆码按 coMatrix 补 3-4 个拖码
+  // ============================================================
+
+  /**
+   * 胆码分层选号（Dan-Tuo 选号法）
+   * 1) 胆码：用 hot/balanced 策略选 1-2 个高把握号码（带元信号加权）
+   * 2) 拖码：从剩余号码里按 coMatrix 与胆码的共现关系补 3-4 个
+   * 3) 拖码权重 = baseScore × co-lift × 元层权重
+   *
+   * @param {Map} frontScores
+   * @param {Array<number>} matrix - 35×35 共现矩阵
+   * @param {object} opts
+   * @param {number} opts.danCount - 胆码数量，1 或 2
+   * @param {string} opts.danStrategy - 胆码策略：hot/balanced
+   * @param {function} opts.rng
+   * @returns {{ danNums: number[], tuoNums: number[], front: number[] }}
+   */
+  function selectWithDanLayer(frontScores, coMatrix, opts = {}) {
+    if (!frontScores || frontScores.size === 0) {
+      return { danNums: [], tuoNums: [], front: [] };
+    }
+    const rng = opts.rng || Math.random;
+    const danCount = opts.danCount || (rng() < 0.5 ? 1 : 2);
+    const danStrategy = opts.danStrategy || (rng() < 0.5 ? 'hot' : 'balanced');
+
+    // 1) 选胆码
+    const danItems = [];
+    for (const [num, s] of frontScores) {
+      const baseScore = s.gapScore * 0.3 + s.freqDeviationScore * 0.3 + s.trendScore * 0.3;
+      const meta = computeMetaWeight(s);
+      const status = danStrategy === 'hot' && s.status === 'hot' ? 1.5 : 1.0;
+      danItems.push({ value: num, weight: Math.max(0.01, baseScore * meta * status + rng() * 0.1) });
+    }
+    const danNums = weightedSample(danItems, danCount, rng);
+
+    // 2) 围绕胆码按 coMatrix 补拖码
+    const tuoCount = FRONT_COUNT - danNums.length;
+    const tuoItems = [];
+    for (const [num, s] of frontScores) {
+      if (danNums.includes(num)) continue;
+      const baseScore = s.gapScore * 0.3 + s.freqDeviationScore * 0.3 + s.trendScore * 0.3;
+      const meta = computeMetaWeight(s);
+      // 与胆码的平均 lift（几何平均，避免极端值）
+      let avgLift = 1.0;
+      for (const dan of danNums) {
+        const lift = (coMatrix && coMatrix[dan] && coMatrix[dan][num]) || 1.0;
+        avgLift *= lift;
+      }
+      avgLift = Math.pow(avgLift, 1 / danNums.length);
+      tuoItems.push({
+        value: num,
+        weight: Math.max(0.01, baseScore * meta * avgLift + rng() * 0.1)
+      });
+    }
+    const tuoNums = weightedSample(tuoItems, tuoCount, rng);
+
+    return {
+      danNums: danNums.slice().sort((a, b) => a - b),
+      tuoNums: tuoNums.slice().sort((a, b) => a - b),
+      front: [...danNums, ...tuoNums].sort((a, b) => a - b)
+    };
   }
 
   /**
@@ -1067,14 +1612,15 @@
 
   function defaultFrontConstraints() {
     return {
-      sumMin: 63,
-      sumMax: 107,
+      sumMin: 60,    // v2026-06-22: 63→60，避免 26065 和值 65 被约束死（实际 7 期范围 65-105）
+      sumMax: 110,   // v2026-06-22: 107→110，给高位补位留余量
       allowedOddEven: new Set(['3:2', '2:3', '4:1', '1:4']),
       allowedBigSmall: new Set(['3:2', '2:3', '1:4', '4:1', '0:5']),
       maxConsecutive: 2,
       minAC: 4,
       minZonesCovered: 3,
-      maxTailPairs: 2
+      maxTailPairs: 2,
+      minTailPairs: 0  // v2026-06-22: 新增；0 表示不强制，computeFrontConstraints 动态算
     };
   }
 
@@ -1094,7 +1640,9 @@
       maxConsecutive: Math.max(2, roundPercentile(shapes.map(shape => shape.maxConsecutive), 0.9)),
       minAC: Math.max(0, Math.floor(percentile(shapes.map(shape => shape.ac), 0.1))),
       minZonesCovered: Math.max(1, Math.floor(percentile(shapes.map(shape => shape.zonesCovered), 0.1))),
-      maxTailPairs: Math.max(1, roundPercentile(shapes.map(shape => shape.tailPairsCount), 0.95))
+      maxTailPairs: Math.max(1, roundPercentile(shapes.map(shape => shape.tailPairsCount), 0.95)),
+      // v2026-06-22: 新增同尾下界（用 30% 分位；不强制过高让 balanced 等策略能选）
+      minTailPairs: Math.max(0, roundPercentile(shapes.map(shape => shape.tailPairsCount), 0.30))
     };
 
     if (constraints.sumMin > constraints.sumMax) {
@@ -1182,7 +1730,9 @@
     const isConsecutiveValid = shape.maxConsecutive <= constraints.maxConsecutive;
     const isACValid = shape.ac >= constraints.minAC;
     const isZoneValid = shape.zonesCovered >= constraints.minZonesCovered;
-    const isTailValid = shape.tailPairsCount <= constraints.maxTailPairs;
+    // v2026-06-22: 加 minTailPairs 检查（默认 0 即不强制）
+    const isTailValid = shape.tailPairsCount <= constraints.maxTailPairs
+      && shape.tailPairsCount >= (constraints.minTailPairs || 0);
 
     const valid = isSumValid && isOddEvenValid && isBigSmallValid && isConsecutiveValid && isACValid && isZoneValid && isTailValid;
 
@@ -1198,7 +1748,8 @@
       sumMin: constraints.sumMin,
       sumMax: constraints.sumMax,
       minAC: constraints.minAC,
-      minZonesCovered: constraints.minZonesCovered
+      minZonesCovered: constraints.minZonesCovered,
+      minTailPairs: constraints.minTailPairs || 0
     };
   }
 
@@ -1234,13 +1785,17 @@
       return generatePredictionPL3(data, strategy, { ...options, rng, context });
     }
 
-    const { frontScores, backScores, coMatrix, exactDrawSet, frontConstraints, backConstraints } = context;
+    const { frontScores, backScores, coMatrix, exactDrawSet, frontConstraints, backConstraints,
+      transitionSignal, biasReport, overKillWarn } = context;
+    const backSoftKill = options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT;
+    const useDanLayer = options.useDanLayer === true;
 
     let front = [];
     let back = [];
     let evalResult = {};
     let backEvalResult = {};
     let bollingerResult = null;
+    let danTuoMeta = null;  // 胆码分层元信息
     let attempts = 0;
     const maxAttempts = 500; // 断路器：为应对全量去重与复合过滤，上限提升至 500
 
@@ -1250,6 +1805,11 @@
         bollingerResult = generateBollingerPrediction(data, context, rng);
         front = bollingerResult.front;
         back = bollingerResult.back;
+      } else if (useDanLayer) {
+        const result = selectWithDanLayer(frontScores, coMatrix, { rng });
+        front = result.front;
+        danTuoMeta = { danNums: result.danNums, danCount: result.danNums.length, danStrategy: 'auto' };
+        back = selectByStrategy(backScores, strategy, BACK_COUNT, null, rng);
       } else {
         front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng);
         back = selectByStrategy(backScores, strategy, BACK_COUNT, null, rng);
@@ -1260,7 +1820,9 @@
       // 全库防重复校验：绝对不能和历史上任何一期的 5+2 开奖号完全相同
       const isExactMatch = exactDrawSet && exactDrawSet.has(drawKey(front, back));
 
-      if (evalResult.valid && backEvalResult.valid && !isExactMatch) {
+      // 后区非硬排时跳过 backEvalResult 校验
+      const backPass = backSoftKill || backEvalResult.valid;
+      if (evalResult.valid && backPass && !isExactMatch) {
         break;
       }
       attempts++;
@@ -1272,6 +1834,11 @@
         bollingerResult = generateBollingerPrediction(data, context, rng);
         front = bollingerResult.front;
         back = bollingerResult.back;
+      } else if (useDanLayer) {
+        const result = selectWithDanLayer(frontScores, coMatrix, { rng });
+        front = result.front;
+        danTuoMeta = { danNums: result.danNums, danCount: result.danNums.length, danStrategy: 'auto' };
+        back = selectByStrategy(backScores, strategy, BACK_COUNT, null, rng);
       } else {
         front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng);
         back = selectByStrategy(backScores, strategy, BACK_COUNT, null, rng);
@@ -1285,8 +1852,10 @@
       hot: '热号优先',
       balanced: '均衡策略',
       gap: '遗漏追号',
-      random: '布林线策略'
+      random: '布林线策略',
+      danTuo: '胆码分层'
     };
+    const displayStrategy = useDanLayer ? 'danTuo' : strategy;
 
     const hotCold = context.hotCold || hotColdAnalysis(data);
     const frontHot = front.filter(n => hotCold.front.hot.includes(n));
@@ -1297,7 +1866,9 @@
     const sumVerdict = evalResult.valid ? '训练区间' : '偏离区间';
     const consecLabel = evalResult.pairs > 0 ? `有 (${evalResult.pairs}组连号)` : '无 (散号组合)';
     const tailLabel = evalResult.tailPairsCount > 0 ? `有 (${evalResult.tailPairsCount}组同尾)` : '无 (全异尾)';
-    const backSumLabel = `和${backEvalResult.sum}(${backEvalResult.sumMin}-${backEvalResult.sumMax})/差${backEvalResult.diff}(${backEvalResult.diffMin}-${backEvalResult.diffMax})`;
+    const backSumLabel = backSoftKill
+      ? `观察层 (软排, 和${backEvalResult.sum})`
+      : `和${backEvalResult.sum}(${backEvalResult.sumMin}-${backEvalResult.sumMax})/差${backEvalResult.diff}(${backEvalResult.diffMin}-${backEvalResult.diffMax})`;
     const bollingerLines = [];
     if (strategy === 'random' && bollingerResult) {
       const analysis = bollingerResult.analysis;
@@ -1307,16 +1878,61 @@
       );
     }
 
+    // 元层信号摘要
+    const overKillFrontNums = (overKillWarn && overKillWarn.front && Array.from(overKillWarn.front)) || [];
+    const overKillBackNums = (overKillWarn && overKillWarn.back && Array.from(overKillWarn.back)) || [];
+    const metaLines = [];
+    if (transitionSignal) {
+      const hotZones = [];
+      for (let i = 1; i <= TRANSITION_CONFIG.zoneCount; i++) {
+        const lo = (i - 1) * TRANSITION_CONFIG.zoneSize + 1;
+        const hi = Math.min(lo + TRANSITION_CONFIG.zoneSize - 1, FRONT_MAX);
+        const sampleNum = lo;
+        const w = transitionSignal.get(sampleNum) || 1.0;
+        if (w < 0.95) hotZones.push(`${lo}-${hi}(降权)`);
+        else if (w > 1.05) hotZones.push(`${lo}-${hi}(升权)`);
+      }
+      if (hotZones.length) metaLines.push(`区间过渡: ${hotZones.join(', ')}`);
+    }
+    if (biasReport && (biasReport.zone.detected || biasReport.tail.detected || biasReport.ac.detected)) {
+      const flags = [];
+      if (biasReport.zone.detected) flags.push(`区间${biasReport.zone.hotZoneIdx + 1}`);
+      if (biasReport.tail.detected) flags.push(`尾数${biasReport.tail.hotTail}`);
+      if (biasReport.ac.detected) flags.push(`低AC`);
+      metaLines.push(`偏态检测: ${flags.join('+')} 聚集 (反聚集加权)`);
+    }
+    if (overKillFrontNums.length > 0) {
+      metaLines.push(`前区误杀预警: ${overKillFrontNums.sort((a, b) => a - b).join(' ')}`);
+    }
+    if (overKillBackNums.length > 0) {
+      metaLines.push(`后区误杀预警: ${overKillBackNums.sort((a, b) => a - b).join(' ')}`);
+    }
+    if (backSoftKill) {
+      metaLines.push(`后区策略: 观察层软排 (非硬约束)`);
+    }
+    if (useDanLayer && danTuoMeta) {
+      metaLines.push(`胆码分层: 胆码 ${danTuoMeta.danCount} 个 + 拖码 ${FRONT_COUNT - danTuoMeta.danCount} 个 (coMatrix 补位)`);
+    }
+
     const reasoning = [
-      `【${strategyNames[strategy] || strategy} · 统计约束模型】`,
+      `【${strategyNames[displayStrategy] || displayStrategy} · 统计约束模型】`,
       ...bollingerLines,
+      ...metaLines,
       `前区奇偶: ${evalResult.oddEven} | 大小: ${evalResult.bigSmall}`,
       `前区和值: ${sumLabel} (${evalResult.sumMin}-${evalResult.sumMax} · ${sumVerdict}) | 后区高阶: ${backSumLabel}`,
       `连号状态: ${consecLabel} | 同尾状态: ${tailLabel}`,
       `前区AC值: ${evalResult.ac} (>=${evalResult.minAC}) | 覆盖 ${evalResult.zonesCovered} 个分区 (>=${evalResult.minZonesCovered})`,
       `冷热结构: ${frontHot.length}热 / ${frontWarm.length}温 / ${frontCold.length}冷`,
-      `结合${strategy === 'random' ? '布林线和值约束与70%热号抽样' : strategy === 'balanced' ? '冷热分层抽样' : '伴生概率矩阵'}、近期时间衰减权重及全库去重生成 (计算碰撞: ${attempts}次)`
+      `结合${strategy === 'random' ? '布林线和值约束与70%热号抽样' : useDanLayer ? '胆码分层 + 伴生矩阵补位' : strategy === 'balanced' ? '冷热分层抽样' : '伴生概率矩阵'}、近期时间衰减权重、元层信号 (transition/bias/overKill) 及全库去重生成 (计算碰撞: ${attempts}次)`
     ].join('\n');
+
+    // 误杀预警：标记选中的号码是否在预警集合里
+    const frontOverKillHit = overKillWarn && overKillWarn.front
+      ? front.filter(n => overKillWarn.front.has(n))
+      : [];
+    const backOverKillHit = overKillWarn && overKillWarn.back
+      ? back.filter(n => overKillWarn.back.has(n))
+      : [];
 
     return {
       front,
@@ -1324,6 +1940,19 @@
       scores: {
         front: frontScores,
         back: backScores
+      },
+      meta: {
+        // 选中的号码中落在预警集合里的（交集）— 用于 UI 高亮
+        overKillHit: { front: frontOverKillHit, back: backOverKillHit },
+        // 完整预警集合（全集）— 用于 app.js 持久化到 record，供回测校准用
+        overKillWarn: {
+          front: overKillWarn && overKillWarn.front ? Array.from(overKillWarn.front) : [],
+          back: overKillWarn && overKillWarn.back ? Array.from(overKillWarn.back) : []
+        },
+        transitionSignalApplied: !!transitionSignal,
+        biasDetected: biasReport ? (biasReport.zone.detected || biasReport.tail.detected || biasReport.ac.detected) : false,
+        backSoftKill,
+        useDanLayer
       },
       reasoning
     };
@@ -1431,15 +2060,62 @@
   // ============================================================
 
   // 固定策略顺序（之前由 evolution 权重动态排序，现在平权）
+  // 新版：第一注用胆码分层（最高把握），其余 4 注按原 5 策略轮转
   function buildStrategyOrder(count) {
-    return Array.from({ length: count }, (_, i) => DEFAULT_STRATEGIES[i % DEFAULT_STRATEGIES.length]);
+    const tail = Array.from({ length: Math.max(0, count - 1) }, (_, i) => DEFAULT_STRATEGIES[i % DEFAULT_STRATEGIES.length]);
+    return ['danTuo', ...tail];
+  }
+
+  // 计算一注号码的"最弱号码得分"（决定 confidence tier 的地板）
+  function computeMinScoreForPrediction(frontScores, backScores, front, back, strategy) {
+    const w = getStrategyWeights(strategy);
+    const values = [];
+    const collect = (n, s) => {
+      const baseScore = s.gapScore * w.gap + s.freqDeviationScore * w.freqDev + s.trendScore * w.trend;
+      const meta = computeMetaWeight(s);
+      const bonus = w.statusBonus[s.status] || 1.0;
+      values.push(baseScore * meta * bonus);
+    };
+    for (const n of front) {
+      if (frontScores.has(n)) collect(n, frontScores.get(n));
+    }
+    for (const n of back) {
+      if (backScores.has(n)) collect(n, backScores.get(n));
+    }
+    return values.length > 0 ? Math.min(...values) : 0;
+  }
+
+  // 给 5 注按 minScore 排序打置信度标签
+  function tagPredictionsWithConfidence(predictions, frontScores, backScores) {
+    if (!predictions || predictions.length === 0) return predictions;
+    const minScores = predictions.map(p => computeMinScoreForPrediction(
+      frontScores, backScores, p.front || [], p.back || [], p.strategy
+    ));
+    // 拷贝以避免污染
+    const sortedIdx = minScores.map((v, i) => i).sort((a, b) => minScores[b] - minScores[a]);
+    const tiers = new Array(predictions.length);
+    const n = predictions.length;
+    // 1/3 高把握，1/3 平衡，1/3 博冷
+    const highCut = Math.max(1, Math.floor(n / 3));
+    const balancedCut = Math.max(highCut + 1, Math.floor((n * 2) / 3));
+    for (let rank = 0; rank < n; rank++) {
+      const origIdx = sortedIdx[rank];
+      if (rank < highCut) tiers[origIdx] = 'high';
+      else if (rank < balancedCut) tiers[origIdx] = 'balanced';
+      else tiers[origIdx] = 'aggressive';
+    }
+    return predictions.map((p, i) => ({
+      ...p,
+      confidence: tiers[i],
+      minScore: Number(minScores[i].toFixed(4))
+    }));
   }
 
   /**
    * 使用多种策略生成多注预测号码
    * @param {Array} data - 开奖数据
    * @param {number} count - 生成注数，默认 5
-   * @returns {Array<{ front, back, scores, reasoning, strategy }>}
+   * @returns {Array<{ front, back, scores, reasoning, strategy, confidence, minScore }>}
    */
   function generateMultiplePredictions(data, count = 5, options = {}) {
     const strategies = buildStrategyOrder(count);
@@ -1452,14 +2128,23 @@
 
     while (predictions.length < count && attempts < maxAttempts) {
       const strategy = strategies[attempts % strategies.length];
-      const prediction = generatePrediction(data, strategy, { ...options, rng, context });
+      // 胆码分层策略 + 5 策略轮转
+      const useDanLayer = strategy === 'danTuo';
+      const realStrategy = useDanLayer ? 'balanced' : strategy;
+      const prediction = generatePrediction(data, realStrategy, {
+        ...options,
+        rng,
+        context,
+        useDanLayer,
+        backSoftKill: options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT
+      });
       const key = predictionKey(prediction.front, prediction.back, context.type);
 
       if (!seen.has(key)) {
         seen.add(key);
         predictions.push({
           ...prediction,
-          strategy
+          strategy: useDanLayer ? 'danTuo' : strategy
         });
       }
       attempts++;
@@ -1467,14 +2152,23 @@
 
     while (predictions.length < count) {
       const strategy = strategies[predictions.length % strategies.length];
-      const prediction = generatePrediction(data, strategy, { ...options, rng, context });
+      const useDanLayer = strategy === 'danTuo';
+      const realStrategy = useDanLayer ? 'balanced' : strategy;
+      const prediction = generatePrediction(data, realStrategy, {
+        ...options,
+        rng,
+        context,
+        useDanLayer,
+        backSoftKill: options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT
+      });
       predictions.push({
         ...prediction,
-        strategy
+        strategy: useDanLayer ? 'danTuo' : strategy
       });
     }
 
-    return predictions;
+    // 置信度分层输出
+    return tagPredictionsWithConfidence(predictions, context.frontScores, context.backScores);
   }
 
 
@@ -1496,9 +2190,32 @@
     generatePrediction,
     generateMultiplePredictions,
 
-
     // 工具函数（供外部使用）
     computeScores,
+
+    // ===== 元层信号（v2026-06-22 增强） =====
+    computeTransitionSignal,
+    detectBias,
+    computeOverKillWarn,
+    selectWithDanLayer,
+    tagPredictionsWithConfidence,
+    computeMinScoreForPrediction,
+    computeMetaWeight,
+    getStyleBoost,
+    calibrateOverKill,
+    getOverKillRuntime,
+    resetOverKillRuntime,
+    computeRecentFrequency,
+
+    // 元层配置
+    TRANSITION_CONFIG,
+    BIAS_CONFIG,
+    OVERKILL_CONFIG,
+    TREND_DUAL_WINDOW_CONFIG,
+    META_WEIGHT_CONFIG,
+    RAW_COMPOSITE_WEIGHTS,
+    RECENT_FREQ_CONFIG,
+    BACK_SOFT_KILL_DEFAULT,
 
     // 常量/变量获取器
     getParams: () => ({

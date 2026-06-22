@@ -50,7 +50,22 @@
 - 抓取脚本是 `api/cron/sync-odds.js`（Vercel Cron），别手动 `curl` 模拟。
 - 改融合权重前先看 `js/odds-utils.js` 的 `devig` / `EV` / `Kelly` 工具函数，别自己重写。
 
-### 6. 测试
+### 6. 大乐透元层信号（v2026-06-22 增强）
+- 9 个新增元层信号/能力集中在 `js/predictor.js`（IIFE 内）和 `js/dlt-conformal.js`：
+  - 双窗口 trendScore（近 10 vs 近 50）+ emergingHot 标记（`computeScores.scoreZone`）
+  - `computeTransitionSignal` — 区间聚集反向加权
+  - `detectBias` — 区间/尾数/AC 聚集 + 反聚集权重
+  - `computeOverKillWarn` + `calibrateOverKill` + `getOverKillRuntime` — 误杀预警 + 命中率回写
+  - `selectWithDanLayer` — 胆码分层选号
+  - `tagPredictionsWithConfidence` + `computeMinScoreForPrediction` — 5 注置信度 3 档分层
+  - `BACK_SOFT_KILL_DEFAULT` — 后区观察层软排（默认开启）
+- 列表 5 注策略顺序：第 1 注 = 胆码分层 (danTuo)，后 4 注 = balanced/random/gap/hot/cold 轮转（`buildStrategyOrder`）
+- `generatePrediction` 新增 `backSoftKill` / `useDanLayer` 选项；返回里多 `meta` 字段（overKillHit / transitionSignalApplied / biasDetected / backSoftKill / useDanLayer）
+- `generateMultiplePredictions` 输出里每注带 `confidence: 'high'|'balanced'|'aggressive'` + `minScore`
+- 误杀预警阈值存在 `_overKillRuntime`，由 `app.js` 的 `backtestOverKillHitRate` 在每期复盘时回写校准
+- `js/dlt-conformal.js` 是大乐透专属 Conformal Prediction：用 Wilson score 算 90% CI，暴露 `DltConformal.generateReport(data)`（仅展示性，目前未接入选号权重）
+
+### 7. 测试
 - 跑 `npm run dev`（`npx -y serve .`）起本地静态服务。
 - API 本地测：`vercel dev`（Vercel CLI）。注意 Vercel dev 跟生产 env 注入逻辑一样，连了 Storage 才会有 Upstash 变量。
 - 数据更新：`npm run scrape:all` 或 `npm run sync:worldcup:all`。
@@ -65,4 +80,15 @@
 
 ## 变更日志
 
+- 2026-06-23：复盘驱动的策略优化（针对 95 条 review × 7 期开奖）。`js/predictor.js`：
+  - `defaultFrontConstraints`：`sumMin: 63→60, sumMax: 107→110`（避免和值 65 的 26065 类被约束死），新增 `minTailPairs` 字段
+  - `computeFrontConstraints`：动态算 `minTailPairs`（30% 分位，鼓励同尾）
+  - `evaluateFrontCombination`：加 `minTailPairs` 检查
+  - `hotColdAnalysis`：阈值 1.15/0.85 → **1.5/0.5**（让 hot/cold 策略选到真正差异化号码）
+  - 新增 `computeRecentFrequency(data, dataEnd, opts)`：近 20 期前区 / 近 30 期后区的短期表现信号，0 出现/严重偏少 → 降权（消解 31/18/11 前区黑洞和 9/6 后区黑洞）
+  - 新增 `RECENT_FREQ_CONFIG`：absentPenalty=0.5 / underHalf=0.7 / underThird=0.85 / overHotBoost=1.15
+  - 新增 `getStyleBoost(strategy, s)`：hot 选热号 +50%，cold 选冷号 +50%，gap 选遗漏大号 +40%（让 5 策略风格差异化生效）
+  - `computeMetaWeight`：纳入 `recentFreqWeight` 维度（仍加性 + clamp 到 [-0.40, +0.40]）
+  - 复盘发现："冷号策略"实际 0 选冷号（hotCold 阈值太宽）、5 策略前区风格趋同（温 89-98%）、前区 31/18/11 黑洞、后区 9/6 黑洞、和值 65 被训练下限 68 卡死、95 注 0 注 ≥3 命中
+- 2026-06-22：大乐透元层增强。在 `js/predictor.js` 内加 9 个元层能力（transitionSignal / biasDetector / overKillWarn + 回写 / 胆码分层 / 置信度分层 / 后区软排 / 双窗口 trend / emergingHot），新增 `js/dlt-conformal.js`（Wilson 90% CI 套件）。`js/app.js` 的 `renderPredictions` 加置信度标签 + 误杀预警球标 + 复盘回测，`savePredictionRecord` 持久化 overKillWarn + confidence + meta。`index.html` 加载顺序加 `dlt-conformal.js`。CSS 加 .pred-confidence / .ball-warn / .pred-overkill-banner / .history-overkill-review。
 - 2026-06-08：初版。基础项目背景 + 6 条已知规则。补齐 `agents/` 下 3 个子规则文件（llm-predict / upstash / worldcup-data），移除测试钩子。

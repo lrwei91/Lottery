@@ -8,3 +8,6 @@ scratch/
 
 .vercel
 .env*
+
+# Agent context dictionary (local-only, not pushed to remote)
+CONTEXT.md

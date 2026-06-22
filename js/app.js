@@ -74,7 +74,14 @@
     hot: '热号优先',
     balanced: '均衡推荐',
     gap: '遗漏回补',
-    random: '布林线策略' // 策略 key 沿用 'random'（与 predictor.js / localStorage 兼容），展示用 "布林线策略"
+    random: '布林线策略', // 策略 key 沿用 'random'（与 predictor.js / localStorage 兼容），展示用 "布林线策略"
+    danTuo: '胆码分层'
+  };
+
+  const CONFIDENCE_LABELS = {
+    high: { text: '高把握', color: '#22c55e' },
+    balanced: { text: '平衡', color: '#fbbf24' },
+    aggressive: { text: '博冷', color: '#f97316' }
   };
 
   // ==================== 工具函数 ====================
@@ -949,6 +956,16 @@
 
   function savePredictionRecord(predictions) {
     const latestDraw = state.data[0] || {};
+    // 收集 5 注合并后的 overKillWarn 全集（用于回测）
+    // 注意：用 meta.overKillWarn（全集），不是 meta.overKillHit（命中）
+    const allOverKillFront = new Set();
+    const allOverKillBack = new Set();
+    predictions.forEach(p => {
+      const m = p.meta;
+      if (!m || !m.overKillWarn) return;
+      (m.overKillWarn.front || []).forEach(n => allOverKillFront.add(n));
+      (m.overKillWarn.back || []).forEach(n => allOverKillBack.add(n));
+    });
     const record = {
       id: `${state.currentLottery}-${Date.now()}`,
       type: state.currentLottery,
@@ -959,8 +976,16 @@
         strategy: prediction.strategy,
         front: prediction.front,
         back: prediction.back || [],
-        reasoning: prediction.reasoning || ''
-      }))
+        reasoning: prediction.reasoning || '',
+        confidence: prediction.confidence || null,
+        minScore: prediction.minScore != null ? prediction.minScore : null,
+        meta: prediction.meta || null
+      })),
+      overKillWarn: {
+        front: Array.from(allOverKillFront).sort((a, b) => a - b),
+        back: Array.from(allOverKillBack).sort((a, b) => a - b)
+      },
+      overKillBacktested: false  // 回测去重标记：被回测后置 true
     };
 
     state.predictionRecords = [record, ...state.predictionRecords].slice(0, PREDICTION_HISTORY_LIMIT);
@@ -1102,6 +1127,68 @@
     `;
   }
 
+  // 误杀预警复盘 + 命中率回写校准
+  // 注意：每次 renderPredictionHistory 会重跑此函数，所以必须用 record.overKillBacktested
+  // 去重，否则同一 record 会被算 N 次（重渲染 N 次）
+  function backtestOverKillHitRate(record, reviewDraw, isPl3) {
+    if (!record || !record.overKillWarn || !reviewDraw || isPl3) return null;
+    // 去重：已经被回测过，跳过
+    if (record.overKillBacktested) return null;
+
+    const ok = record.overKillWarn;
+    const drawFront = new Set(reviewDraw.front || []);
+    const drawBack = new Set(reviewDraw.back || []);
+    const frontHits = (ok.front || []).filter(n => drawFront.has(n));
+    const backHits = (ok.back || []).filter(n => drawBack.has(n));
+    const totalWarned = (ok.front || []).length + (ok.back || []).length;
+    const totalHits = frontHits.length + backHits.length;
+    const hitRate = totalWarned > 0 ? totalHits / totalWarned : 0;
+
+    // 累计到 localStorage
+    try {
+      const stored = JSON.parse(localStorage.getItem('ticai.overKillStats') || '{}');
+      const stats = {
+        totalPredictions: (stored.totalPredictions || 0) + 1,
+        totalWarned: (stored.totalWarned || 0) + totalWarned,
+        totalWarnHit: (stored.totalWarnHit || 0) + totalHits,
+        currentHitRate: ((stored.totalWarnHit || 0) + totalHits) / Math.max(1, (stored.totalWarned || 0) + totalWarned)
+      };
+      localStorage.setItem('ticai.overKillStats', JSON.stringify(stats));
+      // 触发 predictor 校准
+      if (window.Predictor && typeof Predictor.calibrateOverKill === 'function') {
+        Predictor.calibrateOverKill({ currentHitRate: stats.currentHitRate });
+      }
+      // 标记 record 已被回测 + 持久化
+      record.overKillBacktested = true;
+      persistPredictionRecords();
+    } catch (e) {
+      console.warn('[overkill backtest] 写入 localStorage 失败:', e);
+    }
+    return { frontHits, backHits, totalWarned, totalHits, hitRate };
+  }
+
+  function renderOverKillReview(record, reviewDraw, isPl3) {
+    const bt = backtestOverKillHitRate(record, reviewDraw, isPl3);
+    if (!bt || bt.totalWarned === 0) return '';
+    const allWarn = [...(record.overKillWarn.front || []), ...(record.overKillWarn.back || [])];
+    const allHits = [...bt.frontHits, ...bt.backHits].sort((a, b) => a - b);
+    const miss = allWarn.filter(n => !allHits.includes(n)).sort((a, b) => a - b);
+    const hitPct = (bt.hitRate * 100).toFixed(1);
+    return `
+      <div class="history-overkill-review">
+        <div class="overkill-review-head">
+          <span class="overkill-icon">⚠</span>
+          <span>误杀预警复盘</span>
+          <span class="overkill-rate">命中率 ${hitPct}% (${bt.totalHits}/${bt.totalWarned})</span>
+        </div>
+        <div class="overkill-review-balls">
+          ${allHits.length > 0 ? `<div class="overkill-line"><span class="overkill-tag hit">命中</span> ${allHits.map(n => `<span class="history-ball front">${padNum(n)}</span>`).join('')}</div>` : ''}
+          ${miss.length > 0 ? `<div class="overkill-line"><span class="overkill-tag miss">未开</span> ${miss.map(n => `<span class="history-ball">${padNum(n)}</span>`).join('')}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
   function renderPredictionRecordItem(record, isPl3) {
     const reviewDraw = resolveReviewDraw(record);
     const statusText = reviewDraw
@@ -1152,6 +1239,8 @@
         `
       : '';
 
+    const overKillReview = reviewDraw ? renderOverKillReview(record, reviewDraw, isPl3) : '';
+
     return `
         <article class="prediction-history-item">
           <div class="history-record-head">
@@ -1167,6 +1256,7 @@
             </div>
           </div>
           ${reviewSummary}
+          ${overKillReview}
           <div class="prediction-history-tickets">
             ${tickets}
           </div>
@@ -1264,31 +1354,51 @@
 
     const isPl3 = isPL3();
 
-    grid.innerHTML = predictions.map((p, i) => `
-      <div class="prediction-card card" style="animation-delay: ${i * 0.1}s">
+    grid.innerHTML = predictions.map((p, i) => {
+      const confidenceInfo = p.confidence ? CONFIDENCE_LABELS[p.confidence] : null;
+      const overKillFront = (p.meta && p.meta.overKillHit && p.meta.overKillHit.front) || [];
+      const overKillBack = (p.meta && p.meta.overKillHit && p.meta.overKillHit.back) || [];
+
+      const ballWithOverKill = (n, zone) => {
+        const isWarn = zone === 'front' ? overKillFront.includes(n) : overKillBack.includes(n);
+        const cls = isWarn ? 'ball ball-warn' : 'ball';
+        return `<div class="${cls} ${zone}" role="img" aria-label="${ballZoneLabel(zone)} ${padNum(n)} 号${isWarn ? ' · 误杀预警' : ''}">${padNum(n)}${isWarn ? '<span class="warn-dot" title="误杀预警"></span>' : ''}</div>`;
+      };
+
+      return `
+      <div class="prediction-card card${confidenceInfo ? ' pred-' + p.confidence : ''}" style="animation-delay: ${i * 0.1}s">
         <div class="pred-header">
           <span class="pred-label">${escapeHtml(STRATEGY_LABELS[p.strategy] || p.strategy)}</span>
-          <span class="pred-num">方案 ${i + 1}</span>
+          <div class="pred-tags">
+            ${confidenceInfo ? `<span class="pred-confidence conf-${p.confidence}" style="--conf-color: ${confidenceInfo.color}">${confidenceInfo.text}</span>` : ''}
+            <span class="pred-num">方案 ${i + 1}</span>
+          </div>
         </div>
         <div class="pred-balls">
           <div class="pred-zone">
             <span class="zone-tag">${isPl3 ? '开奖号码' : '前区'}</span>
             <div class="ball-row">
-              ${p.front.map(n => createBallHTML(n, 'front')).join('')}
+              ${p.front.map(n => ballWithOverKill(n, 'front')).join('')}
             </div>
           </div>
           ${isPl3 ? '' : `
           <div class="pred-zone">
             <span class="zone-tag">后区</span>
             <div class="ball-row">
-              ${p.back.map(n => createBallHTML(n, 'back')).join('')}
+              ${p.back.map(n => ballWithOverKill(n, 'back')).join('')}
             </div>
           </div>
           `}
         </div>
+        ${(overKillFront.length > 0 || overKillBack.length > 0) ? `
+        <div class="pred-overkill-banner" title="这注命中了误杀预警集合中的号码，开奖后会被回测">
+          <span class="overkill-icon">⚠</span>
+          <span>命中误杀预警: ${(overKillFront.concat(overKillBack)).sort((a, b) => a - b).join(' ')} (开奖后回测校准阈值)</span>
+        </div>
+        ` : ''}
         <div class="pred-reasoning">${escapeHtml(p.reasoning || '')}</div>
       </div>
-    `).join('');
+    `}).join('');
   }
 
   function copyAllPredictions() {
