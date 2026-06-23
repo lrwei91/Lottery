@@ -1065,21 +1065,18 @@
     if (prize) {
       return `命中前区 ${frontMatches} 个、后区 ${backMatches} 个，达到${prize}条件。`;
     }
-    if (backMatches === 2 && frontMatches < 1) {
-      return `后区全中，但前区仅命中 ${frontMatches} 个，低于九等奖的前区补强门槛。`;
+    if (frontMatches === 2 && backMatches === 0) {
+      return `前区命中 2 个，但后区未命中，低于七等奖的后区补强门槛。`;
     }
-    if (frontMatches >= 3 && backMatches === 0) {
-      return `前区命中 ${frontMatches} 个，但后区未命中，缺少后区支撑。`;
+    if (frontMatches === 1 && backMatches < 2) {
+      return `前区仅命中 1 个、后区命中 ${backMatches} 个，低于七等奖组合门槛。`;
     }
-    if (frontMatches < 3 && backMatches < 2) {
-      return `前区仅命中 ${frontMatches} 个、后区命中 ${backMatches} 个，整体低于九等奖组合门槛。`;
-    }
-    return `命中 ${frontMatches}+${backMatches}，距离最低奖级仍差前区或后区关键命中。`;
+    return `前区仅命中 ${frontMatches} 个、后区命中 ${backMatches} 个，整体低于七等奖组合门槛。`;
   }
 
   function getDLTFailureTag(frontMatches, backMatches) {
-    if (frontMatches >= 3 && backMatches === 0) return '后区失配';
-    if (backMatches === 2 && frontMatches === 0) return '前区不足';
+    if (frontMatches >= 2 && backMatches === 0) return '后区失配';
+    if (backMatches > 0 && frontMatches === 0) return '前区不足';
     return '中奖门槛不足';
   }
 
@@ -1476,17 +1473,16 @@
   function getPrizeTierName(fCount, bCount) {
     if (fCount === 5 && bCount === 2) return '一等奖';
     if (fCount === 5 && bCount === 1) return '二等奖';
-    if (fCount === 5 && bCount === 0) return '三等奖';
-    if (fCount === 4 && bCount === 2) return '四等奖';
-    if (fCount === 4 && bCount === 1) return '五等奖';
-    if (fCount === 3 && bCount === 2) return '六等奖';
-    if (fCount === 4 && bCount === 0) return '七等奖';
-    if (fCount === 3 && bCount === 1) return '八等奖';
-    if (fCount === 2 && bCount === 2) return '八等奖';
-    if (fCount === 3 && bCount === 0) return '九等奖';
-    if (fCount === 2 && bCount === 1) return '九等奖';
-    if (fCount === 1 && bCount === 2) return '九等奖';
-    if (fCount === 0 && bCount === 2) return '九等奖';
+    if ((fCount === 5 && bCount === 0) || (fCount === 4 && bCount === 2)) return '三等奖';
+    if (fCount === 4 && bCount === 1) return '四等奖';
+    if ((fCount === 4 && bCount === 0) || (fCount === 3 && bCount === 2)) return '五等奖';
+    if ((fCount === 3 && bCount === 1) || (fCount === 2 && bCount === 2)) return '六等奖';
+    if (
+      (fCount === 3 && bCount === 0) ||
+      (fCount === 2 && bCount === 1) ||
+      (fCount === 1 && bCount === 2) ||
+      (fCount === 0 && bCount === 2)
+    ) return '七等奖';
     return null;
   }
 

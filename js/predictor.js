@@ -281,8 +281,10 @@
   const _biasCache = { sig: null, result: null };
 
   function _dataSignature(data, dataEnd) {
-    const len = dataEnd != null ? dataEnd : data.length;
-    return `${data.length}:${len}`;
+    const len = Math.min(dataEnd != null ? dataEnd : data.length, data.length);
+    const firstIssue = data && data[0] ? data[0].issue || '' : '';
+    const lastIssue = len > 0 && data[len - 1] ? data[len - 1].issue || '' : '';
+    return `${detectLotteryType(data)}:${data.length}:${len}:${firstIssue}:${lastIssue}`;
   }
 
   /**
@@ -651,8 +653,8 @@
    */
   function computeTransitionSignal(data, dataEnd) {
     updateLotteryParams(detectLotteryType(data));
-    const end = dataEnd != null ? dataEnd : data.length;
-    const sig = `transition:${data.length}:${end}`;
+    const end = Math.min(dataEnd != null ? dataEnd : data.length, data.length);
+    const sig = `transition:${_dataSignature(data, end)}`;
     if (_transitionCache.sig === sig) return _transitionCache.result;
 
     const result = new Map();
@@ -694,11 +696,6 @@
       );
       result.set(num, zoneWeights[zoneIdx]);
     }
-    // 后区无 transitionSignal
-    for (let num = BACK_MIN; num <= BACK_MAX; num++) {
-      result.set(num, 1.0);
-    }
-
     _transitionCache.sig = sig;
     _transitionCache.result = result;
     return result;
@@ -722,9 +719,9 @@
   function computeRecentFrequency(data, dataEnd, opts) {
     const min = opts.min;
     const max = opts.max;
-    const window = Math.min(opts.window, dataEnd != null ? dataEnd : data.length);
+    const end = Math.min(dataEnd != null ? dataEnd : data.length, data.length);
+    const window = Math.min(opts.window, end);
     const pickCount = opts.pickCount;
-    const end = dataEnd != null ? dataEnd : data.length;
     const expected = window * pickCount / (max - min + 1);
     const getNumbers = opts.zone === 'back' ? (d) => d.back || [] : (d) => d.front;
     const result = new Map();
@@ -756,11 +753,22 @@
    */
   function detectBias(data, dataEnd) {
     updateLotteryParams(detectLotteryType(data));
-    const end = dataEnd != null ? dataEnd : data.length;
-    const sig = `bias:${data.length}:${end}`;
+    const end = Math.min(dataEnd != null ? dataEnd : data.length, data.length);
+    const sig = `bias:${_dataSignature(data, end)}`;
     if (_biasCache.sig === sig) return _biasCache.result;
 
     const window = Math.min(BIAS_CONFIG.window, end);
+    if (window <= 0) {
+      const neutral = {
+        zone: { detected: false, hotZoneIdx: -1, weight: 1.0 },
+        tail: { detected: false, hotTail: -1, weight: 1.0 },
+        ac: { detected: false, weight: 1.0 },
+        severity: 0
+      };
+      _biasCache.sig = sig;
+      _biasCache.result = neutral;
+      return neutral;
+    }
     const expectedPerZone = (window * FRONT_COUNT) / TRANSITION_CONFIG.zoneCount;
 
     // 1) 区间聚集检测
@@ -899,9 +907,11 @@
   function computeScores(data, dataEnd) {
     updateLotteryParams(detectLotteryType(data));
 
-    const gapData = gapAnalysis(data, dataEnd);
-    const freqData = frequencyAnalysis(data, dataEnd);
-    const hotCold = hotColdAnalysis(data, 300, dataEnd);
+    const effectiveEnd = Math.min(dataEnd != null ? dataEnd : data.length, data.length);
+    const scopedData = data.slice(0, effectiveEnd);
+    const gapData = gapAnalysis(data, effectiveEnd);
+    const freqData = frequencyAnalysis(data, effectiveEnd);
+    const hotCold = hotColdAnalysis(data, 300, effectiveEnd);
     const isPl3 = detectLotteryType(data) === 'pl3';
 
     function scoreZone(min, max, gapMap, freqMap, hotColdInfo, totalDraws, pickCount) {
@@ -918,9 +928,9 @@
       // 计算每个号码的近期趋势（滑动窗口）
       const windowSize = 10;
       const windows = [
-        data.slice(0, windowSize),
-        data.slice(windowSize, windowSize * 2),
-        data.slice(windowSize * 2, windowSize * 3)
+        scopedData.slice(0, windowSize),
+        scopedData.slice(windowSize, windowSize * 2),
+        scopedData.slice(windowSize * 2, windowSize * 3)
       ];
 
       for (let num = min; num <= max; num++) {
@@ -951,11 +961,11 @@
         let shortCount = 0;
         let longCount = 0;
         for (let i = 0; i < shortPeriod; i++) {
-          const nums = (min <= 12 && max <= 12 && !isPl3) ? data[i].back : data[i].front;
+          const nums = (min <= 12 && max <= 12 && !isPl3) ? scopedData[i].back : scopedData[i].front;
           if (nums && nums.includes(num)) shortCount++;
         }
         for (let i = 0; i < longPeriod; i++) {
-          const nums = (min <= 12 && max <= 12 && !isPl3) ? data[i].back : data[i].front;
+          const nums = (min <= 12 && max <= 12 && !isPl3) ? scopedData[i].back : scopedData[i].front;
           if (nums && nums.includes(num)) longCount++;
         }
         // 期望 longPeriod × pickCount / (max - min + 1)
@@ -1009,27 +1019,26 @@
       return scores;
     }
 
-    const effectiveEnd = dataEnd != null ? dataEnd : data.length;
-
     // 元层信号注入：transitionSignal / biasDetector / overKillWarn / recentFrequency
-    const transitionSignal = computeTransitionSignal(data, dataEnd);
-    const biasReport = detectBias(data, dataEnd);
+    const transitionSignal = computeTransitionSignal(data, effectiveEnd);
+    const biasReport = detectBias(data, effectiveEnd);
     // v2026-06-22: 近 20 期前区 / 近 30 期后区的"短期表现"信号
-    const frontRecentFreq = computeRecentFrequency(data, dataEnd, {
+    const frontRecentFreq = computeRecentFrequency(data, effectiveEnd, {
       window: RECENT_FREQ_CONFIG.frontWindow, pickCount: FRONT_COUNT,
       min: FRONT_MIN, max: FRONT_MAX, zone: 'front'
     });
-    const backRecentFreq = isPl3 ? new Map() : computeRecentFrequency(data, dataEnd, {
+    const backRecentFreq = isPl3 ? new Map() : computeRecentFrequency(data, effectiveEnd, {
       window: RECENT_FREQ_CONFIG.backWindow, pickCount: BACK_COUNT,
       min: BACK_MIN, max: BACK_MAX, zone: 'back'
     });
 
-    const injectMetaSignals = (scores, recentFreqMap) => {
+    const injectMetaSignals = (scores, recentFreqMap, zone = 'front') => {
+      const isFrontZone = zone === 'front';
       for (const [num, s] of scores) {
-        s.transitionWeight = transitionSignal.get(num) || 1.0;
-        // bias 应用：尾数聚集 → 同尾号码升权（但要在号码维度再加反向）
+        s.transitionWeight = isFrontZone ? (transitionSignal.get(num) || 1.0) : 1.0;
+        // bias 只作用于前区；后区没有区间/AC 结构，避免跨区误加权。
         let biasWeight = 1.0;
-        if (biasReport.tail.detected) {
+        if (isFrontZone && biasReport.tail.detected) {
           if ((num % 10) === biasReport.tail.hotTail) {
             // 该号码与聚集尾数同尾 → 反而降权
             biasWeight *= 0.85;
@@ -1037,7 +1046,7 @@
             biasWeight *= 1.05;
           }
         }
-        if (biasReport.zone.detected) {
+        if (isFrontZone && biasReport.zone.detected) {
           const zoneIdx = Math.min(
             TRANSITION_CONFIG.zoneCount - 1,
             Math.floor((num - 1) / TRANSITION_CONFIG.zoneSize)
@@ -1047,7 +1056,7 @@
           }
         }
         // AC 聚集 → 升权号码 AC（提高组合复杂度，破坏聚集模式）
-        if (biasReport.ac.detected) {
+        if (isFrontZone && biasReport.ac.detected) {
           if (num >= 18) biasWeight *= (1.0 + BIAS_CONFIG.counterBoost * 0.5);
         }
         s.biasWeight = biasWeight;
@@ -1059,13 +1068,15 @@
 
     const frontScores = injectMetaSignals(
       scoreZone(FRONT_MIN, FRONT_MAX, gapData.front, freqData.front, hotCold.front, effectiveEnd, FRONT_COUNT),
-      frontRecentFreq
+      frontRecentFreq,
+      'front'
     );
     const backScores = isPl3
       ? new Map()
       : injectMetaSignals(
         scoreZone(BACK_MIN, BACK_MAX, gapData.back, freqData.back, hotCold.back, effectiveEnd, BACK_COUNT),
-        backRecentFreq
+        backRecentFreq,
+        'back'
       );
 
     // 误杀预警层（在 composite 计算前先标)
@@ -2120,7 +2131,7 @@
   function generateMultiplePredictions(data, count = 5, options = {}) {
     const strategies = buildStrategyOrder(count);
     const predictions = [];
-    const context = options.context || createPredictionContext(data);
+    const context = options.context || createPredictionContext(data, options.dataEnd);
     const rng = options.rng || Math.random;
     const seen = new Set();
     const maxAttempts = Math.max(count * 25, strategies.length);
