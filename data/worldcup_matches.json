@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-23T21:06:10.081484+00:00",
+    "lastUpdated": "2026-06-24T20:55:17.739040+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-23",
+    "sourceDataDate": "2026-06-24",
     "note": "Official FIFA World Cup 2026 group-stage fixtures and score status.",
     "teamCount": 48,
     "matchCount": 72
@@ -435,10 +435,10 @@
           "away": "Canada",
           "homeId": "43971",
           "awayId": "43899",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 2,
+          "awayScore": 1,
+          "status": "completed",
+          "sourceStatus": 3,
           "headToHead": null
         },
         {
@@ -453,10 +453,10 @@
           "away": "Qatar",
           "homeId": "44037",
           "awayId": "43834",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
+          "homeScore": 3,
+          "awayScore": 1,
+          "status": "completed",
+          "sourceStatus": 3,
           "headToHead": null
         }
       ]
@@ -2538,11 +2538,30 @@
           "away": "DR Congo",
           "homeId": "43926",
           "awayId": "20014",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 1,
+          "awayScore": 0,
+          "status": "completed",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 1,
+            "draws": 0,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 1,
+            "goalsAway": 0,
+            "matches": [
+              {
+                "date": "2026-06-24",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Colombia",
+                "away": "DR Congo",
+                "homeScore": 1,
+                "awayScore": 0
+              }
+            ]
+          }
         },
         {
           "id": "400021505",
@@ -2715,8 +2734,27 @@
           "homeScore": 0,
           "awayScore": 0,
           "status": "completed",
-          "sourceStatus": 3,
-          "headToHead": null
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 0,
+            "draws": 1,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 0,
+            "goalsAway": 0,
+            "matches": [
+              {
+                "date": "2026-06-23",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "England",
+                "away": "Ghana",
+                "homeScore": 0,
+                "awayScore": 0
+              }
+            ]
+          }
         },
         {
           "id": "400021511",
@@ -2730,11 +2768,30 @@
           "away": "Croatia",
           "homeId": "43914",
           "awayId": "43938",
-          "homeScore": null,
-          "awayScore": null,
-          "status": "scheduled",
-          "sourceStatus": 1,
-          "headToHead": null
+          "homeScore": 0,
+          "awayScore": 1,
+          "status": "completed",
+          "sourceStatus": 0,
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 0,
+            "draws": 0,
+            "wAway": 1,
+            "total": 1,
+            "goalsHome": 0,
+            "goalsAway": 1,
+            "matches": [
+              {
+                "date": "2026-06-23",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Panama",
+                "away": "Croatia",
+                "homeScore": 0,
+                "awayScore": 1
+              }
+            ]
+          }
         },
         {
           "id": "400021508",
