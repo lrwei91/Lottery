@@ -82,8 +82,17 @@
   // 元层权重合成：加性 + clamp 到 [-maxAbs, +maxAbs]，避免累乘失控
   const META_WEIGHT_CONFIG = {
     maxAbs: 0.40,            // 单个号码最终元层权重偏离基准最大 0.40（即 0.60-1.40）
-    overKillBoost: 0.15      // 误杀预警号码的升权幅度（加性）
+    overKillBoost: 0.15,     // 误杀预警号码的升权幅度（加性）
+    // v2026-06-27: Conformal 信号接入选号权重
+    // halfWidth < lowThreshold (稳定) → conformalBoost 加成；halfWidth > highThreshold (不稳定) → conformalPenalty 减权
+    conformalLowThreshold: 0.05,
+    conformalHighThreshold: 0.15,
+    conformalBoost: 0.05,
+    conformalPenalty: -0.05
   };
+
+  // DltConformal 结果缓存（key = _dataSignature）—— predictAll 内部无缓存，加一层避免每次预测都重算
+  const _conformalCache = { sig: null, result: null };
 
   // 误杀预警层：得分处于 25%-50% 之间的号码标为预警
   const OVERKILL_CONFIG = {
@@ -882,6 +891,8 @@
    *   - 命中率 < 30% → 预警太多，缩紧阈值 (warnPercentile 减少 0.05，下限 0.35)
    *   - 命中率 > 60% → 预警太准，可放宽阈值 (warnPercentile 增加 0.05，上限 0.60)
    *   - 30% ≤ 命中率 ≤ 60% → 保持不变
+   *
+   * v2026-06-27: 校准结果持久化到 localStorage（修复刷新归零 bug）
    */
   function calibrateOverKill(stats) {
     if (!stats || typeof stats.currentHitRate !== 'number') return _overKillRuntime;
@@ -891,8 +902,29 @@
     } else if (rate > 0.60 && _overKillRuntime.warnPercentile < 0.60) {
       _overKillRuntime.warnPercentile = Math.min(0.60, _overKillRuntime.warnPercentile + 0.05);
     }
+    try {
+      localStorage.setItem('ticai.overKillRuntime', JSON.stringify(_overKillRuntime));
+    } catch (e) {
+      console.warn('[overkill] 持久化校准结果失败:', e);
+    }
     return Object.assign({}, _overKillRuntime);
   }
+
+  // 从 localStorage 恢复校准状态（修复刷新归零 bug）
+  function loadOverKillRuntime() {
+    try {
+      const stored = JSON.parse(localStorage.getItem('ticai.overKillRuntime') || 'null');
+      if (stored && typeof stored.warnPercentile === 'number'
+        && stored.warnPercentile >= 0.35 && stored.warnPercentile <= 0.60) {
+        _overKillRuntime.warnPercentile = stored.warnPercentile;
+        _overKillRuntime.warnBoost = stored.warnBoost || OVERKILL_CONFIG.warnBoost;
+      }
+    } catch (e) {
+      console.warn('[overkill] 读取校准状态失败，使用默认值:', e);
+    }
+  }
+  // IIFE 启动时立即加载（Predictor 加载完即可用最新校准）
+  loadOverKillRuntime();
 
   function getOverKillRuntime() {
     return Object.assign({}, _overKillRuntime);
@@ -913,6 +945,27 @@
     const freqData = frequencyAnalysis(data, effectiveEnd);
     const hotCold = hotColdAnalysis(data, 300, effectiveEnd);
     const isPl3 = detectLotteryType(data) === 'pl3';
+
+    // v2026-06-27: DltConformal 信号接入选号权重
+    // 每个号码 1 期出现概率的 90% CI 半宽：稳定号码 → 升权，不稳定 → 降权
+    // pl3 没有后区，跳过
+    let conformalReport = null;
+    if (!isPl3 && window.DltConformal && typeof window.DltConformal.predictAll === 'function') {
+      const cSig = `conformal:${_dataSignature(data, effectiveEnd)}`;
+      if (_conformalCache.sig !== cSig) {
+        try {
+          _conformalCache.result = window.DltConformal.predictAll(scopedData, {
+            frontMin: FRONT_MIN, frontMax: FRONT_MAX,
+            backMin: BACK_MIN, backMax: BACK_MAX
+          });
+          _conformalCache.sig = cSig;
+        } catch (e) {
+          console.warn('[conformal] predictAll 失败，跳过 conformal 信号:', e);
+          _conformalCache.result = null;
+        }
+      }
+      conformalReport = _conformalCache.result;
+    }
 
     function scoreZone(min, max, gapMap, freqMap, hotColdInfo, totalDraws, pickCount) {
       const scores = new Map();
@@ -1034,6 +1087,10 @@
 
     const injectMetaSignals = (scores, recentFreqMap, zone = 'front') => {
       const isFrontZone = zone === 'front';
+      // v2026-06-27: conformalHalfWidth 查询表（一次构建，避免循环里线性查）
+      const conformalMap = conformalReport
+        ? new Map((isFrontZone ? conformalReport.front : conformalReport.back).map(r => [r.num, r.halfWidth]))
+        : null;
       for (const [num, s] of scores) {
         s.transitionWeight = isFrontZone ? (transitionSignal.get(num) || 1.0) : 1.0;
         // bias 只作用于前区；后区没有区间/AC 结构，避免跨区误加权。
@@ -1062,6 +1119,8 @@
         s.biasWeight = biasWeight;
         // v2026-06-22: 近期表现（近 20/30 期窗口）— 短期超冷号码降权
         s.recentFreqWeight = (recentFreqMap && recentFreqMap.get(num)) || 1.0;
+        // v2026-06-27: conformal 半宽（Wilson 90% CI）— 稳定号码加权
+        s.conformalHalfWidth = conformalMap ? (conformalMap.get(num) != null ? conformalMap.get(num) : 1.0) : 1.0;
       }
       return scores;
     };
@@ -1380,7 +1439,15 @@
     const overKillDelta = s.overKillWarn ? META_WEIGHT_CONFIG.overKillBoost : 0.0;
     // v2026-06-22: recentFreqWeight 已直接是 multiplier 形式（0.5-1.15），转 delta
     const recentFreqDelta = ((s.recentFreqWeight || 1.0) - 1.0);
-    const total = transitionDelta + biasDelta + emergingDelta + overKillDelta + recentFreqDelta;
+    // v2026-06-27: conformal 半宽 → 加性 delta
+    // halfWidth < lowThreshold (稳定, CI 窄) → boost；halfWidth > highThreshold (不稳定) → penalty
+    const hw = s.conformalHalfWidth;
+    let conformalDelta = 0.0;
+    if (typeof hw === 'number' && Number.isFinite(hw)) {
+      if (hw < META_WEIGHT_CONFIG.conformalLowThreshold) conformalDelta = META_WEIGHT_CONFIG.conformalBoost;
+      else if (hw > META_WEIGHT_CONFIG.conformalHighThreshold) conformalDelta = META_WEIGHT_CONFIG.conformalPenalty;
+    }
+    const total = transitionDelta + biasDelta + emergingDelta + overKillDelta + recentFreqDelta + conformalDelta;
     const clamped = Math.max(-META_WEIGHT_CONFIG.maxAbs, Math.min(META_WEIGHT_CONFIG.maxAbs, total));
     return 1.0 + clamped;
   }
@@ -1398,12 +1465,15 @@
 
   function selectByStrategy(scores, strategy, count, coMatrix = null, rng = Math.random) {
     if (strategy === 'balanced' && count === FRONT_COUNT) {
-      // 保持原有黄金比例抽样
+      // 保持原有黄金比例抽样（1-2 热 + 2-3 温 + 1 冷 = 5）
       const targetHotCount = rng() < 0.6 ? 1 : 2;
       const targetWarmCount = targetHotCount === 1 ? 3 : 2;
       const targetColdCount = 1;
 
       const hotPool = [], warmPool = [], coldPool = [];
+      // v2026-06-27 注释：balanced 分支有意硬编码 (0.3, 0.3, 0.3)
+      // STRATEGY_WEIGHTS.balanced = {gap:0.35, freqDev:0.24, trend:0.18} 是选号阶段的策略权重
+      // 这里 0.3/0.3/0.3 是黄金比例抽样的"基线"权重，三维等权让冷热分层更均匀
       const weights = { gap: 0.3, freqDev: 0.3, trend: 0.3 };
 
       for (const [num, s] of scores) {
@@ -2106,7 +2176,8 @@
     const sortedIdx = minScores.map((v, i) => i).sort((a, b) => minScores[b] - minScores[a]);
     const tiers = new Array(predictions.length);
     const n = predictions.length;
-    // 1/3 高把握，1/3 平衡，1/3 博冷
+    // v2026-06-27 注释修正：count=5 时实际分层 = 1 高 + 2 平 + 2 博（floor(5/3)=1, floor(10/3)=3）
+    // 注释说"1/3 1/3 1/3"对 6+ 注才成立；通用公式 floor(n/3) / floor(2n/3) 的余数让短列表偏向 aggressive
     const highCut = Math.max(1, Math.floor(n / 3));
     const balancedCut = Math.max(highCut + 1, Math.floor((n * 2) / 3));
     for (let rank = 0; rank < n; rank++) {
@@ -2172,10 +2243,15 @@
         useDanLayer,
         backSoftKill: options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT
       });
-      predictions.push({
-        ...prediction,
-        strategy: useDanLayer ? 'danTuo' : strategy
-      });
+      // v2026-06-27: 兜底循环也要去重，避免主循环未凑齐时产生重复注
+      const key = predictionKey(prediction.front, prediction.back, context.type);
+      if (!seen.has(key)) {
+        seen.add(key);
+        predictions.push({
+          ...prediction,
+          strategy: useDanLayer ? 'danTuo' : strategy
+        });
+      }
     }
 
     // 置信度分层输出
@@ -2216,6 +2292,7 @@
     calibrateOverKill,
     getOverKillRuntime,
     resetOverKillRuntime,
+    loadOverKillRuntime,
     computeRecentFrequency,
 
     // 元层配置

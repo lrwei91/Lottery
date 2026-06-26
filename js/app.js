@@ -1127,10 +1127,25 @@
   // 误杀预警复盘 + 命中率回写校准
   // 注意：每次 renderPredictionHistory 会重跑此函数，所以必须用 record.overKillBacktested
   // 去重，否则同一 record 会被算 N 次（重渲染 N 次）
+  //
+  // v2026-06-27: 加 recordId::baseIssue 跨设备幂等键（修 Bug 3）
+  // 同一 record.id 在多设备上会被 cloud-sync 同步，但 record.overKillBacktested 字段在
+  // 跨设备 sync 时不会自动带过去，导致两台设备都各自回测 → ticai.overKillStats 双倍计数
+  // 用 recordId::baseIssue 作为幂等键写入 localStorage，任一设备回测后，另一设备再渲染时跳过
   function backtestOverKillHitRate(record, reviewDraw, isPl3) {
     if (!record || !record.overKillWarn || !reviewDraw || isPl3) return null;
-    // 去重：已经被回测过，跳过
+    // 去重 1：本地 record 字段标记
     if (record.overKillBacktested) return null;
+
+    // 去重 2：跨设备幂等键（localStorage 全局共享）
+    const idemKey = `${record.id || ''}::${record.baseIssue || ''}`;
+    let backtestedKeys = {};
+    try {
+      backtestedKeys = JSON.parse(localStorage.getItem('ticai.overKillBacktestedKeys') || '{}');
+    } catch (e) {
+      backtestedKeys = {};
+    }
+    if (backtestedKeys[idemKey]) return null;
 
     const ok = record.overKillWarn;
     const drawFront = new Set(reviewDraw.front || []);
@@ -1155,8 +1170,16 @@
       if (window.Predictor && typeof Predictor.calibrateOverKill === 'function') {
         Predictor.calibrateOverKill({ currentHitRate: stats.currentHitRate });
       }
-      // 标记 record 已被回测 + 持久化
+      // 标记 record 已被回测 + 持久化幂等键
       record.overKillBacktested = true;
+      backtestedKeys[idemKey] = Date.now();
+      // Set 大小保护：超过 500 条清空（实际远到不了）
+      const keys = Object.keys(backtestedKeys);
+      if (keys.length > 500) {
+        keys.sort((a, b) => backtestedKeys[a] - backtestedKeys[b]);
+        keys.slice(0, keys.length - 500).forEach(k => delete backtestedKeys[k]);
+      }
+      localStorage.setItem('ticai.overKillBacktestedKeys', JSON.stringify(backtestedKeys));
       persistPredictionRecords();
     } catch (e) {
       console.warn('[overkill backtest] 写入 localStorage 失败:', e);

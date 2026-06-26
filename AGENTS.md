@@ -80,6 +80,12 @@
 
 ## 变更日志
 
+- 2026-06-27：大乐透代码审查修复 + DltConformal 接入选号权重。`js/predictor.js`：
+  - **Bug 修复 1**：`generateMultiplePredictions` fallback 循环（兜底用）补 `seen` 去重，避免主循环 125 次没凑齐时产生重复注
+  - **Bug 修复 2**：`_overKillRuntime` 校准结果持久化到 `ticai.overKillRuntime`（之前刷新页面归零）；新增 `loadOverKillRuntime()`，IIFE 启动时立即加载
+  - **P1**：`DltConformal`（Wilson 90% CI）接入 `computeMetaWeight` —— 新增 `META_WEIGHT_CONFIG.conformalLowThreshold=0.05` / `conformalHighThreshold=0.15` / `conformalBoost=0.05` / `conformalPenalty=-0.05`；每个号码的 `conformalHalfWidth` 注入到 score，CI 半宽 < 0.05（稳定）升权 +0.05，> 0.15（不确定）降权 -0.05；`computeScores` 内加 `_conformalCache` 避免每次重算；只在 DLT 启用（PL3 无后区跳过）
+  - **P3**：注释修正（`tagPredictionsWithConfidence` 注释"1/3 1/3 1/3"对 count=5 实际是 1/2/2；`selectByStrategy` balanced 分支硬编码 0.3/0.3/0.3 加注释说明是黄金比例抽样简化，与 `STRATEGY_WEIGHTS.balanced` 区分）。`js/app.js`：
+  - **Bug 修复 3**：`backtestOverKillHitRate` 加 `recordId::baseIssue` 幂等键（写 `ticai.overKillBacktestedKeys`），防止同一 record 在多设备通过 cloud-sync 各自回测导致 `ticai.overKillStats` 双倍计数
 - 2026-06-23：复盘驱动的策略优化（针对 95 条 review × 7 期开奖）。`js/predictor.js`：
   - `defaultFrontConstraints`：`sumMin: 63→60, sumMax: 107→110`（避免和值 65 的 26065 类被约束死），新增 `minTailPairs` 字段
   - `computeFrontConstraints`：动态算 `minTailPairs`（30% 分位，鼓励同尾）
