@@ -9,9 +9,12 @@ live schedule/result data at build time and writes data/worldcup_matches.json.
 from __future__ import annotations
 
 import json
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
+from http.client import RemoteDisconnected
 from pathlib import Path
 
 
@@ -72,17 +75,34 @@ def normalize_team(team: dict | None) -> str:
 
 
 def request_json(path: str, params: dict[str, str]) -> dict:
+    """GET FIFA API JSON, with 3-retry + exponential backoff (1s/2s/4s).
+
+    2026-06-28 加入: FIFA API 跑 72 场 h2h 时偶尔 RemoteDisconnected,需要 retry.
+    """
     query = urllib.parse.urlencode(params)
     url = f"{API_BASE}{path}?{query}"
-    req = urllib.request.Request(
-        url,
-        headers={
-            "Accept": "application/json",
-            "User-Agent": "ticai-worldcup-match-sync",
-        },
-    )
-    with urllib.request.urlopen(req, timeout=45) as res:
-        return json.loads(res.read().decode("utf-8"))
+    last_exc = None
+    for attempt in range(3):
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={
+                    "Accept": "application/json",
+                    "User-Agent": "ticai-worldcup-match-sync",
+                },
+            )
+            with urllib.request.urlopen(req, timeout=45) as res:
+                return json.loads(res.read().decode("utf-8"))
+        except (urllib.error.URLError, RemoteDisconnected, TimeoutError) as exc:
+            last_exc = exc
+            if attempt < 2:
+                backoff = 1 * (2 ** attempt)  # 1s, 2s
+                print(f"  retry {attempt + 1}/3 after {backoff}s: {type(exc).__name__}: {exc}")
+                time.sleep(backoff)
+                continue
+            break
+    # 3 次都失败,raise 让上层处理
+    raise last_exc  # type: ignore[misc]
 
 
 def fetch_head_to_head(home_id: str, away_id: str) -> dict | None:
@@ -174,6 +194,7 @@ def build_match(raw: dict) -> dict:
         "id": str(raw.get("IdMatch") or ""),
         "matchNumber": raw.get("MatchNumber"),
         "group": group,
+        "stage": localized(raw.get("StageName")),  # 2026-06-28 加入:支持 knockout 阶段显示
         "matchDay": raw.get("MatchDay"),
         "date": date,
         "time": time,
@@ -195,6 +216,24 @@ def build_output(raw_matches: list[dict]) -> dict:
         match for match in raw_matches
         if localized(match.get("StageName")) == "First Stage"
     ]
+    # 2026-06-28 加入:knockout 阶段 (R32 / R16 / QF / SF / F) 单独落 knockout 段
+    # 现有 groups A-L 字段不动,前端 0 改动即可
+    knockout = {
+        "roundOf32": [],   # Round of 32 (32 → 16)
+        "roundOf16": [],   # Round of 16 (16 → 8)
+        "quarterFinals": [],  # 8 → 4
+        "semiFinals": [],     # 4 → 2
+        "final": [],          # 决赛
+        "thirdPlace": [],     # 季军赛
+    }
+    STAGE_TO_KEY = {
+        "Round of 32": "roundOf32",
+        "Round of 16": "roundOf16",
+        "Quarter-finals": "quarterFinals",
+        "Semi-finals": "semiFinals",
+        "Final": "final",
+        "Match for third place": "thirdPlace",
+    }
 
     for raw in sorted(first_stage, key=lambda item: item.get("MatchNumber") or 999):
         match = build_match(raw)
@@ -207,6 +246,26 @@ def build_output(raw_matches: list[dict]) -> dict:
                 groups[group]["teams"].append(team)
         groups[group]["matches"].append(match)
 
+    # knockout 阶段:不拉 h2h (R32 阶段无历史交锋,等比赛打完才有)
+    for raw in raw_matches:
+        stage = localized(raw.get("StageName"))
+        if stage in STAGE_TO_KEY:
+            match = build_match(raw)
+            # 不调 fetch_head_to_head (R32 阶段 h2h API 大概率空)
+            knockout[STAGE_TO_KEY[stage]].append(match)
+    # 各阶段按 date+time 排序
+    for key in knockout:
+        knockout[key].sort(key=lambda m: (m.get("date", ""), m.get("time", "")))
+
+    # 统计:groups + knockout 一起
+    knockout_match_count = sum(len(v) for v in knockout.values())
+    knockout_team_count = len(set(
+        team
+        for stage_matches in knockout.values()
+        for m in stage_matches
+        for team in [m.get("home"), m.get("away")] if team
+    ))
+
     now = datetime.now(timezone.utc)
     return {
         "metadata": {
@@ -218,11 +277,12 @@ def build_output(raw_matches: list[dict]) -> dict:
                 f"language={LANGUAGE}&count=500&idCompetition={COMPETITION_ID}&idSeason={SEASON_ID}"
             ),
             "sourceDataDate": now.strftime("%Y-%m-%d"),
-            "note": "Official FIFA World Cup 2026 group-stage fixtures and score status.",
-            "teamCount": sum(len(group["teams"]) for group in groups.values()),
-            "matchCount": sum(len(group["matches"]) for group in groups.values()),
+            "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",  # 2026-06-28 改:含 knockout
+            "teamCount": sum(len(group["teams"]) for group in groups.values()) + knockout_team_count,
+            "matchCount": sum(len(group["matches"]) for group in groups.values()) + knockout_match_count,
         },
         "groups": groups,
+        "knockout": knockout,  # 2026-06-28 新增字段 (R32/R16/QF/SF/F/季军)
     }
 
 
