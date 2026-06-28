@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-28T07:30:06.049120+00:00",
+    "lastUpdated": "2026-06-28T20:36:43.949762+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
@@ -2698,7 +2698,35 @@
           "awayScore": 3,
           "status": "completed",
           "sourceStatus": 0,
-          "headToHead": null
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 0,
+            "draws": 1,
+            "wAway": 1,
+            "total": 2,
+            "goalsHome": 3,
+            "goalsAway": 5,
+            "matches": [
+              {
+                "date": "2026-06-28",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Algeria",
+                "away": "Austria",
+                "homeScore": 3,
+                "awayScore": 3
+              },
+              {
+                "date": "1982-06-21",
+                "competition": "FIFA World Cup™",
+                "stage": "Group Matches",
+                "home": "Algeria",
+                "away": "Austria",
+                "homeScore": 0,
+                "awayScore": 2
+              }
+            ]
+          }
         },
         {
           "id": "400021495",
@@ -2717,7 +2745,26 @@
           "awayScore": 3,
           "status": "completed",
           "sourceStatus": 0,
-          "headToHead": null
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 0,
+            "draws": 0,
+            "wAway": 1,
+            "total": 1,
+            "goalsHome": 1,
+            "goalsAway": 3,
+            "matches": [
+              {
+                "date": "2026-06-28",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Jordan",
+                "away": "Argentina",
+                "homeScore": 1,
+                "awayScore": 3
+              }
+            ]
+          }
         }
       ]
     },
@@ -3219,7 +3266,26 @@
           "awayScore": 1,
           "status": "completed",
           "sourceStatus": 0,
-          "headToHead": null
+          "headToHead": {
+            "source": "FIFA head-to-head statistics API",
+            "wHome": 1,
+            "draws": 0,
+            "wAway": 0,
+            "total": 1,
+            "goalsHome": 2,
+            "goalsAway": 1,
+            "matches": [
+              {
+                "date": "2026-06-27",
+                "competition": "FIFA World Cup™",
+                "stage": "First Stage",
+                "home": "Croatia",
+                "away": "Ghana",
+                "homeScore": 2,
+                "awayScore": 1
+              }
+            ]
+          }
         }
       ]
     }
@@ -3239,10 +3305,10 @@
         "away": "Canada",
         "homeId": "43883",
         "awayId": "43899",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 0,
+        "awayScore": 0,
+        "status": "completed",
+        "sourceStatus": 3
       },
       {
         "id": "400021516",
