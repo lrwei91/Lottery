@@ -23,7 +23,8 @@
     "dev": "npx -y serve .",
     "env:check": "node scripts/check-env.cjs",
     "env:check:vercel": "node scripts/check-env.cjs --vercel",
-    "env:check:strict": "node scripts/check-env.cjs --strict"
+    "env:check:strict": "node scripts/check-env.cjs --strict",
+    "check:dlt-predictor": "node scripts/check-dlt-predictor.cjs"
   },
   "dependencies": {
     "@upstash/redis": "^1.34.0"

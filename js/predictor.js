@@ -28,6 +28,8 @@
   let BACK_COUNT = 2;  // 每期后区选号个数
 
   const DEFAULT_STRATEGIES = ['balanced', 'random', 'gap', 'hot', 'cold'];
+  // 140 条大乐透远端复盘显示：gap/cold 前区稳定性优于 hot/danTuo，默认 5 注恢复五个基础策略。
+  const DLT_DEFAULT_STRATEGIES = ['gap', 'cold', 'random', 'balanced', 'hot'];
 
   const STRATEGY_WEIGHTS = {
     cold:     { gap: 0.3, freqDev: 0.2, trend: 0.1, statusBonus: { cold: 2.0, warm: 0.5, hot: 0.1 } },
@@ -35,6 +37,14 @@
     balanced: { gap: 0.35, freqDev: 0.24, trend: 0.18, statusBonus: { cold: 1.0, warm: 1.0, hot: 1.0 } },
     gap:      { gap: 0.6, freqDev: 0.1, trend: 0.1, statusBonus: { cold: 1.2, warm: 1.0, hot: 0.8 } },
     random:   { gap: 0.33, freqDev: 0.33, trend: 0.33, statusBonus: { cold: 1.0, warm: 1.0, hot: 1.0 } }
+  };
+
+  const HOT_COLD_CONFIG = {
+    predictorWindow: 120,
+    hotRatio: 1.25,
+    coldRatio: 0.75,
+    minFrontGroup: 4,
+    minBackGroup: 2
   };
 
 
@@ -87,6 +97,8 @@
     // halfWidth < lowThreshold (稳定) → conformalBoost 加成；halfWidth > highThreshold (不稳定) → conformalPenalty 减权
     conformalLowThreshold: 0.05,
     conformalHighThreshold: 0.15,
+    conformalStableThreshold: 0.75,
+    conformalUnstableThreshold: 0.35,
     conformalBoost: 0.05,
     conformalPenalty: -0.05
   };
@@ -128,10 +140,10 @@
   const RECENT_FREQ_CONFIG = {
     frontWindow: 20,        // 前区近 20 期窗口
     backWindow: 30,         // 后区近 30 期窗口
-    absentPenalty: 0.5,     // 完全没出现 → 0.5
-    underHalfPenalty: 0.7,  // ratio < 0.5 → 0.7
-    underThirdPenalty: 0.85,// ratio < 0.85 → 0.85
-    overHotBoost: 1.15      // ratio > 1.5 → 1.15（短期热号升权）
+    absentPenalty: 0.7,     // 完全没出现 → 0.7（140 条复盘显示重罚会错杀冷回补）
+    underHalfPenalty: 0.82, // ratio < 0.5 → 0.82
+    underThirdPenalty: 0.92,// ratio < 0.85 → 0.92
+    overHotBoost: 1.1       // ratio > 1.5 → 1.10（避免短热号过度集中）
   };
 
   function detectLotteryType(data) {
@@ -374,19 +386,47 @@
         avgExpected = isBackZone ? (total * 2 / 12) : (total * 5 / 35);
       }
 
-      // v2026-06-22: 阈值收紧 1.15/0.85 → 1.5/0.5
-      // 复盘发现 7 期实际开奖 0 个真冷号 (ratio<0.85)、3 个真热号都集中在 13
-      // 1.5/0.5 让 hot/cold 策略真正能选到差异化的号码
-      const hotThreshold = Math.ceil(avgExpected * 1.5);
-      const coldThreshold = Math.floor(avgExpected * 0.5);
+      const hotRatio = isPl3 ? 1.5 : HOT_COLD_CONFIG.hotRatio;
+      const coldRatio = isPl3 ? 0.5 : HOT_COLD_CONFIG.coldRatio;
+      const hotThreshold = avgExpected * hotRatio;
+      const coldThreshold = avgExpected * coldRatio;
+      const entries = Array.from(freqMap.entries()).map(([num, count]) => ({ num, count }));
 
-      for (const [num, count] of freqMap) {
+      for (const { num, count } of entries) {
         if (count >= hotThreshold) {
           hot.push(num);
         } else if (count <= coldThreshold) {
           cold.push(num);
         } else {
           warm.push(num);
+        }
+      }
+
+      // 大乐透使用时间衰减计数后，长窗口容易把全部号码挤成 warm。
+      // 兜底补齐头尾分组，让 hot/cold 策略始终有真实分层，但不扩大到半个号码池。
+      if (!isPl3) {
+        const minGroup = isBackZone ? HOT_COLD_CONFIG.minBackGroup : HOT_COLD_CONFIG.minFrontGroup;
+        const hotSet = new Set(hot);
+        const coldSet = new Set(cold);
+        const sortedAsc = entries.slice().sort((a, b) => a.count - b.count || a.num - b.num);
+        const sortedDesc = entries.slice().sort((a, b) => b.count - a.count || a.num - b.num);
+
+        for (const item of sortedDesc) {
+          if (hotSet.size >= minGroup) break;
+          if (!coldSet.has(item.num)) hotSet.add(item.num);
+        }
+        for (const item of sortedAsc) {
+          if (coldSet.size >= minGroup) break;
+          if (!hotSet.has(item.num)) coldSet.add(item.num);
+        }
+
+        hot.length = 0;
+        cold.length = 0;
+        warm.length = 0;
+        for (const { num } of entries) {
+          if (hotSet.has(num)) hot.push(num);
+          else if (coldSet.has(num)) cold.push(num);
+          else warm.push(num);
         }
       }
 
@@ -943,8 +983,12 @@
     const scopedData = data.slice(0, effectiveEnd);
     const gapData = gapAnalysis(data, effectiveEnd);
     const freqData = frequencyAnalysis(data, effectiveEnd);
-    const hotCold = hotColdAnalysis(data, 300, effectiveEnd);
     const isPl3 = detectLotteryType(data) === 'pl3';
+    const hotCold = hotColdAnalysis(
+      data,
+      isPl3 ? 300 : HOT_COLD_CONFIG.predictorWindow,
+      effectiveEnd
+    );
 
     // v2026-06-27: DltConformal 信号接入选号权重
     // 每个号码 1 期出现概率的 90% CI 半宽：稳定号码 → 升权，不稳定 → 降权
@@ -1087,9 +1131,9 @@
 
     const injectMetaSignals = (scores, recentFreqMap, zone = 'front') => {
       const isFrontZone = zone === 'front';
-      // v2026-06-27: conformalHalfWidth 查询表（一次构建，避免循环里线性查）
+      // conformal 查询表（一次构建，避免循环里线性查）
       const conformalMap = conformalReport
-        ? new Map((isFrontZone ? conformalReport.front : conformalReport.back).map(r => [r.num, r.halfWidth]))
+        ? new Map((isFrontZone ? conformalReport.front : conformalReport.back).map(r => [r.num, r]))
         : null;
       for (const [num, s] of scores) {
         s.transitionWeight = isFrontZone ? (transitionSignal.get(num) || 1.0) : 1.0;
@@ -1119,8 +1163,14 @@
         s.biasWeight = biasWeight;
         // v2026-06-22: 近期表现（近 20/30 期窗口）— 短期超冷号码降权
         s.recentFreqWeight = (recentFreqMap && recentFreqMap.get(num)) || 1.0;
-        // v2026-06-27: conformal 半宽（Wilson 90% CI）— 稳定号码加权
-        s.conformalHalfWidth = conformalMap ? (conformalMap.get(num) != null ? conformalMap.get(num) : 1.0) : 1.0;
+        // conformal 校准半宽 + 稳定性分数：稳定号码加权，近期漂移过大降权
+        const conformal = conformalMap ? conformalMap.get(num) : null;
+        s.conformalHalfWidth = conformal
+          ? (conformal.conformalHalfWidth != null ? conformal.conformalHalfWidth : conformal.halfWidth)
+          : 1.0;
+        s.conformalStability = conformal && typeof conformal.stabilityScore === 'number'
+          ? conformal.stabilityScore
+          : null;
       }
       return scores;
     };
@@ -1439,13 +1489,21 @@
     const overKillDelta = s.overKillWarn ? META_WEIGHT_CONFIG.overKillBoost : 0.0;
     // v2026-06-22: recentFreqWeight 已直接是 multiplier 形式（0.5-1.15），转 delta
     const recentFreqDelta = ((s.recentFreqWeight || 1.0) - 1.0);
-    // v2026-06-27: conformal 半宽 → 加性 delta
-    // halfWidth < lowThreshold (稳定, CI 窄) → boost；halfWidth > highThreshold (不稳定) → penalty
-    const hw = s.conformalHalfWidth;
     let conformalDelta = 0.0;
-    if (typeof hw === 'number' && Number.isFinite(hw)) {
-      if (hw < META_WEIGHT_CONFIG.conformalLowThreshold) conformalDelta = META_WEIGHT_CONFIG.conformalBoost;
-      else if (hw > META_WEIGHT_CONFIG.conformalHighThreshold) conformalDelta = META_WEIGHT_CONFIG.conformalPenalty;
+    const stability = s.conformalStability;
+    if (typeof stability === 'number' && Number.isFinite(stability)) {
+      if (stability >= META_WEIGHT_CONFIG.conformalStableThreshold) {
+        conformalDelta = META_WEIGHT_CONFIG.conformalBoost;
+      } else if (stability <= META_WEIGHT_CONFIG.conformalUnstableThreshold) {
+        conformalDelta = META_WEIGHT_CONFIG.conformalPenalty;
+      }
+    } else {
+      // 兼容旧 conformal 报告：没有 stabilityScore 时退回半宽判断。
+      const hw = s.conformalHalfWidth;
+      if (typeof hw === 'number' && Number.isFinite(hw)) {
+        if (hw < META_WEIGHT_CONFIG.conformalLowThreshold) conformalDelta = META_WEIGHT_CONFIG.conformalBoost;
+        else if (hw > META_WEIGHT_CONFIG.conformalHighThreshold) conformalDelta = META_WEIGHT_CONFIG.conformalPenalty;
+      }
     }
     const total = transitionDelta + biasDelta + emergingDelta + overKillDelta + recentFreqDelta + conformalDelta;
     const clamped = Math.max(-META_WEIGHT_CONFIG.maxAbs, Math.min(META_WEIGHT_CONFIG.maxAbs, total));
@@ -1714,8 +1772,9 @@
       shapes.push(analyzeFrontShape(data[i].front));
     }
     const constraints = {
-      sumMin: roundPercentile(shapes.map(shape => shape.sum), 0.15),
-      sumMax: roundPercentile(shapes.map(shape => shape.sum), 0.85),
+      // 140 条复盘继续暴露低和值漏杀，和值用 10%-90% 分位保留尾部回补空间。
+      sumMin: roundPercentile(shapes.map(shape => shape.sum), 0.10),
+      sumMax: roundPercentile(shapes.map(shape => shape.sum), 0.90),
       allowedOddEven: topGroupsCovering(shapes.map(shape => shape.oddEven), 0.9),
       allowedBigSmall: topGroupsCovering(shapes.map(shape => shape.bigSmall), 0.9),
       maxConsecutive: Math.max(2, roundPercentile(shapes.map(shape => shape.maxConsecutive), 0.9)),
@@ -1870,6 +1929,7 @@
       transitionSignal, biasReport, overKillWarn } = context;
     const backSoftKill = options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT;
     const useDanLayer = options.useDanLayer === true;
+    const backStrategy = options.backStrategy || 'gap';
 
     let front = [];
     let back = [];
@@ -1890,10 +1950,10 @@
         const result = selectWithDanLayer(frontScores, coMatrix, { rng });
         front = result.front;
         danTuoMeta = { danNums: result.danNums, danCount: result.danNums.length, danStrategy: 'auto' };
-        back = selectByStrategy(backScores, strategy, BACK_COUNT, null, rng);
+        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng);
       } else {
         front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng);
-        back = selectByStrategy(backScores, strategy, BACK_COUNT, null, rng);
+        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng);
       }
       evalResult = evaluateFrontCombination(front, frontConstraints);
       backEvalResult = evaluateBackCombination(back, backConstraints);
@@ -1919,10 +1979,10 @@
         const result = selectWithDanLayer(frontScores, coMatrix, { rng });
         front = result.front;
         danTuoMeta = { danNums: result.danNums, danCount: result.danNums.length, danStrategy: 'auto' };
-        back = selectByStrategy(backScores, strategy, BACK_COUNT, null, rng);
+        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng);
       } else {
         front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng);
-        back = selectByStrategy(backScores, strategy, BACK_COUNT, null, rng);
+        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng);
       }
       evalResult = evaluateFrontCombination(front, frontConstraints);
       backEvalResult = evaluateBackCombination(back, backConstraints);
@@ -1989,7 +2049,7 @@
       metaLines.push(`后区误杀预警: ${overKillBackNums.sort((a, b) => a - b).join(' ')}`);
     }
     if (backSoftKill) {
-      metaLines.push(`后区策略: 观察层软排 (非硬约束)`);
+      metaLines.push(`后区策略: 遗漏回补 + 观察层软排 (非硬约束)`);
     }
     if (useDanLayer && danTuoMeta) {
       metaLines.push(`胆码分层: 胆码 ${danTuoMeta.danCount} 个 + 拖码 ${FRONT_COUNT - danTuoMeta.danCount} 个 (coMatrix 补位)`);
@@ -2004,7 +2064,7 @@
       `连号状态: ${consecLabel} | 同尾状态: ${tailLabel}`,
       `前区AC值: ${evalResult.ac} (>=${evalResult.minAC}) | 覆盖 ${evalResult.zonesCovered} 个分区 (>=${evalResult.minZonesCovered})`,
       `冷热结构: ${frontHot.length}热 / ${frontWarm.length}温 / ${frontCold.length}冷`,
-      `结合${strategy === 'random' ? '布林线和值约束与70%热号抽样' : useDanLayer ? '胆码分层 + 伴生矩阵补位' : strategy === 'balanced' ? '冷热分层抽样' : '伴生概率矩阵'}、近期时间衰减权重、元层信号 (transition/bias/overKill) 及全库去重生成 (计算碰撞: ${attempts}次)`
+      `结合${strategy === 'random' ? '布林线和值约束与70%热号抽样' : useDanLayer ? '胆码分层 + 伴生矩阵补位' : strategy === 'balanced' ? '冷热分层抽样' : '伴生概率矩阵'}、近期时间衰减权重、元层信号 (transition/bias/overKill/conformal) 及全库去重生成 (计算碰撞: ${attempts}次)`
     ].join('\n');
 
     // 误杀预警：标记选中的号码是否在预警集合里
@@ -2141,10 +2201,9 @@
   // ============================================================
 
   // 固定策略顺序（之前由 evolution 权重动态排序，现在平权）
-  // 新版：第一注用胆码分层（最高把握），其余 4 注按原 5 策略轮转
-  function buildStrategyOrder(count) {
-    const tail = Array.from({ length: Math.max(0, count - 1) }, (_, i) => DEFAULT_STRATEGIES[i % DEFAULT_STRATEGIES.length]);
-    return ['danTuo', ...tail];
+  function buildStrategyOrder(count, type = 'dlt') {
+    const base = type === 'dlt' ? DLT_DEFAULT_STRATEGIES : DEFAULT_STRATEGIES;
+    return Array.from({ length: count }, (_, i) => base[i % base.length]);
   }
 
   // 计算一注号码的"最弱号码得分"（决定 confidence tier 的地板）
@@ -2200,9 +2259,9 @@
    * @returns {Array<{ front, back, scores, reasoning, strategy, confidence, minScore }>}
    */
   function generateMultiplePredictions(data, count = 5, options = {}) {
-    const strategies = buildStrategyOrder(count);
     const predictions = [];
     const context = options.context || createPredictionContext(data, options.dataEnd);
+    const strategies = buildStrategyOrder(count, context.type);
     const rng = options.rng || Math.random;
     const seen = new Set();
     const maxAttempts = Math.max(count * 25, strategies.length);
@@ -2232,7 +2291,9 @@
       attempts++;
     }
 
-    while (predictions.length < count) {
+    let fallbackAttempts = 0;
+    const fallbackMaxAttempts = Math.max(count * 50, strategies.length * 10);
+    while (predictions.length < count && fallbackAttempts < fallbackMaxAttempts) {
       const strategy = strategies[predictions.length % strategies.length];
       const useDanLayer = strategy === 'danTuo';
       const realStrategy = useDanLayer ? 'balanced' : strategy;
@@ -2252,6 +2313,11 @@
           strategy: useDanLayer ? 'danTuo' : strategy
         });
       }
+      fallbackAttempts++;
+    }
+
+    if (predictions.length < count) {
+      throw new Error(`预测生成不足：需要 ${count} 注，实际 ${predictions.length} 注`);
     }
 
     // 置信度分层输出
@@ -2301,6 +2367,7 @@
     OVERKILL_CONFIG,
     TREND_DUAL_WINDOW_CONFIG,
     META_WEIGHT_CONFIG,
+    HOT_COLD_CONFIG,
     RAW_COMPOSITE_WEIGHTS,
     RECENT_FREQ_CONFIG,
     BACK_SOFT_KILL_DEFAULT,

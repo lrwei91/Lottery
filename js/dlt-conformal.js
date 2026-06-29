@@ -22,7 +22,34 @@
   'use strict';
 
   const ALPHA = 0.10;  // 90% coverage target
+  const HOLDOUT_RATIO = 0.20;
+  const MIN_CAL_SIZE = 10;
   const Z_HALF_WIDTH_THRESHOLDS = { low: 0.05, medium: 0.10 };
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function quantile(values, q) {
+    if (!values || values.length === 0) return 0;
+    const sorted = values.slice().sort((a, b) => a - b);
+    const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * q) - 1));
+    return sorted[idx];
+  }
+
+  function splitTrainCalibration(data) {
+    const calSize = Math.min(
+      Math.max(MIN_CAL_SIZE, Math.ceil(data.length * HOLDOUT_RATIO)),
+      Math.max(1, data.length - 1)
+    );
+    // 数据按期号降序排列：前 20% 是最近开奖，用作校准集；剩余旧数据用于训练。
+    return {
+      cal: data.slice(0, calSize),
+      train: data.slice(calSize),
+      calSize,
+      trainSize: data.length - calSize
+    };
+  }
 
   /**
    * 构建每个号码的"出现序列"
@@ -99,6 +126,54 @@
     };
   }
 
+  function countProb(draws, num, zone) {
+    if (!draws || draws.length === 0) return 0;
+    const count = draws.reduce((acc, draw) => {
+      const nums = zone === 'back' ? (draw.back || []) : (draw.front || []);
+      return acc + (nums.includes(num) ? 1 : 0);
+    }, 0);
+    return count / draws.length;
+  }
+
+  function calibrateZone(results, cal, zone, alpha) {
+    const driftScores = results.map(r => Math.abs(countProb(cal, r.num, zone) - r.empiricalProb));
+    const qhat = quantile(driftScores, 1 - alpha);
+    let covered = 0;
+
+    const calibrated = results.map(r => {
+      const calProb = countProb(cal, r.num, zone);
+      const recentDrift = Number((calProb - r.empiricalProb).toFixed(4));
+      const conformalHalfWidth = Number(clamp(r.halfWidth + qhat, 0.01, 0.5).toFixed(4));
+      const ciLow = Number(clamp(r.empiricalProb - conformalHalfWidth, 0, 1).toFixed(4));
+      const ciHigh = Number(clamp(r.empiricalProb + conformalHalfWidth, 0, 1).toFixed(4));
+      const isCovered = calProb >= ciLow - 1e-6 && calProb <= ciHigh + 1e-6;
+      if (isCovered) covered++;
+
+      const driftPenalty = clamp(Math.abs(recentDrift) / (conformalHalfWidth || 0.01), 0, 1);
+      const widthPenalty = clamp(conformalHalfWidth / 0.20, 0, 1);
+      const stabilityScore = Number(clamp(1 - driftPenalty * 0.65 - widthPenalty * 0.35, 0, 1).toFixed(4));
+
+      return {
+        ...r,
+        calProb: Number(calProb.toFixed(4)),
+        qhat: Number(qhat.toFixed(4)),
+        conformalHalfWidth,
+        ciLow,
+        ciHigh,
+        recentDrift,
+        stabilityScore,
+        uncertaintyLevel: stabilityScore >= 0.75 ? 'low' : stabilityScore >= 0.35 ? 'medium' : 'high'
+      };
+    });
+
+    return {
+      results: calibrated,
+      qhat: Number(qhat.toFixed(4)),
+      covered,
+      total: results.length
+    };
+  }
+
   /**
    * 批量预测所有号码
    * @param {Array} data - 开奖数据
@@ -109,43 +184,27 @@
     if (!data || data.length < 5) {
       return { front: [], back: [], empiricalCoverage: 0, calSize: 0 };
     }
-    const { front, back } = buildAppearanceSequences(data, opts);
+    const split = splitTrainCalibration(data);
+    const { front, back } = buildAppearanceSequences(split.train, opts);
     const frontResults = Array.from(front.entries()).map(([num, seq]) => predictNumber(num, seq));
     const backResults = Array.from(back.entries()).map(([num, seq]) => predictNumber(num, seq));
 
-    // 在 calibration 集上校验 empiricalCoverage（用最后 20% 期作 holdout）
-    // 检查 cal 期的真实经验频率是否落在 CI 内
-    const splitIdx = Math.max(1, Math.floor(data.length * 0.8));
-    const cal = data.slice(splitIdx);
-    if (cal.length === 0) {
-      return { front: frontResults, back: backResults, empiricalCoverage: 0, calSize: 0 };
-    }
-
-    // 每期只建一次 Set，避免 O(N × M) 创建
-    const calFrontSets = cal.map(d => new Set(d.front || []));
-    const calBackSets = cal.map(d => new Set(d.back || []));
-
-    let covered = 0;
-    let total = 0;
-    for (const r of frontResults) {
-      const calCount = calFrontSets.reduce((acc, s) => acc + (s.has(r.num) ? 1 : 0), 0);
-      const calProb = calCount / cal.length;
-      if (calProb >= r.ciLow - 1e-6 && calProb <= r.ciHigh + 1e-6) covered++;
-      total++;
-    }
-    for (const r of backResults) {
-      const calCount = calBackSets.reduce((acc, s) => acc + (s.has(r.num) ? 1 : 0), 0);
-      const calProb = calCount / cal.length;
-      if (calProb >= r.ciLow - 1e-6 && calProb <= r.ciHigh + 1e-6) covered++;
-      total++;
-    }
+    const frontCal = calibrateZone(frontResults, split.cal, 'front', ALPHA);
+    const backCal = calibrateZone(backResults, split.cal, 'back', ALPHA);
+    const covered = frontCal.covered + backCal.covered;
+    const total = frontCal.total + backCal.total;
     const empiricalCoverage = total > 0 ? covered / total : 0;
 
     return {
-      front: frontResults,
-      back: backResults,
+      front: frontCal.results,
+      back: backCal.results,
       empiricalCoverage: Number(empiricalCoverage.toFixed(4)),
-      calSize: cal.length
+      calSize: split.calSize,
+      trainSize: split.trainSize,
+      qhat: {
+        front: frontCal.qhat,
+        back: backCal.qhat
+      }
     };
   }
 
@@ -160,11 +219,12 @@
     const maxHalfWidth = (opts && opts.maxHalfWidth) || 0.10;
     const minProb = (opts && opts.minProb) || 0.05;
     return results
-      .filter(r => r.halfWidth <= maxHalfWidth && r.empiricalProb >= minProb)
+      .filter(r => (r.conformalHalfWidth || r.halfWidth) <= maxHalfWidth && r.empiricalProb >= minProb)
       .map(r => ({
         num: r.num,
-        score: r.empiricalProb * (1 - r.halfWidth),
-        halfWidth: r.halfWidth,
+        score: r.empiricalProb * (1 - (r.conformalHalfWidth || r.halfWidth)) * (r.stabilityScore || 0.5),
+        halfWidth: r.conformalHalfWidth || r.halfWidth,
+        stabilityScore: r.stabilityScore,
         prob: r.empiricalProb
       }))
       .sort((a, b) => b.score - a.score)
@@ -193,6 +253,7 @@
     rankByConfidence,
     generateReport,
     ALPHA,
+    HOLDOUT_RATIO,
     Z_HALF_WIDTH_THRESHOLDS
   };
 })(typeof window !== 'undefined' ? window : globalThis);

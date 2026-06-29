@@ -31,6 +31,19 @@
 - Storage → Connect Database 改完 env **不会自动 re-deploy**，要么 `vercel deploy --prod`，要么在 Dashboard 点 Redeploy。
 - 验证 env 是否生效的快速方法：curl 部署后的 `/api/xxx`，500 错误信息里如果还报 "Missing required environment variables" 就是没注入。
 
+### 2.1 Vercel 自定义域名 / DNS 排查
+- `lrwei91.online` 的子域名如果挂到 Vercel，Cloudflare DNS 用 `CNAME -> cname.vercel-dns.com`，初始保持 **DNS only**，等 Vercel 验证和 HTTPS 证书稳定后再考虑开代理。
+- 本机普通 `dig` 看到 `198.18.x.x` 时，**不要直接当成 Cloudflare 真实 A 记录**。这个网段常见于 Clash / mihomo / TUN 的 Fake-IP 模式；先查公共 DoH 或权威 DNS 再判断。
+- 推荐验证 Cloudflare/公网真实解析：
+  ```bash
+  curl -sS -H 'accept: application/dns-json' \
+    'https://cloudflare-dns.com/dns-query?name=bet.lrwei91.online&type=CNAME'
+  curl -sS -H 'accept: application/dns-json' \
+    'https://dns.google/resolve?name=bet.lrwei91.online&type=A'
+  ```
+- 如果 DoH 返回 `CNAME cname.vercel-dns.com.`，但本机 `dig` 返回 `198.18.x.x`，优先检查本机代理/VPN/TUN 路由，而不是去 Cloudflare 面板找不存在的 A 记录。
+- 自定义域名 DNS 正确但访问跳到 `vercel.com/sso-api?...` 时，说明 Vercel 项目可能开了 Deployment Protection / Vercel Authentication；要在 Vercel Dashboard 的项目设置里关闭生产环境访问保护。
+
 ### 3. 项目结构约定
 - 新增前端逻辑：放 `js/`，命名小写连字符（参考 `odds-utils.js` / `cloud-sync.js`）。
 - 新增 API endpoint：放 `api/`（Vercel Functions 自动识别），文件名就是路径。
@@ -59,11 +72,12 @@
   - `selectWithDanLayer` — 胆码分层选号
   - `tagPredictionsWithConfidence` + `computeMinScoreForPrediction` — 5 注置信度 3 档分层
   - `BACK_SOFT_KILL_DEFAULT` — 后区观察层软排（默认开启）
-- 列表 5 注策略顺序：第 1 注 = 胆码分层 (danTuo)，后 4 注 = balanced/random/gap/hot/cold 轮转（`buildStrategyOrder`）
+- 列表 5 注默认策略顺序（v2026-06-29）：`gap / cold / random / balanced / hot`（`buildStrategyOrder(count, type)`）；`danTuo` 保留为可选能力，但不再占默认 5 注名额
 - `generatePrediction` 新增 `backSoftKill` / `useDanLayer` 选项；返回里多 `meta` 字段（overKillHit / transitionSignalApplied / biasDetected / backSoftKill / useDanLayer）
 - `generateMultiplePredictions` 输出里每注带 `confidence: 'high'|'balanced'|'aggressive'` + `minScore`
 - 误杀预警阈值存在 `_overKillRuntime`，由 `app.js` 的 `backtestOverKillHitRate` 在每期复盘时回写校准
-- `js/dlt-conformal.js` 是大乐透专属 Conformal Prediction：用 Wilson score 算 90% CI，暴露 `DltConformal.generateReport(data)`（仅展示性，目前未接入选号权重）
+- `js/dlt-conformal.js` 是大乐透专属 Conformal Prediction：旧数据训练 + 最近 20% holdout 校准，输出 `qhat` / `conformalHalfWidth` / `recentDrift` / `stabilityScore`，并通过 `computeMetaWeight` 接入选号权重
+- 大乐透健康检查入口：`npm run check:dlt-predictor`（覆盖 Predictor/DltConformal 加载、Conformal 覆盖率、5 注合法性、历史完全重复排除）
 
 ### 7. 测试
 - 跑 `npm run dev`（`npx -y serve .`）起本地静态服务。
@@ -80,6 +94,19 @@
 
 ## 变更日志
 
+- 2026-06-29：基于远端 140 条大乐透复盘记录做策略升级（只优化 大乐透，PL3 仅冒烟防回归）。`js/predictor.js`：
+  - 复盘结论：`gap/cold` 前区表现优于 `hot/danTuo`；原默认 5 注中 `danTuo` 前区命中偏弱，且 `hotColdAnalysis` 在长窗口 + 时间衰减下把选中号码/开奖号几乎全判成 `warm`，导致 hot/cold 策略名义存在、实际失效
+  - 默认大乐透 5 注策略顺序改为 `gap / cold / random / balanced / hot`；`danTuo` 保留为 `useDanLayer` 可选能力，不再默认占位；`buildStrategyOrder(count, type)` 按彩种分支，PL3 仍走 `balanced/random/gap/hot/cold`
+  - 新增 `HOT_COLD_CONFIG`：大乐透预测用近 120 期窗口，`hotRatio=1.25` / `coldRatio=0.75`，并设置最小冷热分组（前区 4 个、后区 2 个），避免全量 `warm`
+  - `RECENT_FREQ_CONFIG` 放松短期冷号惩罚：`absentPenalty 0.5→0.7`、`underHalf 0.7→0.82`、`underThird 0.85→0.92`、`overHotBoost 1.15→1.10`，减少对冷回补的错杀
+  - `computeFrontConstraints` 和值分位放宽到 10%-90%，避免低和值继续被训练区间排掉
+  - 后区默认独立走 `gap`（遗漏回补）+ `BACK_SOFT_KILL_DEFAULT` 观察层软排，避免前区 cold/hot 策略牵连后区
+  - `computeMetaWeight` 优先使用 `conformalStability`，旧报告才回退 `conformalHalfWidth`；新增 `conformalStableThreshold=0.75` / `conformalUnstableThreshold=0.35`
+  - `generateMultiplePredictions` 兜底循环增加 `fallbackMaxAttempts`，不足注数时显式抛错，避免极端约束下无限循环。`js/dlt-conformal.js`：
+  - 从单纯 Wilson CI 升级为旧数据训练 + 最近 holdout 校准：输出 `trainSize` / `calSize` / `qhat.front` / `qhat.back` / `conformalHalfWidth` / `recentDrift` / `stabilityScore`
+  - `rankByConfidence` 改用校准半宽和稳定性分数排序。`package.json`：
+  - 新增 `check:dlt-predictor` 脚本，执行 `node scripts/check-dlt-predictor.cjs`
+  - 验证记录：`npm run check:dlt-predictor` 通过，最新期 `26072`，`conformalCoverage=0.9574`，`qhat.front=0.0316` / `qhat.back=0.0238`；28 组远端 record × 20 seed walk-forward：单注前区均值 `0.7186→0.7568`，综合分 `1.8523→1.8961`，中奖注数 `1085→1094`，后区基本持平 `0.2989→0.2982`
 - 2026-06-27：大乐透代码审查修复 + DltConformal 接入选号权重。`js/predictor.js`：
   - **Bug 修复 1**：`generateMultiplePredictions` fallback 循环（兜底用）补 `seen` 去重，避免主循环 125 次没凑齐时产生重复注
   - **Bug 修复 2**：`_overKillRuntime` 校准结果持久化到 `ticai.overKillRuntime`（之前刷新页面归零）；新增 `loadOverKillRuntime()`，IIFE 启动时立即加载
