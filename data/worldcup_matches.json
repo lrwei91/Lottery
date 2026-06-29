@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-28T20:36:43.949762+00:00",
+    "lastUpdated": "2026-06-29T20:56:31.905834+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-28",
+    "sourceDataDate": "2026-06-29",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
     "matchCount": 97
@@ -3306,9 +3306,9 @@
         "homeId": "43883",
         "awayId": "43899",
         "homeScore": 0,
-        "awayScore": 0,
+        "awayScore": 1,
         "status": "completed",
-        "sourceStatus": 3
+        "sourceStatus": 0
       },
       {
         "id": "400021516",
@@ -3323,10 +3323,10 @@
         "away": "Japan",
         "homeId": "43924",
         "awayId": "43819",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 2,
+        "awayScore": 1,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021513",
@@ -3341,10 +3341,10 @@
         "away": "Paraguay",
         "homeId": "43948",
         "awayId": "43928",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 0,
+        "awayScore": 0,
+        "status": "completed",
+        "sourceStatus": 3
       },
       {
         "id": "400021522",
@@ -3591,9 +3591,9 @@
         "date": "2026-07-04",
         "time": "17:00",
         "venue": "Houston Stadium, Houston",
-        "home": "",
+        "home": "Canada",
         "away": "",
-        "homeId": "",
+        "homeId": "43899",
         "awayId": "",
         "homeScore": null,
         "awayScore": null,
@@ -3627,9 +3627,9 @@
         "date": "2026-07-05",
         "time": "20:00",
         "venue": "New York/New Jersey Stadium, New Jersey",
-        "home": "",
+        "home": "Brazil",
         "away": "",
-        "homeId": "",
+        "homeId": "43924",
         "awayId": "",
         "homeScore": null,
         "awayScore": null,
