@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-29T20:56:31.905834+00:00",
+    "lastUpdated": "2026-06-30T21:04:16.503072+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-29",
+    "sourceDataDate": "2026-06-30",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
     "matchCount": 97
@@ -3341,10 +3341,10 @@
         "away": "Paraguay",
         "homeId": "43948",
         "awayId": "43928",
-        "homeScore": 0,
-        "awayScore": 0,
+        "homeScore": 1,
+        "awayScore": 1,
         "status": "completed",
-        "sourceStatus": 3
+        "sourceStatus": 0
       },
       {
         "id": "400021522",
@@ -3359,10 +3359,10 @@
         "away": "Morocco",
         "homeId": "43960",
         "awayId": "43872",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 1,
+        "awayScore": 1,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021514",
@@ -3377,10 +3377,10 @@
         "away": "Norway",
         "homeId": "43854",
         "awayId": "43961",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 1,
+        "awayScore": 2,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021523",
@@ -3395,10 +3395,10 @@
         "away": "Sweden",
         "homeId": "43946",
         "awayId": "43970",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 0,
+        "awayScore": 0,
+        "status": "completed",
+        "sourceStatus": 3
       },
       {
         "id": "400021520",
@@ -3592,9 +3592,9 @@
         "time": "17:00",
         "venue": "Houston Stadium, Houston",
         "home": "Canada",
-        "away": "",
+        "away": "Morocco",
         "homeId": "43899",
-        "awayId": "",
+        "awayId": "43872",
         "homeScore": null,
         "awayScore": null,
         "status": "scheduled",
@@ -3609,9 +3609,9 @@
         "date": "2026-07-04",
         "time": "21:00",
         "venue": "Philadelphia Stadium, Philadelphia",
-        "home": "",
+        "home": "Paraguay",
         "away": "",
-        "homeId": "",
+        "homeId": "43928",
         "awayId": "",
         "homeScore": null,
         "awayScore": null,
@@ -3628,9 +3628,9 @@
         "time": "20:00",
         "venue": "New York/New Jersey Stadium, New Jersey",
         "home": "Brazil",
-        "away": "",
+        "away": "Norway",
         "homeId": "43924",
-        "awayId": "",
+        "awayId": "43961",
         "homeScore": null,
         "awayScore": null,
         "status": "scheduled",
