@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-06-30T21:04:16.503072+00:00",
+    "lastUpdated": "2026-07-01T20:53:23.560449+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-06-30",
+    "sourceDataDate": "2026-07-01",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
     "matchCount": 97
@@ -3395,10 +3395,10 @@
         "away": "Sweden",
         "homeId": "43946",
         "awayId": "43970",
-        "homeScore": 0,
+        "homeScore": 3,
         "awayScore": 0,
         "status": "completed",
-        "sourceStatus": 3
+        "sourceStatus": 0
       },
       {
         "id": "400021520",
@@ -3407,16 +3407,16 @@
         "stage": "Round of 32",
         "matchDay": null,
         "date": "2026-07-01",
-        "time": "01:00",
+        "time": "02:00",
         "venue": "Mexico City Stadium, Mexico City",
         "home": "Mexico",
         "away": "Ecuador",
         "homeId": "43911",
         "awayId": "43927",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 2,
+        "awayScore": 0,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021512",
@@ -3431,10 +3431,10 @@
         "away": "DR Congo",
         "homeId": "43942",
         "awayId": "20014",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 2,
+        "awayScore": 1,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021525",
@@ -3449,10 +3449,10 @@
         "away": "Senegal",
         "homeId": "43935",
         "awayId": "43879",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 0,
+        "awayScore": 1,
+        "status": "completed",
+        "sourceStatus": 3
       },
       {
         "id": "400021524",
@@ -3610,9 +3610,9 @@
         "time": "21:00",
         "venue": "Philadelphia Stadium, Philadelphia",
         "home": "Paraguay",
-        "away": "",
+        "away": "France",
         "homeId": "43928",
-        "awayId": "",
+        "awayId": "43946",
         "homeScore": null,
         "awayScore": null,
         "status": "scheduled",
@@ -3645,10 +3645,10 @@
         "date": "2026-07-06",
         "time": "00:00",
         "venue": "Mexico City Stadium, Mexico City",
-        "home": "",
-        "away": "",
-        "homeId": "",
-        "awayId": "",
+        "home": "Mexico",
+        "away": "England",
+        "homeId": "43911",
+        "awayId": "43942",
         "homeScore": null,
         "awayScore": null,
         "status": "scheduled",
