@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-01T20:53:23.560449+00:00",
+    "lastUpdated": "2026-07-02T20:36:44.247070+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-07-01",
+    "sourceDataDate": "2026-07-02",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
     "matchCount": 97
@@ -3449,10 +3449,10 @@
         "away": "Senegal",
         "homeId": "43935",
         "awayId": "43879",
-        "homeScore": 0,
-        "awayScore": 1,
+        "homeScore": 3,
+        "awayScore": 2,
         "status": "completed",
-        "sourceStatus": 3
+        "sourceStatus": 0
       },
       {
         "id": "400021524",
@@ -3467,10 +3467,10 @@
         "away": "Bosnia-Herzegovina",
         "homeId": "43921",
         "awayId": "44037",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 2,
+        "awayScore": 0,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021519",
@@ -3485,10 +3485,10 @@
         "away": "Austria",
         "homeId": "43969",
         "awayId": "43934",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 2,
+        "awayScore": 0,
+        "status": "completed",
+        "sourceStatus": 3
       },
       {
         "id": "400021526",
@@ -3681,10 +3681,10 @@
         "date": "2026-07-07",
         "time": "00:00",
         "venue": "Seattle Stadium, Seattle",
-        "home": "",
-        "away": "",
-        "homeId": "",
-        "awayId": "",
+        "home": "USA",
+        "away": "Belgium",
+        "homeId": "43921",
+        "awayId": "43935",
         "homeScore": null,
         "awayScore": null,
         "status": "scheduled",
