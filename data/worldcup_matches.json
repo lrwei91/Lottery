@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-02T20:36:44.247070+00:00",
+    "lastUpdated": "2026-07-03T20:32:36.735421+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-07-02",
+    "sourceDataDate": "2026-07-03",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
     "matchCount": 97
@@ -3485,10 +3485,10 @@
         "away": "Austria",
         "homeId": "43969",
         "awayId": "43934",
-        "homeScore": 2,
+        "homeScore": 3,
         "awayScore": 0,
         "status": "completed",
-        "sourceStatus": 3
+        "sourceStatus": 0
       },
       {
         "id": "400021526",
@@ -3503,10 +3503,10 @@
         "away": "Croatia",
         "homeId": "43963",
         "awayId": "43938",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 2,
+        "awayScore": 1,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021527",
@@ -3521,10 +3521,10 @@
         "away": "Algeria",
         "homeId": "43971",
         "awayId": "43843",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 2,
+        "awayScore": 0,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021515",
@@ -3539,10 +3539,10 @@
         "away": "Egypt",
         "homeId": "43976",
         "awayId": "43855",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 1,
+        "awayScore": 1,
+        "status": "completed",
+        "sourceStatus": 3
       },
       {
         "id": "400021521",
@@ -3663,10 +3663,10 @@
         "date": "2026-07-06",
         "time": "19:00",
         "venue": "Dallas Stadium, Dallas",
-        "home": "",
-        "away": "",
-        "homeId": "",
-        "awayId": "",
+        "home": "Portugal",
+        "away": "Spain",
+        "homeId": "43963",
+        "awayId": "43969",
         "homeScore": null,
         "awayScore": null,
         "status": "scheduled",
@@ -3717,9 +3717,9 @@
         "date": "2026-07-07",
         "time": "20:00",
         "venue": "BC Place Vancouver, Vancouver",
-        "home": "",
+        "home": "Switzerland",
         "away": "",
-        "homeId": "",
+        "homeId": "43971",
         "awayId": "",
         "homeScore": null,
         "awayScore": null,
