@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-03T20:32:36.735421+00:00",
+    "lastUpdated": "2026-07-04T20:16:19.651036+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-07-03",
+    "sourceDataDate": "2026-07-04",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
     "matchCount": 97
@@ -3542,7 +3542,7 @@
         "homeScore": 1,
         "awayScore": 1,
         "status": "completed",
-        "sourceStatus": 3
+        "sourceStatus": 0
       },
       {
         "id": "400021521",
@@ -3557,10 +3557,10 @@
         "away": "Cape Verde",
         "homeId": "43922",
         "awayId": "43850",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 3,
+        "awayScore": 2,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021517",
@@ -3575,10 +3575,10 @@
         "away": "Ghana",
         "homeId": "43926",
         "awayId": "43860",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 1,
+        "awayScore": 0,
+        "status": "completed",
+        "sourceStatus": 0
       }
     ],
     "roundOf16": [
@@ -3595,10 +3595,10 @@
         "away": "Morocco",
         "homeId": "43899",
         "awayId": "43872",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 0,
+        "awayScore": 3,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021533",
@@ -3699,10 +3699,10 @@
         "date": "2026-07-07",
         "time": "16:00",
         "venue": "Atlanta Stadium, Atlanta",
-        "home": "",
-        "away": "",
-        "homeId": "",
-        "awayId": "",
+        "home": "Argentina",
+        "away": "Egypt",
+        "homeId": "43922",
+        "awayId": "43855",
         "homeScore": null,
         "awayScore": null,
         "status": "scheduled",
@@ -3718,9 +3718,9 @@
         "time": "20:00",
         "venue": "BC Place Vancouver, Vancouver",
         "home": "Switzerland",
-        "away": "",
+        "away": "Colombia",
         "homeId": "43971",
-        "awayId": "",
+        "awayId": "43926",
         "homeScore": null,
         "awayScore": null,
         "status": "scheduled",
