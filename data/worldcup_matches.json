@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-04T20:16:19.651036+00:00",
+    "lastUpdated": "2026-07-05T20:21:30.122149+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-07-04",
+    "sourceDataDate": "2026-07-05",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
     "matchCount": 97
@@ -3613,10 +3613,10 @@
         "away": "France",
         "homeId": "43928",
         "awayId": "43946",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 0,
+        "awayScore": 1,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021532",
@@ -3631,10 +3631,10 @@
         "away": "Norway",
         "homeId": "43924",
         "awayId": "43961",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 0,
+        "awayScore": 0,
+        "status": "completed",
+        "sourceStatus": 3
       },
       {
         "id": "400021531",
