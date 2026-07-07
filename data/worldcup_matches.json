@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-06T21:00:27.366666+00:00",
+    "lastUpdated": "2026-07-07T20:57:22.426719+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-07-06",
+    "sourceDataDate": "2026-07-07",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
     "matchCount": 97
@@ -3670,7 +3670,7 @@
         "homeScore": 0,
         "awayScore": 1,
         "status": "completed",
-        "sourceStatus": 3
+        "sourceStatus": 0
       },
       {
         "id": "400021534",
@@ -3685,10 +3685,10 @@
         "away": "Belgium",
         "homeId": "43921",
         "awayId": "43935",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 1,
+        "awayScore": 4,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021528",
@@ -3703,10 +3703,10 @@
         "away": "Egypt",
         "homeId": "43922",
         "awayId": "43855",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 3,
+        "awayScore": 2,
+        "status": "completed",
+        "sourceStatus": 0
       },
       {
         "id": "400021535",
@@ -3721,10 +3721,10 @@
         "away": "Colombia",
         "homeId": "43971",
         "awayId": "43926",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 0,
+        "awayScore": 0,
+        "status": "completed",
+        "sourceStatus": 3
       }
     ],
     "quarterFinals": [],
