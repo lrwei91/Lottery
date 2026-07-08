@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-07T20:57:22.426719+00:00",
+    "lastUpdated": "2026-07-08T16:28:15.158966+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-07-07",
+    "sourceDataDate": "2026-07-08",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
-    "matchCount": 97
+    "matchCount": 104
   },
   "groups": {
     "A": {
@@ -3724,11 +3724,121 @@
         "homeScore": 0,
         "awayScore": 0,
         "status": "completed",
-        "sourceStatus": 3
+        "sourceStatus": 0
       }
     ],
-    "quarterFinals": [],
-    "semiFinals": [],
+    "quarterFinals": [
+      {
+        "id": "400021536",
+        "matchNumber": 97,
+        "group": "",
+        "stage": "Quarter-final",
+        "matchDay": null,
+        "date": "2026-07-09",
+        "time": "20:00",
+        "venue": "Boston Stadium, Boston",
+        "home": "France",
+        "away": "Morocco",
+        "homeId": "43946",
+        "awayId": "43872",
+        "homeScore": null,
+        "awayScore": null,
+        "status": "scheduled",
+        "sourceStatus": 1
+      },
+      {
+        "id": "400021538",
+        "matchNumber": 98,
+        "group": "",
+        "stage": "Quarter-final",
+        "matchDay": null,
+        "date": "2026-07-10",
+        "time": "19:00",
+        "venue": "Los Angeles Stadium, Los Angeles",
+        "home": "Spain",
+        "away": "Belgium",
+        "homeId": "43969",
+        "awayId": "43935",
+        "homeScore": null,
+        "awayScore": null,
+        "status": "scheduled",
+        "sourceStatus": 1
+      },
+      {
+        "id": "400021539",
+        "matchNumber": 99,
+        "group": "",
+        "stage": "Quarter-final",
+        "matchDay": null,
+        "date": "2026-07-11",
+        "time": "21:00",
+        "venue": "Miami Stadium, Miami",
+        "home": "Norway",
+        "away": "England",
+        "homeId": "43961",
+        "awayId": "43942",
+        "homeScore": null,
+        "awayScore": null,
+        "status": "scheduled",
+        "sourceStatus": 1
+      },
+      {
+        "id": "400021537",
+        "matchNumber": 100,
+        "group": "",
+        "stage": "Quarter-final",
+        "matchDay": null,
+        "date": "2026-07-12",
+        "time": "01:00",
+        "venue": "Kansas City Stadium, Kansas City",
+        "home": "Argentina",
+        "away": "Switzerland",
+        "homeId": "43922",
+        "awayId": "43971",
+        "homeScore": null,
+        "awayScore": null,
+        "status": "scheduled",
+        "sourceStatus": 1
+      }
+    ],
+    "semiFinals": [
+      {
+        "id": "400021541",
+        "matchNumber": 101,
+        "group": "",
+        "stage": "Semi-final",
+        "matchDay": null,
+        "date": "2026-07-14",
+        "time": "19:00",
+        "venue": "Dallas Stadium, Dallas",
+        "home": "",
+        "away": "",
+        "homeId": "",
+        "awayId": "",
+        "homeScore": null,
+        "awayScore": null,
+        "status": "scheduled",
+        "sourceStatus": 1
+      },
+      {
+        "id": "400021540",
+        "matchNumber": 102,
+        "group": "",
+        "stage": "Semi-final",
+        "matchDay": null,
+        "date": "2026-07-15",
+        "time": "19:00",
+        "venue": "Atlanta Stadium, Atlanta",
+        "home": "",
+        "away": "",
+        "homeId": "",
+        "awayId": "",
+        "homeScore": null,
+        "awayScore": null,
+        "status": "scheduled",
+        "sourceStatus": 1
+      }
+    ],
     "final": [
       {
         "id": "400021543",
@@ -3749,6 +3859,25 @@
         "sourceStatus": 1
       }
     ],
-    "thirdPlace": []
+    "thirdPlace": [
+      {
+        "id": "400021542",
+        "matchNumber": 103,
+        "group": "",
+        "stage": "Play-off for third place",
+        "matchDay": null,
+        "date": "2026-07-18",
+        "time": "21:00",
+        "venue": "Miami Stadium, Miami",
+        "home": "",
+        "away": "",
+        "homeId": "",
+        "awayId": "",
+        "homeScore": null,
+        "awayScore": null,
+        "status": "scheduled",
+        "sourceStatus": 1
+      }
+    ]
   }
 }

@@ -230,9 +230,12 @@ def build_output(raw_matches: list[dict]) -> dict:
         "Round of 32": "roundOf32",
         "Round of 16": "roundOf16",
         "Quarter-finals": "quarterFinals",
+        "Quarter-final": "quarterFinals",      # 2026-07-09 修正:FIFA API 实际用单数
         "Semi-finals": "semiFinals",
+        "Semi-final": "semiFinals",             # 2026-07-09 修正
         "Final": "final",
         "Match for third place": "thirdPlace",
+        "Play-off for third place": "thirdPlace",  # 2026-07-09 修正:FIFA API 实际用此名
     }
 
     for raw in sorted(first_stage, key=lambda item: item.get("MatchNumber") or 999):
