@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-10T05:25:59.914052+00:00",
+    "lastUpdated": "2026-07-10T20:41:48.148773+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
@@ -3759,10 +3759,10 @@
         "away": "Belgium",
         "homeId": "43969",
         "awayId": "43935",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 1,
+        "awayScore": 1,
+        "status": "completed",
+        "sourceStatus": 3
       },
       {
         "id": "400021539",
