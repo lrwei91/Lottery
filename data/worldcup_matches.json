@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-10T20:41:48.148773+00:00",
+    "lastUpdated": "2026-07-11T20:10:21.325837+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-07-10",
+    "sourceDataDate": "2026-07-11",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
     "matchCount": 104
@@ -3759,10 +3759,10 @@
         "away": "Belgium",
         "homeId": "43969",
         "awayId": "43935",
-        "homeScore": 1,
+        "homeScore": 2,
         "awayScore": 1,
         "status": "completed",
-        "sourceStatus": 3
+        "sourceStatus": 0
       },
       {
         "id": "400021539",
@@ -3812,9 +3812,9 @@
         "time": "19:00",
         "venue": "Dallas Stadium, Dallas",
         "home": "France",
-        "away": "",
+        "away": "Spain",
         "homeId": "43946",
-        "awayId": "",
+        "awayId": "43969",
         "homeScore": null,
         "awayScore": null,
         "status": "scheduled",
