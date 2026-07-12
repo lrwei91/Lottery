@@ -24,17 +24,13 @@
  *   odds:snapshot:_meta                → 拉取时间 + 健康度
  */
 
-import { Redis } from '@upstash/redis';
-
-let _redis = null;
-function getRedis() {
-  if (_redis) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  _redis = new Redis({ url, token });
-  return _redis;
-}
+import { getRedis } from '../_lib/redis.js';
+import { setCors } from '../_lib/http.js';
+import {
+  fetchFifaMatchesSnapshot,
+  MATCHES_SNAPSHOT_KEY,
+  MATCHES_SNAPSHOT_TTL_SECONDS
+} from '../_lib/worldcup-matches.js';
 
 const KV_KEYS = {
   'polymarket-h2h': 'odds:snapshot:polymarket-h2h',
@@ -45,12 +41,6 @@ const KV_KEYS = {
   meta: 'odds:snapshot:_meta'
 };
 const SNAPSHOT_TTL_SECONDS = 60 * 60 * 24 * 3;
-
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-}
 
 // ============================================================
 // Polymarket 单场 1X2 h2h（series 11433 = "FIFA World Cup" soccer-fifwc）
@@ -559,7 +549,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: `Unknown source: ${sourceParam}. Use one of: ${Object.keys(SOURCES).join(', ')}` });
   }
 
-  const redis = getRedis();
+  const redis = getRedis({ required: false });
   const results = {};
   const startedAt = new Date().toISOString();
 
@@ -609,7 +599,7 @@ export default async function handler(req, res) {
   if (redis) {
     try {
       const matches = await fetchFifaMatchesSnapshot();
-      await redis.set('matches:snapshot', matches, { ex: 60 * 60 * 12 });
+      await redis.set(MATCHES_SNAPSHOT_KEY, matches, { ex: MATCHES_SNAPSHOT_TTL_SECONDS });
       meta.results = { ...meta.results, matches: 'ok' };
     } catch (err) {
       console.error('[sync-odds] matches sync failed:', err);
@@ -618,180 +608,4 @@ export default async function handler(req, res) {
   }
 
   return res.status(200).json({ meta, results });
-}
-
-// ============================================================
-// FIFA v3 calendar matches 同步 (合并到 sync-odds 里, Vercel Hobby 只能 1 cron/天)
-// ============================================================
-const FIFA_TEAM_ALIASES = {
-  'Bosnia-Herzegovina': 'Bosnia and Herzegovina',
-  'Cabo Verde': 'Cape Verde',
-  'Congo DR': 'DR Congo',
-  "Côte d'Ivoire": 'Ivory Coast',
-  'Czechia': 'Czech Republic',
-  'IR Iran': 'Iran',
-  'Korea Republic': 'South Korea',
-  'Türkiye': 'Turkey'
-};
-// FIFA v3 calendar API MatchStatus: 0=finished(历史), 1=scheduled, 3-9/15-17=live, 10-12=completed
-const FIFA_STATUS_MAP = {
-  0: 'completed',
-  1: 'scheduled', 2: 'scheduled',
-  3: 'live', 4: 'live', 5: 'live', 6: 'live', 7: 'live', 8: 'live', 9: 'live',
-  10: 'completed', 11: 'completed', 12: 'completed',
-  13: 'abandoned',
-  15: 'live', 16: 'live', 17: 'live'
-};
-function _fifaPickLocalized(values) {
-  if (!Array.isArray(values) || !values.length) return '';
-  for (const item of values) {
-    if ((item?.Locale || '').toLowerCase().startsWith('en')) return item?.Description || '';
-  }
-  return values[0]?.Description || '';
-}
-function _fifaNormalizeTeam(team) {
-  if (!team) return '';
-  const raw = team.ShortClubName || _fifaPickLocalized(team.TeamName) || '';
-  return FIFA_TEAM_ALIASES[raw] || raw;
-}
-function _fifaNormalizeMatch(raw) {
-  // FIFA v3 calendar 字段:
-  //   raw.Home / raw.Away       →  nested team objects
-  //   raw.HomeTeamScore         →  直接数字
-  //   raw.Date                  →  ISO 8601 UTC
-  //   raw.GroupName             →  array of {Locale, Description}
-  const homeTeam = raw.Home || raw.HomeTeam || raw.homeTeam;
-  const awayTeam = raw.Away || raw.AwayTeam || raw.awayTeam;
-  const groupRaw = _fifaPickLocalized(raw.GroupName)
-    || (raw.Group && raw.Group.GroupName)
-    || raw.GroupLetter || raw.groupLetter
-    || '';
-  const group = typeof groupRaw === 'string' ? groupRaw : '';
-  const sourceStatus = Number(raw.MatchStatus ?? raw.matchStatus ?? 0);
-  const homeScore = (raw.HomeTeamScore ?? raw.homeTeamScore);
-  const awayScore = (raw.AwayTeamScore ?? raw.awayTeamScore);
-  const dateStr = (raw.Date || raw.MatchDate || raw.matchDate || '').slice(0, 10);
-  const timeStr = (raw.Date || raw.MatchTime || raw.matchTime || '').slice(11, 16);
-  const letterMatch = typeof group === 'string' ? group.match(/Group\s+([A-Z])/i) : null;
-  // FIFA v3 字段: raw.Stadium = { Name: [{Locale,Description}], CityName: [{Locale,Description}] }
-  // 也兼容顶层 StadiumName / CityName (新版本可能 flatten)
-  const stadium = raw.Stadium || {};
-  const venueName = _fifaPickLocalized(stadium.Name) || raw.StadiumName || raw.stadiumName || '';
-  const cityName = _fifaPickLocalized(stadium.CityName) || raw.CityName || raw.cityName || '';
-  const venue = [venueName, cityName].filter(Boolean).join(', ');
-  return {
-    id: String(raw.IdMatch || raw.Id || raw.MatchId || raw.matchId || ''),
-    matchNumber: raw.MatchNumber || raw.matchNumber || null,
-    group,
-    groupLetter: raw.GroupLetter || raw.groupLetter || (letterMatch?.[1] || ''),
-    matchDay: raw.MatchDay || raw.matchDay || null,
-    date: dateStr,
-    time: timeStr,
-    venue,
-    city: cityName,
-    home: _fifaNormalizeTeam(homeTeam),
-    away: _fifaNormalizeTeam(awayTeam),
-    homeScore: homeScore != null ? Number(homeScore) : null,
-    awayScore: awayScore != null ? Number(awayScore) : null,
-    status: FIFA_STATUS_MAP[sourceStatus] || 'unknown',
-    sourceStatus,
-    stage: _fifaPickLocalized(raw.StageName) || raw.stageName || '',
-    lastUpdated: raw.UpdatedDate || raw.updatedDate || null
-  };
-}
-async function _fifaFetchCalendar() {
-  const url = 'https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023';
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), 20000);
-  try {
-    const res = await fetch(url, { signal: ctrl.signal });
-    if (!res.ok) throw new Error(`FIFA API HTTP ${res.status}`);
-    return res.json();
-  } finally {
-    clearTimeout(tid);
-  }
-}
-async function _fifaFetchH2H(matchId) {
-  if (!matchId) return null;
-  const url = `https://api.fifa.com/api/v3/headtohead?matchId=${encodeURIComponent(matchId)}&language=en`;
-  const ctrl = new AbortController();
-  const tid = setTimeout(() => ctrl.abort(), 6000);
-  try {
-    const res = await fetch(url, { signal: ctrl.signal });
-    if (!res.ok) return null;
-    return res.json();
-  } catch { return null; } finally { clearTimeout(tid); }
-}
-function _fifaParseH2H(raw) {
-  if (!raw) return null;
-  const matches = Array.isArray(raw.Matches) ? raw.Matches : Array.isArray(raw.matches) ? raw.matches : [];
-  if (!matches.length) return null;
-  let wHome = 0, draws = 0, wAway = 0, goalsHome = 0, goalsAway = 0;
-  for (const m of matches) {
-    const h = Number(m.HomeTeamScore ?? m.homeTeamScore ?? m.homeScore ?? 0);
-    const a = Number(m.AwayTeamScore ?? m.awayTeamScore ?? m.awayScore ?? 0);
-    if (h > a) wHome++; else if (h < a) wAway++; else draws++;
-    goalsHome += h; goalsAway += a;
-  }
-  return {
-    source: 'FIFA head-to-head statistics API',
-    wHome, draws, wAway, total: matches.length,
-    goalsHome, goalsAway,
-    matches: matches.slice(0, 10).map(m => ({
-      date: (m.MatchDate || m.matchDate || m.Date || '').slice(0, 10),
-      competition: m.CompetitionName || m.competitionName || '',
-      stage: m.StageName || m.stageName || '',
-      home: _fifaNormalizeTeam(m.HomeTeam || m.homeTeam),
-      away: _fifaNormalizeTeam(m.AwayTeam || m.awayTeam),
-      homeScore: Number(m.HomeTeamScore ?? m.homeTeamScore ?? m.homeScore ?? 0),
-      awayScore: Number(m.AwayTeamScore ?? m.awayTeamScore ?? m.awayScore ?? 0)
-    }))
-  };
-}
-function _fifaGroupByLetter(matches) {
-  const groups = {};
-  for (const m of matches) {
-    const letter = m.groupLetter || '?';
-    if (!groups[letter]) groups[letter] = { teams: [], matches: [] };
-    groups[letter].matches.push(m);
-  }
-  for (const letter of Object.keys(groups)) {
-    const teamSet = new Set();
-    for (const m of groups[letter].matches) {
-      if (m.home) teamSet.add(m.home);
-      if (m.away) teamSet.add(m.away);
-    }
-    groups[letter].teams = Array.from(teamSet).sort();
-    groups[letter].matches.sort((a, b) =>
-      (a.date + 'T' + (a.time || '00:00')).localeCompare(b.date + 'T' + (b.time || '00:00'))
-    );
-  }
-  return groups;
-}
-async function fetchFifaMatchesSnapshot() {
-  const data = await _fifaFetchCalendar();
-  const results = Array.isArray(data?.Results) ? data.Results : Array.isArray(data?.results) ? data.results : [];
-  const matches = results.map(_fifaNormalizeMatch).filter(m => m.id);
-  let h2hOk = 0, h2hFail = 0;
-  for (const m of matches.filter(m => m.status === 'completed')) {
-    const h2h = await _fifaFetchH2H(m.id);
-    const parsed = _fifaParseH2H(h2h);
-    if (parsed) { m.headToHead = parsed; h2hOk++; } else { h2hFail++; }
-  }
-  const groups = _fifaGroupByLetter(matches);
-  return {
-    metadata: {
-      lastUpdated: new Date().toISOString(),
-      generatedBy: 'api/cron/sync-odds.js (embedded matches sync)',
-      sourceName: 'FIFA public calendar API',
-      sourceUrl: 'https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023',
-      sourceDataDate: new Date().toISOString().slice(0, 10),
-      teamCount: new Set(matches.flatMap(m => [m.home, m.away])).size,
-      matchCount: matches.length,
-      h2hAttached: h2hOk,
-      h2hFailed: h2hFail,
-      note: 'Synced via Vercel Cron daily. data/worldcup_matches.json is git-tracked fallback when Redis is empty.'
-    },
-    groups
-  };
 }

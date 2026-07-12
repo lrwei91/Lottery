@@ -47,6 +47,7 @@
 ### 3. 项目结构约定
 - 新增前端逻辑：放 `js/`，命名小写连字符（参考 `odds-utils.js` / `cloud-sync.js`）。
 - 新增 API endpoint：放 `api/`（Vercel Functions 自动识别），文件名就是路径。
+- API 公共能力复用 `api/_lib/http.js` / `redis.js`；FIFA 实时标准化只放 `api/_lib/worldcup-matches.js`。
 - 新增 Python 脚本：放 `scripts/`，同步类加前缀 `sync_`。
 - 修改 `worldcup_matches.json` 相关逻辑时，优先改 `scripts/sync_worldcup_matches.py`，不要在多个脚本里复制一份“手改比分字段”的逻辑。
 - 新增爬虫：放 `scripts/`，Node.js 走 `node scripts/xxx.js`，命名 `scraper_*.js`。
@@ -64,7 +65,7 @@
 - 改融合权重前先看 `js/odds-utils.js` 的 `devig` / `EV` / `Kelly` 工具函数，别自己重写。
 
 ### 6. 大乐透元层信号（v2026-06-22 增强）
-- 9 个新增元层信号/能力集中在 `js/predictor.js`（IIFE 内）和 `js/dlt-conformal.js`：
+- 彩种边界参数集中在 `js/predictor-config.js`，必须保持不可变；元层信号/能力集中在 `js/predictor.js` 和 `js/dlt-conformal.js`：
   - 双窗口 trendScore（近 10 vs 近 50）+ emergingHot 标记（`computeScores.scoreZone`）
   - `computeTransitionSignal` — 区间聚集反向加权
   - `detectBias` — 区间/尾数/AC 聚集 + 反聚集权重
@@ -80,6 +81,7 @@
 - 大乐透健康检查入口：`npm run check:dlt-predictor`（覆盖 Predictor/DltConformal 加载、Conformal 覆盖率、5 注合法性、历史完全重复排除）
 
 ### 7. 测试
+- 统一门禁：`npm run check`（语法、数据、API/Redis、大乐透、排列三）。
 - 跑 `npm run dev`（`npx -y serve .`）起本地静态服务。
 - API 本地测：`vercel dev`（Vercel CLI）。注意 Vercel dev 跟生产 env 注入逻辑一样，连了 Storage 才会有 Upstash 变量。
 - 数据更新：`npm run scrape:all` 或 `npm run sync:worldcup:all`。
@@ -94,6 +96,7 @@
 
 ## 变更日志
 
+- 2026-07-11：渐进式架构治理：新增统一 `npm run check` 和只读 CI；彩票工作流只提交两个 owner 文件；世界杯静态首屏与实时 API 解耦，FIFA 实时同步抽到单一共享实现；Predictor 改用不可变彩种 context；云同步升级设备命名空间 Sorted Set，并兼容读取 v1 数据。
 - 2026-06-29：基于远端 140 条大乐透复盘记录做策略升级（只优化 大乐透，PL3 仅冒烟防回归）。`js/predictor.js`：
   - 复盘结论：`gap/cold` 前区表现优于 `hot/danTuo`；原默认 5 注中 `danTuo` 前区命中偏弱，且 `hotColdAnalysis` 在长窗口 + 时间衰减下把选中号码/开奖号几乎全判成 `warm`，导致 hot/cold 策略名义存在、实际失效
   - 默认大乐透 5 注策略顺序改为 `gap / cold / random / balanced / hot`；`danTuo` 保留为 `useDanLayer` 可选能力，不再默认占位；`buildStrategyOrder(count, type)` 按彩种分支，PL3 仍走 `balanced/random/gap/hot/cold`

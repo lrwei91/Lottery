@@ -1,117 +1,45 @@
-/**
- * 复盘结果云端同步 API
- *
- * GET  /api/reviews?deviceId=xxx
- *   → { reviews: [...] }
- *
- * POST /api/reviews
- *   body: { deviceId, review }
- *   → { ok: true, key }
- *
- * 存储结构：
- *   review:{recordId}:{strategy}:{issue}  → JSON(review)
- *   reviews:byDevice:{deviceId}           → SET<reviewKey>
- *
- * reviewKey 形如 `${recordId}::${strategy}::${issue}`，天然去重。
- */
-
-import { Redis } from '@upstash/redis';
+import { getRedis } from './_lib/redis.js';
+import { bodySize, internalError, isValidDeviceId, setCors } from './_lib/http.js';
+import { listReviews, makeReviewKey, upsertReview } from './_lib/device-sync.js';
 
 const REVIEW_LIMIT = 1000;
-let _redis = null;
+const MAX_BODY_BYTES = 32 * 1024;
 
-function getRedis() {
-  if (_redis) return _redis;
-  // 兼容 Vercel Marketplace Upstash Redis（新）和老的 Vercel KV（即将下线）两种环境变量名
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-  if (!url || !token) {
-    throw new Error('Upstash Redis 环境变量未配置（请在 Vercel Dashboard → Storage 装/连 Upstash Redis）');
-  }
-  _redis = new Redis({ url, token });
-  return _redis;
-}
-
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-}
-
-function reviewKey(review) {
-  if (!review) return '';
-  return `${review.recordId || ''}::${review.strategy || ''}::${review.issue || ''}`;
+function isValidReview(review) {
+  if (!review || typeof review !== 'object') return false;
+  const key = makeReviewKey(review);
+  return /^[a-zA-Z0-9-]{3,128}$/.test(String(review.recordId || ''))
+    && /^[a-zA-Z0-9_-]{1,32}$/.test(String(review.strategy || ''))
+    && /^\d{4,16}$/.test(String(review.issue || ''))
+    && key.length <= 384;
 }
 
 export default async function handler(req, res) {
   setCors(res);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).json({ ok: true });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).json({ ok: true });
 
   try {
-    const redis = getRedis();
-
     if (req.method === 'GET') {
       const deviceId = String(req.query.deviceId || '').trim();
-      if (!deviceId) {
-        return res.status(400).json({ error: 'deviceId required' });
-      }
-
-      const keys = (await redis.smembers(`reviews:byDevice:${deviceId}`)) || [];
-      if (!keys.length) {
-        return res.status(200).json({ reviews: [] });
-      }
-
-      const reviews = await redis.mget(...keys.map((k) => `review:${k}`));
-      return res.status(200).json({
-        reviews: reviews.filter(Boolean),
-      });
+      if (!isValidDeviceId(deviceId)) return res.status(400).json({ error: 'valid deviceId required' });
+      const redis = getRedis();
+      return res.status(200).json({ reviews: await listReviews(redis, deviceId, REVIEW_LIMIT) });
     }
 
     if (req.method === 'POST') {
-      const { deviceId, review } = req.body || {};
-      const cleanDeviceId = String(deviceId || '').trim();
-      if (!cleanDeviceId || !review) {
-        return res.status(400).json({ error: 'deviceId + review required' });
+      if (bodySize(req.body) > MAX_BODY_BYTES) return res.status(413).json({ error: 'request body too large' });
+      const { deviceId: rawDeviceId, review } = req.body || {};
+      const deviceId = String(rawDeviceId || '').trim();
+      if (!isValidDeviceId(deviceId) || !isValidReview(review)) {
+        return res.status(400).json({ error: 'valid deviceId + review required' });
       }
-
-      const key = reviewKey(review);
-      if (!key || key === '::') {
-        return res.status(400).json({ error: 'review.recordId / strategy / issue required' });
-      }
-
-      const enriched = {
-        ...review,
-        deviceId: cleanDeviceId,
-        syncedAt: new Date().toISOString(),
-      };
-
-      const pipeline = redis.pipeline();
-      pipeline.set(`review:${key}`, enriched);
-      pipeline.sadd(`reviews:byDevice:${cleanDeviceId}`, key);
-      await pipeline.exec();
-
-      // 溢出保护（set 长期膨胀时裁剪最旧项）
-      const size = await redis.scard(`reviews:byDevice:${cleanDeviceId}`);
-      if (size > REVIEW_LIMIT) {
-        const allKeys = await redis.smembers(`reviews:byDevice:${cleanDeviceId}`);
-        const overflow = allKeys.slice(REVIEW_LIMIT);
-        if (overflow.length) {
-          const cleanup = redis.pipeline();
-          cleanup.srem(`reviews:byDevice:${cleanDeviceId}`, ...overflow);
-          cleanup.del(...overflow.map((k) => `review:${k}`));
-          await cleanup.exec();
-        }
-      }
-
+      const redis = getRedis();
+      const { key } = await upsertReview(redis, deviceId, review, REVIEW_LIMIT);
       return res.status(200).json({ ok: true, key });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
-  } catch (err) {
-    console.error('api/reviews error:', err);
-    return res.status(500).json({ error: 'internal error', message: err?.message || String(err) });
+  } catch (error) {
+    return internalError(res, 'api/reviews error:', error);
   }
 }

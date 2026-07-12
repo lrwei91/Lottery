@@ -24,7 +24,13 @@
     "env:check": "node scripts/check-env.cjs",
     "env:check:vercel": "node scripts/check-env.cjs --vercel",
     "env:check:strict": "node scripts/check-env.cjs --strict",
-    "check:dlt-predictor": "node scripts/check-dlt-predictor.cjs"
+    "check:syntax": "node scripts/check-syntax.cjs",
+    "check:data": "node scripts/check-data.cjs",
+    "check:api": "node scripts/check-api.cjs",
+    "check:frontend": "node scripts/check-frontend-runtime.cjs",
+    "check:dlt-predictor": "node scripts/check-dlt-predictor.cjs",
+    "check:pl3-predictor": "node scripts/check-pl3-predictor.cjs",
+    "check": "npm run check:syntax && npm run check:data && npm run check:api && npm run check:frontend && npm run check:dlt-predictor && npm run check:pl3-predictor"
   },
   "dependencies": {
     "@upstash/redis": "^1.34.0"

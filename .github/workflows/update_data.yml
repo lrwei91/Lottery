@@ -27,6 +27,9 @@ jobs:
       - name: Fetch PL3 Data
         run: node scripts/scraper_pl3.cjs
 
+      - name: Validate Updated Data
+        run: npm run check
+
       - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions[bot]"
@@ -35,9 +38,9 @@ jobs:
           # 检查数据是否发生了变更
           git status
           
-          if [ -n "$(git status --porcelain data/)" ]; then
+          if [ -n "$(git status --porcelain data/lottery_data.json data/pl3_data.json)" ]; then
             echo "数据发生更新，正在提交并推送..."
-            git add data/
+            git add data/lottery_data.json data/pl3_data.json
             git commit -m "Auto update lottery data: $(date +'%Y-%m-%d %H:%M:%S')"
             git push
           else

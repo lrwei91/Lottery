@@ -14,30 +14,15 @@
  * 如果某个 key 不存在（cron 还没跑过 / 未配 env），对应字段是 null。
  */
 
-import { Redis } from '@upstash/redis';
-
-let _redis = null;
-function getRedis() {
-  if (_redis) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  _redis = new Redis({ url, token });
-  return _redis;
-}
-
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-}
+import { getRedis } from '../_lib/redis.js';
+import { internalError, setCors } from '../_lib/http.js';
 
 export default async function handler(req, res) {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(200).json({ ok: true });
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const redis = getRedis();
+  const redis = getRedis({ required: false });
   if (!redis) {
     return res.status(503).json({
       error: 'Upstash Redis env not configured',
@@ -95,8 +80,7 @@ export default async function handler(req, res) {
       'the-odds-api': theOddsApi,
       'football-data': footballData
     });
-  } catch (err) {
-    console.error('api/odds/snapshots error:', err);
-    return res.status(500).json({ error: 'internal error', message: err?.message || String(err) });
+  } catch (error) {
+    return internalError(res, 'api/odds/snapshots error:', error);
   }
 }

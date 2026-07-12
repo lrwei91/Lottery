@@ -17,9 +17,9 @@
 
   async function pullRecords() {
     const deviceId = getDeviceId();
-    if (!deviceId) return [];
+    if (!deviceId || !window.TicaiRuntime?.canUseApi()) return [];
     try {
-      const res = await fetch(`/api/records?deviceId=${encodeURIComponent(deviceId)}`, {
+      const res = await window.TicaiRuntime.fetchWithTimeout(`/api/records?deviceId=${encodeURIComponent(deviceId)}`, {
         headers: { accept: 'application/json' },
       });
       if (!res.ok) {
@@ -36,9 +36,9 @@
 
   async function pullReviews() {
     const deviceId = getDeviceId();
-    if (!deviceId) return [];
+    if (!deviceId || !window.TicaiRuntime?.canUseApi()) return [];
     try {
-      const res = await fetch(`/api/reviews?deviceId=${encodeURIComponent(deviceId)}`, {
+      const res = await window.TicaiRuntime.fetchWithTimeout(`/api/reviews?deviceId=${encodeURIComponent(deviceId)}`, {
         headers: { accept: 'application/json' },
       });
       if (!res.ok) {
@@ -55,11 +55,13 @@
 
   function syncRecord(record) {
     const deviceId = getDeviceId();
-    if (!deviceId || !record || !record.id) return;
-    fetch('/api/records', {
+    if (!deviceId || !record || !record.id || !window.TicaiRuntime?.canUseApi()) return;
+    window.TicaiRuntime.fetchWithTimeout('/api/records', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ deviceId, record }),
+    }).then(function (res) {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
     }).catch(function (err) {
       console.warn('[cloud] 同步预测记录失败:', err);
     });
@@ -70,7 +72,7 @@
   }
 
   function syncReview(review) {
-    if (!review) return;
+    if (!review || !window.TicaiRuntime?.canUseApi()) return;
     const key = makeReviewKey(review);
     if (!key || key === '::') return;
     if (syncedReviewKeys.has(key)) return;
@@ -85,10 +87,12 @@
     const deviceId = getDeviceId();
     if (!deviceId) return;
 
-    fetch('/api/reviews', {
+    window.TicaiRuntime.fetchWithTimeout('/api/reviews', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ deviceId, review }),
+    }).then(function (res) {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
     }).catch(function (err) {
       console.warn('[cloud] 同步复盘失败:', err);
       // 失败时移除 key，下次 render 允许重试
@@ -100,10 +104,11 @@
     syncedReviewKeys.clear();
   }
 
-  // 从云端拉取赔率/赛程快照（每 6h 由 Vercel Cron 刷新）
+  // 从云端拉取赔率/赛程快照（Vercel daily cron 刷新）
   async function pullOddsSnapshots() {
+    if (!window.TicaiRuntime?.canUseApi()) return null;
     try {
-      const res = await fetch('/api/odds/snapshots', {
+      const res = await window.TicaiRuntime.fetchWithTimeout('/api/odds/snapshots', {
         headers: { accept: 'application/json' }
       });
       if (!res.ok) return null;

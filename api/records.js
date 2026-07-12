@@ -1,98 +1,58 @@
-/**
- * 预测记录云端同步 API
- *
- * GET  /api/records?deviceId=xxx
- *   → { records: [...] }
- *
- * POST /api/records
- *   body: { deviceId, record }
- *   → { ok: true, id }
- *
- * 存储结构（Upstash Redis / Vercel Marketplace Upstash Redis integration）：
- *   record:{recordId}              → JSON(record)
- *   records:byDevice:{deviceId}    → LIST<recordId>  (LTRIM 200)
- *
- * 环境变量（Vercel Marketplace 装 Upstash Redis 后自动注入）：
- *   UPSTASH_REDIS_REST_URL
- *   UPSTASH_REDIS_REST_TOKEN
- */
-
-import { Redis } from '@upstash/redis';
+import { getRedis } from './_lib/redis.js';
+import { bodySize, internalError, isValidDeviceId, setCors } from './_lib/http.js';
+import { listRecords, upsertRecord } from './_lib/device-sync.js';
 
 const RECORD_LIMIT = 200;
-let _redis = null;
+const MAX_BODY_BYTES = 128 * 1024;
 
-function getRedis() {
-  if (_redis) return _redis;
-  // 兼容 Vercel Marketplace Upstash Redis（新）和老的 Vercel KV（即将下线）两种环境变量名
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-  if (!url || !token) {
-    throw new Error('Upstash Redis 环境变量未配置（请在 Vercel Dashboard → Storage 装/连 Upstash Redis）');
-  }
-  _redis = new Redis({ url, token });
-  return _redis;
-}
-
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+function isValidRecord(record) {
+  const validPrediction = (prediction) => prediction
+    && typeof prediction === 'object'
+    && typeof prediction.strategy === 'string'
+    && prediction.strategy.length <= 32
+    && Array.isArray(prediction.front)
+    && prediction.front.length <= 5
+    && prediction.front.every(Number.isInteger)
+    && Array.isArray(prediction.back || [])
+    && (prediction.back || []).length <= 2
+    && (prediction.back || []).every(Number.isInteger);
+  return !!record
+    && typeof record === 'object'
+    && typeof record.id === 'string'
+    && /^[a-zA-Z0-9-]{3,128}$/.test(record.id)
+    && ['dlt', 'pl3'].includes(record.type)
+    && Array.isArray(record.predictions)
+    && record.predictions.length >= 1
+    && record.predictions.length <= 20
+    && record.predictions.every(validPrediction);
 }
 
 export default async function handler(req, res) {
   setCors(res);
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).json({ ok: true });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).json({ ok: true });
 
   try {
-    const redis = getRedis();
-
     if (req.method === 'GET') {
       const deviceId = String(req.query.deviceId || '').trim();
-      if (!deviceId) {
-        return res.status(400).json({ error: 'deviceId required' });
-      }
-
-      const ids = (await redis.lrange(`records:byDevice:${deviceId}`, 0, RECORD_LIMIT - 1)) || [];
-      if (!ids.length) {
-        return res.status(200).json({ records: [] });
-      }
-
-      const records = await redis.mget(...ids.map((id) => `record:${id}`));
-      return res.status(200).json({
-        records: records.filter(Boolean),
-      });
+      if (!isValidDeviceId(deviceId)) return res.status(400).json({ error: 'valid deviceId required' });
+      const redis = getRedis();
+      return res.status(200).json({ records: await listRecords(redis, deviceId, RECORD_LIMIT) });
     }
 
     if (req.method === 'POST') {
-      const { deviceId, record } = req.body || {};
-      const cleanDeviceId = String(deviceId || '').trim();
-      if (!cleanDeviceId || !record || !record.id) {
-        return res.status(400).json({ error: 'deviceId + record.id required' });
+      if (bodySize(req.body) > MAX_BODY_BYTES) return res.status(413).json({ error: 'request body too large' });
+      const { deviceId: rawDeviceId, record } = req.body || {};
+      const deviceId = String(rawDeviceId || '').trim();
+      if (!isValidDeviceId(deviceId) || !isValidRecord(record)) {
+        return res.status(400).json({ error: 'valid deviceId + record required' });
       }
-
-      const enriched = {
-        ...record,
-        deviceId: cleanDeviceId,
-        syncedAt: new Date().toISOString(),
-      };
-
-      // pipeline：减少一次 round-trip
-      const pipeline = redis.pipeline();
-      pipeline.set(`record:${record.id}`, enriched);
-      pipeline.lpush(`records:byDevice:${cleanDeviceId}`, record.id);
-      pipeline.ltrim(`records:byDevice:${cleanDeviceId}`, 0, RECORD_LIMIT - 1);
-      await pipeline.exec();
-
+      const redis = getRedis();
+      await upsertRecord(redis, deviceId, record, RECORD_LIMIT);
       return res.status(200).json({ ok: true, id: record.id });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
-  } catch (err) {
-    console.error('api/records error:', err);
-    return res.status(500).json({ error: 'internal error', message: err?.message || String(err) });
+  } catch (error) {
+    return internalError(res, 'api/records error:', error);
   }
 }

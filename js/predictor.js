@@ -18,14 +18,10 @@
   'use strict';
 
   // ============================================================
-  // 常量与变量定义 (支持大乐透/排列三动态适配)
+  // 彩种配置独立于计算核心，不保存“当前彩种”状态。
   // ============================================================
-  let FRONT_MIN = 1;
-  let FRONT_MAX = 35;
-  let BACK_MIN = 1;
-  let BACK_MAX = 12;
-  let FRONT_COUNT = 5; // 每期前区选号个数
-  let BACK_COUNT = 2;  // 每期后区选号个数
+  if (!window.PredictorConfig) throw new Error('PredictorConfig 未加载');
+  const { LOTTERY_PARAMS, detectLotteryType, getParams: getLotteryParams } = window.PredictorConfig;
 
   const DEFAULT_STRATEGIES = ['balanced', 'random', 'gap', 'hot', 'cold'];
   // 140 条大乐透远端复盘显示：gap/cold 前区稳定性优于 hot/danTuo，默认 5 注恢复五个基础策略。
@@ -145,29 +141,6 @@
     underThirdPenalty: 0.92,// ratio < 0.85 → 0.92
     overHotBoost: 1.1       // ratio > 1.5 → 1.10（避免短热号过度集中）
   };
-
-  function detectLotteryType(data) {
-    if (!data || data.length === 0) return 'dlt';
-    return data[0].front.length === 3 ? 'pl3' : 'dlt';
-  }
-
-  function updateLotteryParams(type) {
-    if (type === 'pl3') {
-      FRONT_MIN = 0;
-      FRONT_MAX = 9;
-      BACK_MIN = 1;
-      BACK_MAX = 0; // 无后区
-      FRONT_COUNT = 3;
-      BACK_COUNT = 0;
-    } else {
-      FRONT_MIN = 1;
-      FRONT_MAX = 35;
-      BACK_MIN = 1;
-      BACK_MAX = 12;
-      FRONT_COUNT = 5;
-      BACK_COUNT = 2;
-    }
-  }
 
   // ============================================================
   // 工具函数
@@ -321,7 +294,7 @@
       return _freqCache.result;
     }
 
-    updateLotteryParams(detectLotteryType(data));
+    const { FRONT_MIN, FRONT_MAX, BACK_MIN, BACK_MAX } = getLotteryParams(data);
     const front = new Map();
     const back = new Map();
 
@@ -371,7 +344,6 @@
    */
   function hotColdAnalysis(data, recentN = 300, dataEnd) {
     const isPl3 = detectLotteryType(data) === 'pl3';
-    updateLotteryParams(isPl3 ? 'pl3' : 'dlt');
 
     const end = dataEnd != null ? Math.min(dataEnd, recentN) : Math.min(data.length, recentN);
     const freq = frequencyAnalysis(data, end);
@@ -457,7 +429,7 @@
    * @returns {{ front: Map, back: Map }}
    */
   function gapAnalysis(data, dataEnd) {
-    updateLotteryParams(detectLotteryType(data));
+    const { FRONT_MIN, FRONT_MAX, BACK_MIN, BACK_MAX, BACK_COUNT } = getLotteryParams(data);
 
     const end = dataEnd != null ? dataEnd : data.length;
 
@@ -531,8 +503,8 @@
    * @returns {Object} 奇偶比分布 { '5:0': count, '4:1': count, ... }
    */
   function oddEvenAnalysis(data) {
-    updateLotteryParams(detectLotteryType(data));
     const isPl3 = detectLotteryType(data) === 'pl3';
+    const { FRONT_COUNT } = getLotteryParams(data);
     const distribution = isPl3 ? {
       '3:0': 0, '2:1': 0, '1:2': 0, '0:3': 0
     } : {
@@ -612,8 +584,8 @@
    * @returns {Object} 大小比分布
    */
   function bigSmallAnalysis(data) {
-    updateLotteryParams(detectLotteryType(data));
     const isPl3 = detectLotteryType(data) === 'pl3';
+    const { FRONT_COUNT } = getLotteryParams(data);
     const distribution = isPl3 ? {
       '3:0': 0, '2:1': 0, '1:2': 0, '0:3': 0
     } : {
@@ -701,7 +673,7 @@
    * @returns {Map<number, number>} 每个号码的 transitionSignal 权重（约 0.85-1.15）
    */
   function computeTransitionSignal(data, dataEnd) {
-    updateLotteryParams(detectLotteryType(data));
+    const { FRONT_MIN, FRONT_MAX, FRONT_COUNT } = getLotteryParams(data);
     const end = Math.min(dataEnd != null ? dataEnd : data.length, data.length);
     const sig = `transition:${_dataSignature(data, end)}`;
     if (_transitionCache.sig === sig) return _transitionCache.result;
@@ -801,7 +773,7 @@
    * @returns {{ zone: {detected, hotZoneIdx, weight}, tail: {detected, hotTail, weight}, ac: {detected, weight}, severity: number }}
    */
   function detectBias(data, dataEnd) {
-    updateLotteryParams(detectLotteryType(data));
+    const { FRONT_MIN, FRONT_MAX, FRONT_COUNT } = getLotteryParams(data);
     const end = Math.min(dataEnd != null ? dataEnd : data.length, data.length);
     const sig = `bias:${_dataSignature(data, end)}`;
     if (_biasCache.sig === sig) return _biasCache.result;
@@ -977,7 +949,7 @@
   }
 
   function computeScores(data, dataEnd) {
-    updateLotteryParams(detectLotteryType(data));
+    const { FRONT_MIN, FRONT_MAX, BACK_MIN, BACK_MAX, FRONT_COUNT, BACK_COUNT } = getLotteryParams(data);
 
     const effectiveEnd = Math.min(dataEnd != null ? dataEnd : data.length, data.length);
     const scopedData = data.slice(0, effectiveEnd);
@@ -1320,11 +1292,12 @@
 
   function createPredictionContext(data, dataEnd) {
     const type = detectLotteryType(data);
-    updateLotteryParams(type);
+    const params = getLotteryParams(type);
 
     const scoreBundle = computeScores(data, dataEnd);
     const context = {
       type,
+      params,
       frontScores: scoreBundle.frontScores,
       backScores: scoreBundle.backScores,
       hotCold: scoreBundle.hotCold,
@@ -1521,8 +1494,8 @@
     return 1.0;
   }
 
-  function selectByStrategy(scores, strategy, count, coMatrix = null, rng = Math.random) {
-    if (strategy === 'balanced' && count === FRONT_COUNT) {
+  function selectByStrategy(scores, strategy, count, coMatrix = null, rng = Math.random, params = LOTTERY_PARAMS.dlt) {
+    if (strategy === 'balanced' && count === params.FRONT_COUNT) {
       // 保持原有黄金比例抽样（1-2 热 + 2-3 温 + 1 冷 = 5）
       const targetHotCount = rng() < 0.6 ? 1 : 2;
       const targetWarmCount = targetHotCount === 1 ? 3 : 2;
@@ -1556,7 +1529,7 @@
     const w = getStrategyWeights(strategy);
 
     // 前区加入伴生矩阵动态抽样：逐个抽取，抽取后提升伴生兄弟的权重
-    if (coMatrix && count === FRONT_COUNT) {
+    if (coMatrix && count === params.FRONT_COUNT) {
       const selected = [];
       const pool = [];
       for (const [num, s] of scores) {
@@ -1627,6 +1600,7 @@
       return { danNums: [], tuoNums: [], front: [] };
     }
     const rng = opts.rng || Math.random;
+    const frontCount = opts.frontCount || LOTTERY_PARAMS.dlt.FRONT_COUNT;
     const danCount = opts.danCount || (rng() < 0.5 ? 1 : 2);
     const danStrategy = opts.danStrategy || (rng() < 0.5 ? 'hot' : 'balanced');
 
@@ -1641,7 +1615,7 @@
     const danNums = weightedSample(danItems, danCount, rng);
 
     // 2) 围绕胆码按 coMatrix 补拖码
-    const tuoCount = FRONT_COUNT - danNums.length;
+    const tuoCount = frontCount - danNums.length;
     const tuoItems = [];
     for (const [num, s] of frontScores) {
       if (danNums.includes(num)) continue;
@@ -1684,17 +1658,17 @@
     }
     
     // AC = 差值个数 - (选号个数 - 1)
-    return diffs.size - (FRONT_COUNT - 1);
+    return diffs.size - (front.length - 1);
   }
 
-  function analyzeFrontShape(front) {
+  function analyzeFrontShape(front, params = LOTTERY_PARAMS.dlt) {
     const sorted = front.slice().sort((a, b) => a - b);
     const sum = sorted.reduce((a, b) => a + b, 0);
     const oddCount = sorted.filter(n => n % 2 === 1).length;
-    const evenCount = FRONT_COUNT - oddCount;
-    const bigThreshold = FRONT_MIN === 0 ? 5 : 18;
+    const evenCount = params.FRONT_COUNT - oddCount;
+    const bigThreshold = params.FRONT_MIN === 0 ? 5 : 18;
     const bigCount = sorted.filter(n => n >= bigThreshold).length;
-    const smallCount = FRONT_COUNT - bigCount;
+    const smallCount = params.FRONT_COUNT - bigCount;
 
     let maxConsecutive = 1;
     let currentConsecutive = 1;
@@ -1769,7 +1743,7 @@
     const end = dataEnd != null ? dataEnd : data.length;
     const shapes = [];
     for (let i = 0; i < end; i++) {
-      shapes.push(analyzeFrontShape(data[i].front));
+      shapes.push(analyzeFrontShape(data[i].front, getLotteryParams(data)));
     }
     const constraints = {
       // 140 条复盘继续暴露低和值漏杀，和值用 10%-90% 分位保留尾部回补空间。
@@ -1862,8 +1836,8 @@
    * @returns {{ valid: boolean, sum: number, oddEven: string, bigSmall: string, pairs: number, ac: number, zonesCovered,
       tailPairsCount: number }}
    */
-  function evaluateFrontCombination(front, constraints = defaultFrontConstraints()) {
-    const shape = analyzeFrontShape(front);
+  function evaluateFrontCombination(front, constraints = defaultFrontConstraints(), params = LOTTERY_PARAMS.dlt) {
+    const shape = analyzeFrontShape(front, params);
     const isSumValid = shape.sum >= constraints.sumMin && shape.sum <= constraints.sumMax;
     const isOddEvenValid = !constraints.allowedOddEven || constraints.allowedOddEven.has(shape.oddEven);
     const isBigSmallValid = !constraints.allowedBigSmall || constraints.allowedBigSmall.has(shape.bigSmall);
@@ -1917,9 +1891,10 @@
     }
 
     const isPl3 = detectLotteryType(data) === 'pl3';
-    updateLotteryParams(isPl3 ? 'pl3' : 'dlt');
     const rng = options.rng || Math.random;
     const context = options.context || createPredictionContext(data, options.dataEnd);
+    const params = context.params || getLotteryParams(isPl3 ? 'pl3' : 'dlt');
+    const { FRONT_MAX, FRONT_COUNT, BACK_COUNT } = params;
 
     if (isPl3) {
       return generatePredictionPL3(data, strategy, { ...options, rng, context });
@@ -1947,15 +1922,15 @@
         front = bollingerResult.front;
         back = bollingerResult.back;
       } else if (useDanLayer) {
-        const result = selectWithDanLayer(frontScores, coMatrix, { rng });
+        const result = selectWithDanLayer(frontScores, coMatrix, { rng, frontCount: FRONT_COUNT });
         front = result.front;
         danTuoMeta = { danNums: result.danNums, danCount: result.danNums.length, danStrategy: 'auto' };
-        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng);
+        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng, params);
       } else {
-        front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng);
-        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng);
+        front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng, params);
+        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng, params);
       }
-      evalResult = evaluateFrontCombination(front, frontConstraints);
+      evalResult = evaluateFrontCombination(front, frontConstraints, params);
       backEvalResult = evaluateBackCombination(back, backConstraints);
 
       // 全库防重复校验：绝对不能和历史上任何一期的 5+2 开奖号完全相同
@@ -1976,15 +1951,15 @@
         front = bollingerResult.front;
         back = bollingerResult.back;
       } else if (useDanLayer) {
-        const result = selectWithDanLayer(frontScores, coMatrix, { rng });
+        const result = selectWithDanLayer(frontScores, coMatrix, { rng, frontCount: FRONT_COUNT });
         front = result.front;
         danTuoMeta = { danNums: result.danNums, danCount: result.danNums.length, danStrategy: 'auto' };
-        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng);
+        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng, params);
       } else {
-        front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng);
-        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng);
+        front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng, params);
+        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng, params);
       }
-      evalResult = evaluateFrontCombination(front, frontConstraints);
+      evalResult = evaluateFrontCombination(front, frontConstraints, params);
       backEvalResult = evaluateBackCombination(back, backConstraints);
     }
 
@@ -2373,14 +2348,7 @@
     BACK_SOFT_KILL_DEFAULT,
 
     // 常量/变量获取器
-    getParams: () => ({
-      FRONT_MIN,
-      FRONT_MAX,
-      BACK_MIN,
-      BACK_MAX,
-      FRONT_COUNT,
-      BACK_COUNT
-    })
+    getParams: (type = 'dlt') => ({ ...getLotteryParams(type) })
   };
 
 })();

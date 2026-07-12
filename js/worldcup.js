@@ -5,9 +5,6 @@
 ;(function () {
   'use strict';
 
-  const DATA_URL = 'data/worldcup_2026.json';
-  const MATCHES_URL = 'data/worldcup_matches.json';
-
   const state = {
     loaded: false,
     loading: false,
@@ -374,47 +371,22 @@
     return null;
   }
 
-  async function loadNames() {
-    try {
-      const res = await fetch('data/worldcup_names.json', { cache: 'no-cache' });
-      if (!res.ok) return;
-      const names = await res.json();
-      COUNTRY_CN = names.countryNames || {};
-      PLAYER_CN = names.playerNames || {};
-    } catch (e) {
-      console.warn('Failed to load name translations:', e);
-    }
-  }
-
   async function loadData() {
     if (state.loaded || state.loading) return;
     state.loading = true;
     const root = el('worldcupRoot');
     if (root) root.innerHTML = '<div class="card"><div class="empty-state">正在加载世界杯预测数据...</div></div>';
 
-    await loadNames();
-
-    // Kimi 2026 增量: 加载 benchmarks (Elo 校准表 / MC 参数 / 校准矩阵 / 概率基准)
-    if (window.KimiBenchmarks) {
-      try {
-        const b = await window.KimiBenchmarks.load();
-        window._kimiBenchCache = b;
-        console.info('[KimiBenchmarks] loaded:', {
-          teams: b.championBenchmarks?.teams?.length || 0,
-          eloRows: b.eloMappingTable?.rows?.length || 0,
-          calBins: b.calibrationMatrix?.bins?.length || 0
-        });
-      } catch (e) {
-        console.warn('[KimiBenchmarks] load failed:', e);
-      }
-    }
-
     try {
-      await loadMatches();
-
-      const res = await fetch(`${DATA_URL}?t=${Date.now()}`, { cache: 'no-cache' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const payload = await res.json();
+      if (!window.WorldCupData) throw new Error('WorldCupData 未加载');
+      const bundle = await window.WorldCupData.loadStaticBundle();
+      const payload = bundle.core;
+      COUNTRY_CN = bundle.names.countryNames || {};
+      PLAYER_CN = bundle.names.playerNames || {};
+      window._kimiBenchCache = bundle.benchmark;
+      state.matchesData = bundle.matches;
+      state.matchesLoaded = true;
+      state.matchesSource = bundle.matches ? 'static' : 'unavailable';
       state.metadata = payload.metadata || {};
       const rawTeams = Array.isArray(payload.teams) ? payload.teams : [];
       if (state.matchesData && state.matchesData.groups) {
@@ -439,16 +411,8 @@
       // 计算结果挂在 state.conformal / state.attribution 上，渲染层从这里取
       enrichTeamsWithConformalAndAttribution();
       state.loaded = true;
-      // 实时数据快照（赔率/Polymarket）跟核心数据并行加载：保证首次 render 就有赔率，
-      // 避免"先空再补"的窗口被网络抖动卡住
-      await Promise.all([
-        loadOddsSnapshots(),
-        loadOddsHistory()
-      ]);
       render();
-      // LLM 预测快照（用户本地跑 LLM 后才生成，fire-and-forget 合理）
-      loadLLMPredictions();
-      loadLLMOutright();
+      loadLiveEnhancements();
     } catch (error) {
       console.error('World Cup data load failed:', error);
       if (root) {
@@ -459,12 +423,19 @@
     }
   }
 
+  function loadLiveEnhancements() {
+    const tasks = [loadLLMPredictions(), loadLLMOutright()];
+    if (window.TicaiRuntime?.canUseApi()) {
+      tasks.push(loadLiveMatches(), loadOddsSnapshots(), loadOddsHistory());
+    }
+    Promise.allSettled(tasks).catch(() => {});
+  }
+
   // 本地 LLM 跑完的预测快照（fire-and-forget，不阻塞主加载）
   async function loadLLMPredictions() {
     try {
-      const res = await fetch('data/wc_llm_predictions.json?t=' + Date.now(), { cache: 'no-cache' });
-      if (!res.ok) return;
-      const payload = await res.json();
+      const payload = await window.WorldCupData.loadOptionalStatic('data/wc_llm_predictions.json');
+      if (!payload) return;
       state.llmPredictions = payload;
       // LLM 预测加载完，刷新对战卡片（如果已经渲染了）
       if (state.loaded) render();
@@ -476,9 +447,8 @@
   // 本地 LLM 跑完的冠军 outright 预测（独立文件，独立 fire-and-forget）
   async function loadLLMOutright() {
     try {
-      const res = await fetch('data/wc_llm_outright.json?t=' + Date.now(), { cache: 'no-cache' });
-      if (!res.ok) return;
-      const payload = await res.json();
+      const payload = await window.WorldCupData.loadOptionalStatic('data/wc_llm_outright.json');
+      if (!payload) return;
       state.llmOutright = payload;
       // 冠军概率 tab 用了 LLM outright
       if (state.loaded) render();
@@ -489,13 +459,10 @@
 
   // 赔率历史快照（cron 每天累积一次，保留最近 28 个点 = 约 28 天）
   async function loadOddsHistory() {
+    if (!window.TicaiRuntime?.canUseApi()) return;
     try {
-      const res = await fetch('/api/odds/history?source=the-odds-api', { headers: { accept: 'application/json' } });
-      if (!res.ok) {
-        if (res.status !== 503) console.info('[odds] history HTTP', res.status);
-        return;
-      }
-      const payload = await res.json();
+      const payload = await window.WorldCupData.loadApi('/api/odds/history?source=the-odds-api');
+      if (!payload) return;
       state.oddsHistory = { 'the-odds-api': payload.history || [] };
     } catch (e) {
       // 静默 — 缺失不影响主功能
@@ -505,16 +472,10 @@
   // 实时数据快照（Polymarket / The Odds API / football-data / Polymarket outright）
   // 由 Vercel Cron 每天写入 KV，前端直接 fetch
   async function loadOddsSnapshots() {
+    if (!window.TicaiRuntime?.canUseApi()) return;
     try {
-      const res = await fetch('/api/odds/snapshots', { headers: { accept: 'application/json' } });
-      if (!res.ok) {
-        // 503 通常 = Vercel 没配 Upstash env (开发/预览环境常见), 静默
-        if (res.status !== 503) {
-          console.info('[odds] /api/odds/snapshots HTTP', res.status);
-        }
-        return;
-      }
-      const payload = await res.json();
+      const payload = await window.WorldCupData.loadApi('/api/odds/snapshots');
+      if (!payload) return;
       state.oddsSnapshots = payload;
       // 健康度检查：避免上游改了 tag/丢了 key 时静默坏数据
       state.oddsHealth = checkOddsHealth(payload);
@@ -719,33 +680,21 @@
     return `<span class="wc-match-status is-odds" title="The Odds API h2h · ${escapeHtml(oddsMarket.bookmaker)}">💰 ${escapeHtml(formatOddsCompact(oddsMarket))}</span>`;
   }
 
-  async function loadMatches() {
-    // 优先 /api/matches (Vercel Cron 6h 写入 Redis, 含真实比分)
-    // fallback: data/worldcup_matches.json (git-tracked, build-time 数据)
-    let payload = null;
+  async function loadLiveMatches() {
+    if (!window.TicaiRuntime?.canUseApi()) return;
     try {
-      const r = await fetch('/api/matches?_t=' + Date.now(), { cache: 'no-cache' });
-      if (r.ok) payload = await r.json();
-    } catch (e) {
-      // 网络错误, 走 fallback
-    }
-    if (!payload || !payload.groups) {
-      try {
-        const res = await fetch(MATCHES_URL + '?t=' + Date.now(), { cache: 'no-cache' });
-        if (res.ok) payload = await res.json();
-      } catch (error) {
-        console.info('[matches] fallback failed:', error?.message || error);
-      }
-    }
-    if (payload && payload.groups) {
-      state.matchesData = payload;
+      const payload = await window.WorldCupData.loadApi('/api/matches?_t=' + Date.now());
+      if (!payload?.groups) return;
+      state.matchesData = {
+        ...(state.matchesData || {}),
+        ...payload,
+        knockout: payload.knockout || state.matchesData?.knockout
+      };
       state.matchesLoaded = true;
-      // 标记数据来源, 渲染时能告诉用户"数据每 6h 更新"
-      state.matchesSource = payload?.metadata?.lastUpdated ? 'api' : 'static';
-    } else {
-      console.info('[matches] both API and fallback failed, no match data');
-      state.matchesData = null;
-      state.matchesLoaded = true;
+      state.matchesSource = 'api';
+      if (state.loaded) render();
+    } catch (error) {
+      console.info('[matches] live snapshot unavailable:', error?.message || error);
     }
   }
 
@@ -935,13 +884,11 @@
 
   async function fetchWeather(match) {
     if (!match.venue || !match.date) return null;
+    if (!window.TicaiRuntime?.canUseApi()) return null;
     const time = match.time || '20:00';
     try {
       const url = `/api/weather?venue=${encodeURIComponent(match.venue)}&date=${encodeURIComponent(match.date)}&time=${encodeURIComponent(time)}`;
-      const ctrl = new AbortController();
-      const tid = setTimeout(() => ctrl.abort(), 6000);
-      const res = await fetch(url, { signal: ctrl.signal });
-      clearTimeout(tid);
+      const res = await window.TicaiRuntime.fetchWithTimeout(url);
       if (!res.ok) return null;
       const data = await res.json();
       if (data && data.ok) return data;

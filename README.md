@@ -35,13 +35,18 @@ Lottery/
 ├── .gitignore                    # Git 忽略配置（含 .env）
 ├── .github/
 │   └── workflows/
-│       └── update_data.yml       # GitHub Actions 每日自动更新脚本
+│       ├── check.yml             # PR / push 只读质量门禁
+│       └── update_data.yml       # GitHub Actions 彩票数据更新
 ├── css/
 │   └── style.css                 # 现代深色系毛玻璃设计系统
 ├── js/
 │   ├── app.js                    # 主应用交互与状态机管理
+│   ├── app-config.js             # 彩票静态配置与状态工厂
 │   ├── charts.js                 # 原生 Canvas 图表绘制引擎
+│   ├── predictor-config.js       # 大乐透 / 排列三不可变参数
 │   ├── predictor.js              # 多策略号码预测与回测计算核心
+│   ├── runtime.js                # Pages / Vercel 运行时与网络超时
+│   ├── worldcup-data.js          # 世界杯静态 / 实时数据访问层
 │   ├── odds-utils.js             # devig / EV / Kelly 工具集
 │   ├── cloud-sync.js             # 跨端预测同步 + 赔率/赛事拉取
 │   └── worldcup.js               # 2026 世界杯预测 Tab 交互
@@ -56,13 +61,14 @@ Lottery/
 ├── api/
 │   ├── records.js                # 跨端预测记录 同步/拉取
 │   ├── reviews.js                # 跨端复盘结果 同步/拉取
-│   ├── cron/sync-odds.js         # Vercel Cron：3 数据源统一抓取 + 累积历史
+│   ├── _lib/                     # Redis、HTTP、云同步、FIFA 共享实现
+│   ├── cron/sync-odds.js         # Vercel Cron：赔率 + 实时赛程统一刷新
 │   ├── odds/snapshots.js         # 前端拉取当前赔率快照
 │   └── odds/history.js           # 前端拉取赔率历史（24h 趋势用）
 ├── scripts/
-│   ├── lottery_scraper_common.js # 双源抓取公共逻辑
-│   ├── scraper.js                # 大乐透双源抓取脚本 (Jisu 主 / 官方副)
-│   ├── scraper_pl3.js            # 排列三双源抓取脚本 (Jisu 主 / 官方副)
+│   ├── lottery_scraper_common.cjs # 双源抓取公共逻辑
+│   ├── scraper.cjs               # 大乐透双源抓取脚本 (Jisu 主 / 官方副)
+│   ├── scraper_pl3.cjs           # 排列三双源抓取脚本 (Jisu 主 / 官方副)
 │   └── llm-predict.js            # 本地/云端 LLM 跑世界杯预测（h2h + outright）
 └── vercel.json                   # Vercel 部署 + Cron 配置
 ```
@@ -90,15 +96,15 @@ Lottery/
    如需优先走第三方主源，请先配置 `JISU_API_KEY`。
    验证抓取但不写入数据文件时，可使用 `DRY_RUN=1 npm run scrape:all`。
 
-### 大乐透预测健康检查
+### 统一质量检查
 
-修改 `js/predictor.js` 或 `js/dlt-conformal.js` 后，至少运行：
+修改代码或数据后运行：
 
 ```bash
-npm run check:dlt-predictor
+npm run check
 ```
 
-该检查会验证 Predictor / DltConformal 加载、Conformal 校准覆盖率、5 注预测合法性、历史完全重复排除和置信度字段。`js/predictor.js` 同时服务大乐透和排列三；若改动共享选号逻辑，建议额外做一次排列三冒烟。
+该检查覆盖 JS/Python 语法、JSON 数据契约、云同步 v2、大乐透 Conformal 与固定 seed 预测、排列三固定 seed 和跨彩种状态隔离。
 
 ---
 
@@ -106,7 +112,7 @@ npm run check:dlt-predictor
 
 项目通过 **Hermes Bot** 外部调度 + GitHub Actions 实现自动化数据更新：
 - **触发方式**：Hermes Bot 每天北京时间 **21:36** 定时推送（大乐透在周一、三、六晚上 21:25 开奖，排列三每天 21:25 开奖，21:36 即可获取完整官方开奖数据），通过 `workflow_dispatch` 触发 GitHub Actions 工作流。
-- **运行机制**：工作流启动 Node.js 环境，优先使用 `JisuAPI` 拉取最新开奖；若未配置 `JISU_API_KEY` 或主源失败，则自动切换到体彩官方接口，随后合并进本地 `data/*.json` 并自动提交。
+- **运行机制**：工作流优先使用 `JisuAPI` 拉取最新开奖，失败时切换体彩官方接口；检查通过后只提交 `lottery_data.json` 和 `pl3_data.json`。
 - **防缓存机制**：前端请求自动附加时间戳参数，确保每次加载都能获取最新开奖数据，避免浏览器缓存导致的数据延迟。
 - **免维护**：无需本地部署和手动抓取，数据始终保持最新。
 
@@ -143,6 +149,7 @@ Vercel KV 已被官方 deprecated（[迁移公告](https://vercel.com/changelog/
 - 本地写入后**异步**推到云端（fire-and-forget，不阻塞 UI）
 - 启动时从云端**拉取并 merge** 增量到本地
 - 复盘结果用 `recordId::strategy::issue` 当 key 天然去重
+- v2 使用 `device:<deviceId>:*` 命名空间和 Sorted Set 按时间稳定裁剪；读取时兼容合并旧版 key
 - 云端调用失败只 `console.warn`，本地逻辑照常运行
 
 ### 一键配置（Vercel Dashboard）
@@ -320,7 +327,7 @@ Vercel 会自动部署，浏览器刷新就能看到：
 
 ### 实时数据接入（Polymarket / The Odds API / football-data.org）
 
-云端模式用 Vercel Cron **每天 UTC 0:00** 拉一次真实数据，写 Upstash Redis，前端 `/api/odds/snapshots` 拉取。
+云端模式用 Vercel Cron **每天 UTC 0:00** 统一刷新赔率、市场数据和 FIFA 实时赛程，写 Upstash Redis。世界杯首屏始终先加载 git tracked 静态数据，实时 API 成功后再增量刷新；GitHub Pages 不请求同源 `/api`。
 
 > **Vercel Hobby 计划限制**：每天最多 1 个 cron 触发，所以 cron 表达式锁死为 `0 0 * * *`。如果你升级到 Pro，可改成 `0 */6 * * *`（每 6 小时一次），所有源会自动累积更高频历史。
 
@@ -341,8 +348,8 @@ UPSTASH_REDIS_REST_URL       # Vercel Marketplace → Upstash Redis 自动注入
 UPSTASH_REDIS_REST_TOKEN     # 同上
 
 # 任一数据源（未配 = skipped）
-ODDS_API_KEY=04cbda6a8f9303af709cdf4730d096bc
-FOOTBALL_DATA_API_KEY=614ebfc84a9b4020873ffab39d6849f6
+ODDS_API_KEY=your_odds_api_key
+FOOTBALL_DATA_API_KEY=your_football_data_api_key
 POLYMARKET_PUBLIC_ENABLED=true
 # POLYMARKET_TAG_ID=102467               # 默认值，单场 h2h
 # POLYMARKET_OUTRIGHT_TAG_ID=100350      # 默认值，冠军 outright
@@ -360,13 +367,14 @@ POLYMARKET_PUBLIC_ENABLED=true
 | 方法 | 路径                                | 用途                                  |
 |------|-------------------------------------|---------------------------------------|
 | `POST` | `/api/cron/sync-odds`             | Vercel Cron 调用，拉所有源 + 累积历史 |
+| `POST` | `/api/cron/sync-matches`          | 兼容入口，复用同一 FIFA 同步实现       |
 | `GET`  | `/api/cron/sync-odds?source=xxx`  | 手动触发单个源（`polymarket`/`polymarket-outright`/`the-odds-api`/`football-data`） |
 | `GET`  | `/api/odds/snapshots`             | 前端拉取当前 4 源最新快照             |
 | `GET`  | `/api/odds/history?source=the-odds-api` | 拉取最近 28 个时间点（24h 趋势用） |
 
 #### 赔率历史与 24h 趋势
 
-`sync-odds.js` 在每次拉取 `the-odds-api` 后**追加**一个时间点到 `odds:history:the-odds-api`（Redis list），LTRIM 保留最近 28 个点，TTL 7 天。
+`sync-odds.js` 在每次拉取 `the-odds-api` 后**追加**一个时间点到 `odds:history:the-odds-api`（Redis list），LTRIM 保留最近 28 个点，TTL 35 天。
 
 前端在每场未来比赛 modal 顶部下方显示"📈 赔率 24h 变化"段：
 

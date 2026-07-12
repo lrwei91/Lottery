@@ -15,19 +15,10 @@
  * - 场馆未匹配 / KV 未配置 / 上游失败：返回 200 + { ok:false, reason }, 让前端走降级
  */
 
-import { Redis } from '@upstash/redis';
 import fs from 'node:fs';
 import path from 'node:path';
-
-let _redis = null;
-function getRedis() {
-  if (_redis) return _redis;
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  _redis = new Redis({ url, token });
-  return _redis;
-}
+import { getRedis } from './_lib/redis.js';
+import { setCors } from './_lib/http.js';
 
 let _coordsCache = null;
 function loadCoords() {
@@ -72,13 +63,6 @@ const WMO_MAP = {
   99: { label: '强雷暴+冰雹', icon: '⛈️' }
 };
 
-function setCors(res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600');
-}
-
 // 找距离开赛时间最近的小时（开赛前 2h 的整点）
 function pickHour(iso) {
   // iso like 2026-06-12T18:00  (local time, no zone)
@@ -91,6 +75,7 @@ function pickHour(iso) {
 
 export default async function handler(req, res) {
   setCors(res);
+  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=600');
   if (req.method === 'OPTIONS') return res.status(200).json({ ok: true });
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -125,7 +110,7 @@ export default async function handler(req, res) {
   const cacheKey = `weather:${matchedVenue}:${hourISO}`;
 
   // 1) 查缓存
-  const redis = getRedis();
+  const redis = getRedis({ required: false });
   if (redis) {
     try {
       const cached = await redis.get(cacheKey);

@@ -33,7 +33,7 @@ function loadBrowserScripts() {
   sandbox.globalThis = sandbox;
 
   vm.createContext(sandbox);
-  for (const rel of ['js/dlt-conformal.js', 'js/predictor.js']) {
+  for (const rel of ['js/dlt-conformal.js', 'js/predictor-config.js', 'js/predictor.js']) {
     const filename = path.join(root, rel);
     vm.runInContext(fs.readFileSync(filename, 'utf8'), sandbox, { filename });
   }
