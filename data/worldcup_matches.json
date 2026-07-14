@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-13T20:34:02.586026+00:00",
+    "lastUpdated": "2026-07-14T20:21:21.927781+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-07-13",
+    "sourceDataDate": "2026-07-14",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
-    "matchCount": 104
+    "matchCount": 103
   },
   "groups": {
     "A": {
@@ -3815,10 +3815,10 @@
         "away": "Spain",
         "homeId": "43946",
         "awayId": "43969",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
+        "homeScore": 0,
+        "awayScore": 2,
+        "status": "completed",
+        "sourceStatus": 3
       },
       {
         "id": "400021540",
@@ -3859,25 +3859,6 @@
         "sourceStatus": 1
       }
     ],
-    "thirdPlace": [
-      {
-        "id": "400021542",
-        "matchNumber": 103,
-        "group": "",
-        "stage": "Play-off for third place",
-        "matchDay": null,
-        "date": "2026-07-18",
-        "time": "21:00",
-        "venue": "Miami Stadium, Miami",
-        "home": "",
-        "away": "",
-        "homeId": "",
-        "awayId": "",
-        "homeScore": null,
-        "awayScore": null,
-        "status": "scheduled",
-        "sourceStatus": 1
-      }
-    ]
+    "thirdPlace": []
   }
 }
