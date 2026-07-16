@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-15T20:18:12.595608+00:00",
+    "lastUpdated": "2026-07-16T20:10:56.704989+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-07-15",
+    "sourceDataDate": "2026-07-16",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
     "matchCount": 103
@@ -3834,9 +3834,9 @@
         "homeId": "43942",
         "awayId": "43922",
         "homeScore": 1,
-        "awayScore": 0,
+        "awayScore": 2,
         "status": "completed",
-        "sourceStatus": 3
+        "sourceStatus": 0
       }
     ],
     "final": [
@@ -3850,9 +3850,9 @@
         "time": "19:00",
         "venue": "New York/New Jersey Stadium, New Jersey",
         "home": "Spain",
-        "away": "",
+        "away": "Argentina",
         "homeId": "43969",
-        "awayId": "",
+        "awayId": "43922",
         "homeScore": null,
         "awayScore": null,
         "status": "scheduled",
