@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-16T20:10:56.704989+00:00",
+    "lastUpdated": "2026-07-17T20:14:01.494653+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-07-16",
+    "sourceDataDate": "2026-07-17",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
     "matchCount": 103
