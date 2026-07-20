@@ -1,10 +1,10 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-19T20:11:15.751435+00:00",
+    "lastUpdated": "2026-07-20T20:39:38.562890+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-07-19",
+    "sourceDataDate": "2026-07-20",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
     "matchCount": 103
@@ -3853,10 +3853,10 @@
         "away": "Argentina",
         "homeId": "43969",
         "awayId": "43922",
-        "homeScore": 0,
+        "homeScore": 1,
         "awayScore": 0,
         "status": "completed",
-        "sourceStatus": 3
+        "sourceStatus": 0
       }
     ],
     "thirdPlace": []
