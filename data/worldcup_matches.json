@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "lastUpdated": "2026-07-25T20:15:03.024199+00:00",
+    "lastUpdated": "2026-07-26T17:03:10.814879+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
-    "sourceDataDate": "2026-07-25",
+    "sourceDataDate": "2026-07-26",
     "note": "Official FIFA World Cup 2026 fixtures (group stage + knockout rounds).",
     "teamCount": 80,
-    "matchCount": 103
+    "matchCount": 104
   },
   "groups": {
     "A": {
@@ -3859,6 +3859,25 @@
         "sourceStatus": 0
       }
     ],
-    "thirdPlace": []
+    "thirdPlace": [
+      {
+        "id": "400021542",
+        "matchNumber": 103,
+        "group": "",
+        "stage": "Bronze final",
+        "matchDay": null,
+        "date": "2026-07-18",
+        "time": "21:00",
+        "venue": "Miami Stadium, Miami",
+        "home": "France",
+        "away": "England",
+        "homeId": "43946",
+        "awayId": "43942",
+        "homeScore": 4,
+        "awayScore": 6,
+        "status": "completed",
+        "sourceStatus": 0
+      }
+    ]
   }
 }

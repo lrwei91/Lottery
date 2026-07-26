@@ -236,6 +236,7 @@ def build_output(raw_matches: list[dict]) -> dict:
         "Final": "final",
         "Match for third place": "thirdPlace",
         "Play-off for third place": "thirdPlace",  # 2026-07-09 修正:FIFA API 实际用此名
+        "Bronze final": "thirdPlace",  # 2026-07-27 修正:FIFA API 收赛后实际用此名
     }
 
     for raw in sorted(first_stage, key=lambda item: item.get("MatchNumber") or 999):
