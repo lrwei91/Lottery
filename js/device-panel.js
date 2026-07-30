@@ -9,6 +9,14 @@
 
   let qrInstance = null;
   let overlayEl = null;
+  let lastFocusedBeforePanel = null;
+
+  function focusableElements() {
+    if (!overlayEl) return [];
+    return Array.from(overlayEl.querySelectorAll(
+      'button:not([disabled]), input:not([disabled]), summary, [tabindex]:not([tabindex="-1"])'
+    )).filter((element) => element.getClientRects().length > 0);
+  }
 
   function ensurePanel() {
     if (overlayEl) return overlayEl;
@@ -18,12 +26,13 @@
     overlayEl.setAttribute('role', 'dialog');
     overlayEl.setAttribute('aria-modal', 'true');
     overlayEl.setAttribute('aria-labelledby', 'ticaiDevicePanelTitle');
+    overlayEl.setAttribute('aria-hidden', 'true');
     overlayEl.style.display = 'none';
     overlayEl.innerHTML = `
       <div class="modal-card card device-panel-card" role="document">
         <div class="modal-header">
           <h3 id="ticaiDevicePanelTitle">设备管理 · 跨端同步</h3>
-          <button class="modal-close" data-device-action="close" aria-label="关闭">×</button>
+          <button class="modal-close" type="button" data-device-action="close" aria-label="关闭设备管理">×</button>
         </div>
         <div class="modal-body device-panel-body">
           <p class="device-panel-desc">
@@ -34,7 +43,7 @@
           <div class="device-panel-id-row">
             <span class="device-panel-label">当前设备 ID</span>
             <code class="device-panel-id" id="ticaiDevicePanelId">--</code>
-            <button class="btn-icon" data-device-action="copy" title="复制 ID">复制</button>
+            <button class="btn-icon" type="button" data-device-action="copy" aria-label="复制当前设备 ID">复制</button>
           </div>
 
           <div class="device-panel-qr-wrap">
@@ -45,18 +54,19 @@
           <details class="device-panel-details">
             <summary>手动绑定（输入另一台设备的 ID）</summary>
             <div class="device-panel-manual-row">
+              <label class="sr-only" for="ticaiDevicePanelInput">另一台设备的 ID</label>
               <input type="text" id="ticaiDevicePanelInput" placeholder="例如：550e8400-e29b-41d4-a716-446655440000" autocomplete="off" spellcheck="false" />
-              <button class="btn btn-primary" data-device-action="bind">绑定并刷新</button>
+              <button class="btn btn-primary" type="button" data-device-action="bind">绑定并刷新</button>
             </div>
           </details>
 
           <details class="device-panel-details device-panel-danger">
             <summary>重置当前设备</summary>
             <p class="device-panel-danger-hint">将生成新的设备 ID，并清空本机<strong>所有</strong>预测记录与策略缓存（云端数据不受影响）。</p>
-            <button class="btn btn-danger" data-device-action="reset">确认重置</button>
+            <button class="btn btn-danger" type="button" data-device-action="reset">确认重置</button>
           </details>
 
-          <p class="device-panel-status" id="ticaiDevicePanelStatus"></p>
+          <p class="device-panel-status" id="ticaiDevicePanelStatus" role="status" aria-live="polite"></p>
         </div>
       </div>
     `;
@@ -73,8 +83,29 @@
       else if (action === 'bind') handleBind();
       else if (action === 'reset') handleReset();
     });
-    document.addEventListener('keydown', function escHandler(e) {
-      if (e.key === 'Escape' && overlayEl && overlayEl.style.display !== 'none') hide();
+    document.addEventListener('keydown', function panelKeyHandler(e) {
+      if (!overlayEl || overlayEl.style.display === 'none') return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        hide();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const focusable = focusableElements();
+      if (focusable.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     });
     return overlayEl;
   }
@@ -191,6 +222,7 @@
 
   function show() {
     ensurePanel();
+    lastFocusedBeforePanel = document.activeElement;
     const idEl = document.getElementById('ticaiDevicePanelId');
     if (idEl) idEl.textContent = window.TicaiDevice.getId();
     const input = document.getElementById('ticaiDevicePanelInput');
@@ -199,10 +231,23 @@
     if (status) status.textContent = '';
     refreshQr();
     overlayEl.style.display = 'flex';
+    overlayEl.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('is-modal-open');
+    requestAnimationFrame(() => {
+      const closeButton = overlayEl.querySelector('[data-device-action="close"]');
+      if (closeButton) closeButton.focus();
+    });
   }
 
   function hide() {
-    if (overlayEl) overlayEl.style.display = 'none';
+    if (!overlayEl) return;
+    overlayEl.style.display = 'none';
+    overlayEl.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('is-modal-open');
+    if (lastFocusedBeforePanel && typeof lastFocusedBeforePanel.focus === 'function') {
+      lastFocusedBeforePanel.focus();
+    }
+    lastFocusedBeforePanel = null;
   }
 
   window.TicaiDevicePanel = { show, hide };

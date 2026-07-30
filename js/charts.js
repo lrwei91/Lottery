@@ -16,9 +16,9 @@
   // 配色与主题同步系统
   // ============================================================
   const COLORS = {
-    grid: 'rgba(255, 255, 255, 0.06)',
-    text: '#94a3b8',
-    textLight: '#64748b',
+    grid: 'rgba(23, 32, 39, 0.10)',
+    text: '#536069',
+    textLight: '#707980',
     front: '#ff4757',
     frontGrad1: '#ff6b35',
     frontGrad2: '#ff2e63',
@@ -52,6 +52,9 @@
       COLORS.cold = getVal('--cold', '#3b82f6');
       COLORS.warm = getVal('--warm', '#f59e0b');
       COLORS.green = getVal('--success', '#10b981');
+      COLORS.grid = getVal('--chart-grid', 'rgba(23, 32, 39, 0.10)');
+      COLORS.text = getVal('--chart-text', '#536069');
+      COLORS.textLight = getVal('--chart-text-muted', '#707980');
 
       LINE_COLORS[0] = COLORS.front;
       LINE_COLORS[1] = COLORS.back;
@@ -72,7 +75,9 @@
     const canvas = document.getElementById(canvasId);
     if (!canvas) return null;
 
-    const dpr = window.devicePixelRatio || 1;
+    // 图表属于高密度数据视图，2x 已足够清晰；限制 DPR 避免高像素屏
+    // 产生过大的 Canvas 位图和无意义的内存占用。
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const rect = canvas.parentElement.getBoundingClientRect();
     const w = Math.max(260, rect.width - 32); // 减去 padding
     
@@ -134,6 +139,29 @@
     if (!values || values.length === 0) return fallback;
     const max = Math.max(...values);
     return Number.isFinite(max) && max > 0 ? max : fallback;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function syncAccessibleTable(canvasId, headers, rows) {
+    const canvas = document.getElementById(canvasId);
+    const table = canvas?.parentElement?.querySelector(
+      `table.sr-only[data-canvas-id="${canvasId}"]`
+    );
+    if (!table) return;
+
+    const thead = table.querySelector('thead') || table.createTHead();
+    const tbody = table.querySelector('tbody') || table.createTBody();
+    thead.innerHTML = `<tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr>`;
+    tbody.innerHTML = rows.map(row => (
+      `<tr>${row.map(cell => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`
+    )).join('');
   }
 
   function hexToRgba(hex, alpha) {
@@ -454,6 +482,7 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('请点击号码查看走势', w / 2, h / 2);
+      syncAccessibleTable(canvasId, ['状态'], [['请先选择要查看的号码']]);
       return;
     }
 
@@ -525,6 +554,17 @@
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText('号码走势 (最近 60 期)', padding.left, 6);
+
+    syncAccessibleTable(
+      canvasId,
+      ['号码', '最近 60 期出现次数', '出现期号'],
+      selectedNumbers.map(num => {
+        const appearedIssues = recentData
+          .filter(draw => draw.front.includes(num))
+          .map(draw => draw.issue);
+        return [padNum(num), appearedIssues.length, appearedIssues.join('、') || '无'];
+      })
+    );
   }
 
   // ============================================================
@@ -646,6 +686,12 @@
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(`和值分布 (平均: ${avg.toFixed(1)}, 标准差: ${sd.toFixed(1)})`, padding.left, 6);
+
+    syncAccessibleTable(
+      canvasId,
+      ['和值区间', '期数'],
+      labels.map((label, index) => [label, values[index]])
+    );
   }
 
   // ============================================================
@@ -699,7 +745,7 @@
       ctx.fill();
 
       // 边框
-      ctx.strokeStyle = 'rgba(10, 14, 26, 0.5)';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.82)';
       ctx.lineWidth = 2;
       ctx.stroke();
 
@@ -738,6 +784,16 @@
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText(title, cx, 8);
+
+    syncAccessibleTable(
+      canvasId,
+      ['比例', '期数', '占比'],
+      entries.map(([label, value]) => [
+        label,
+        value,
+        `${((value / total) * 100).toFixed(1)}%`
+      ])
+    );
   }
 
   // ============================================================

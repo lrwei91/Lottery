@@ -714,12 +714,12 @@
         <div class="wc-top-strip" id="wcTopStrip"></div>
       </div>
 
-      <div class="wc-tabs" id="worldcupTabs">
-        <button class="wc-tab active" data-wc-tab="matches">最近比赛</button>
-        <button class="wc-tab" data-wc-tab="champion">冠军概率</button>
-        <button class="wc-tab" data-wc-tab="factor">因子拆解</button>
-        <button class="wc-tab" data-wc-tab="mystic">玄学分析</button>
-        <button class="wc-tab" data-wc-tab="squad">球队阵容</button>
+      <div class="wc-tabs" id="worldcupTabs" aria-label="世界杯分析维度">
+        <button class="wc-tab active" type="button" data-wc-tab="matches" aria-pressed="true">最近比赛</button>
+        <button class="wc-tab" type="button" data-wc-tab="champion" aria-pressed="false">冠军概率</button>
+        <button class="wc-tab" type="button" data-wc-tab="factor" aria-pressed="false">因子拆解</button>
+        <button class="wc-tab" type="button" data-wc-tab="mystic" aria-pressed="false">玄学分析</button>
+        <button class="wc-tab" type="button" data-wc-tab="squad" aria-pressed="false">球队阵容</button>
         ${state.oddsHealth && !state.oddsHealth.ok
           ? `<span class="wc-odds-health-badge" title="${escapeHtml(state.oddsHealth.issues.join(' / '))}">⚠️ 数据源异常</span>`
           : ''}
@@ -1662,7 +1662,9 @@
     const groupSelector = el('wcGroupSelector');
     if (groupSelector) {
       groupSelector.querySelectorAll('.wc-group-tab').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.group === state.selectedGroup);
+        const active = btn.dataset.group === state.selectedGroup;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', String(active));
       });
 
       groupSelector.addEventListener('click', event => {
@@ -1673,7 +1675,9 @@
         state.selectedGroup = group;
 
         groupSelector.querySelectorAll('.wc-group-tab').forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.group === group);
+          const active = btn.dataset.group === group;
+          btn.classList.toggle('active', active);
+          btn.setAttribute('aria-pressed', String(active));
         });
 
         const groupsList = document.querySelectorAll('.wc-match-group');
@@ -1729,11 +1733,15 @@
   function switchTab(tabName) {
     state.activeTab = tabName || 'champion';
     document.querySelectorAll('#sectionWorldcup .wc-tab').forEach(button => {
-      button.classList.toggle('active', button.dataset.wcTab === state.activeTab);
+      const active = button.dataset.wcTab === state.activeTab;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
     });
     document.querySelectorAll('#sectionWorldcup .wc-panel').forEach(panel => {
       const id = `wcPanel${state.activeTab.charAt(0).toUpperCase()}${state.activeTab.slice(1)}`;
-      panel.classList.toggle('active', panel.id === id);
+      const active = panel.id === id;
+      panel.classList.toggle('active', active);
+      panel.setAttribute('aria-hidden', String(!active));
     });
   }
 
@@ -2222,7 +2230,60 @@
     const modal = document.createElement('div');
     modal.className = 'modal-overlay wc-h2h-modal-overlay';
     modal.id = 'wcH2hModal';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', `${countryName(home)} 对 ${countryName(away)} 比赛预测`);
     modal.style.display = 'flex';
+    const previousFocus = document.activeElement;
+    const focusableSelector = [
+      'button:not([disabled])',
+      'a[href]',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])'
+    ].join(', ');
+    const closeModal = () => {
+      document.removeEventListener('keydown', handleModalKeydown);
+      modal.classList.add('fade-out');
+      document.body.classList.remove('is-modal-open');
+      setTimeout(() => {
+        modal.remove();
+        if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+      }, 200);
+    };
+    const handleModalKeydown = event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeModal();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const focusable = Array.from(modal.querySelectorAll(focusableSelector))
+        .filter(element => element.getClientRects().length > 0);
+      if (!focusable.length) {
+        event.preventDefault();
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    const mountModal = () => {
+      document.body.appendChild(modal);
+      document.body.classList.add('is-modal-open');
+      document.addEventListener('keydown', handleModalKeydown);
+      requestAnimationFrame(() => {
+        const closeButton = modal.querySelector('.modal-close');
+        if (closeButton) closeButton.focus();
+      });
+    };
 
     if (!teamA || !teamB) {
       const missingTeams = [];
@@ -2233,7 +2294,7 @@
         <div class="modal-card card wc-h2h-modal-card" style="max-width: 460px;">
           <div class="modal-header wc-h2h-modal-header" style="border-bottom: none; margin-bottom: 0;">
             <h3 style="font-size: 1.15rem; color: var(--danger); font-weight: 700;">⚠️ 预测数据不足</h3>
-            <button class="modal-close" id="wcH2hModalClose" aria-label="关闭预测窗口">×</button>
+            <button class="modal-close" type="button" id="wcH2hModalClose" aria-label="关闭预测窗口">×</button>
           </div>
           <div class="modal-body" style="text-align: center; padding: 0 var(--space-lg) var(--space-lg) var(--space-lg);">
             <div class="wc-modal-prediction-title" style="margin-bottom: var(--space-md);">
@@ -2244,19 +2305,15 @@
               <p style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.6; margin-bottom: var(--space-md);">
                 非常抱歉！由于队伍 <strong style="color: var(--danger); font-weight: 800;">${missingTeams.join(' 和 ')}</strong> 缺失 Elo 历史战绩、战术因子及球员身价等核心模型数据，系统无法对此场比赛进行 Poisson 模拟和对战推演。
               </p>
-              <button class="btn btn-secondary" id="wcH2hModalCloseBtn" style="min-height: 38px; padding: 6px 24px; font-weight: 700;">我知道了</button>
+              <button class="btn btn-secondary" type="button" id="wcH2hModalCloseBtn" style="min-height: 38px; padding: 6px 24px; font-weight: 700;">我知道了</button>
             </div>
           </div>
         </div>
       `;
-      document.body.appendChild(modal);
+      mountModal();
       
       const closeBtn = modal.querySelector('#wcH2hModalClose');
       const closeBtn2 = modal.querySelector('#wcH2hModalCloseBtn');
-      const closeModal = () => {
-        modal.classList.add('fade-out');
-        setTimeout(() => modal.remove(), 200);
-      };
       if (closeBtn) closeBtn.addEventListener('click', closeModal);
       if (closeBtn2) closeBtn2.addEventListener('click', closeModal);
       modal.addEventListener('click', e => {
@@ -2308,7 +2365,7 @@
             <span class="wc-modal-vs">VS</span>
             <span class="wc-modal-flag-badge">${flag(teamB.country)} ${escapeHtml(countryName(teamB.country))}</span>
           </div>
-          <button class="modal-close" id="wcH2hModalClose" aria-label="关闭预测窗口">×</button>
+          <button class="modal-close" type="button" id="wcH2hModalClose" aria-label="关闭预测窗口">×</button>
         </div>
         <div class="modal-body wc-h2h-modal-body">
           ${(() => {
@@ -2492,13 +2549,9 @@
       </div>
     `;
 
-    document.body.appendChild(modal);
+    mountModal();
 
     const closeBtn = modal.querySelector('#wcH2hModalClose');
-    const closeModal = () => {
-      modal.classList.add('fade-out');
-      setTimeout(() => modal.remove(), 200);
-    };
     if (closeBtn) {
       closeBtn.addEventListener('click', closeModal);
     }

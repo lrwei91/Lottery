@@ -66,6 +66,9 @@
       toast = document.createElement('div');
       toast.id = 'appToast';
       toast.className = 'app-toast';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+      toast.setAttribute('aria-atomic', 'true');
       document.body.appendChild(toast);
     }
     toast.textContent = message;
@@ -222,14 +225,29 @@
     if (el) el.style.display = value;
   }
 
+  function updatePressedGroup(selector, isActive) {
+    document.querySelectorAll(selector).forEach((button) => {
+      const active = Boolean(isActive(button));
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+  }
+
+  function updateSectionVisibility(activeSectionId) {
+    document.querySelectorAll('.section').forEach((section) => {
+      const active = section.id === activeSectionId;
+      section.classList.toggle('active', active);
+      section.setAttribute('aria-hidden', String(!active));
+    });
+  }
+
   function getActiveStatName() {
     const active = document.querySelector('#statsTabs .sub-tab.active');
     return active ? active.dataset.stat : 'frequency';
   }
 
   function resetStatsTabs() {
-    document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
-    document.querySelector('.sub-tab[data-stat="frequency"]').classList.add('active');
+    updatePressedGroup('.sub-tab', (button) => button.dataset.stat === 'frequency');
     document.querySelectorAll('.stat-panel').forEach(p => p.classList.remove('active'));
     document.getElementById('panelFrequency').classList.add('active');
   }
@@ -271,6 +289,10 @@
         el.classList.toggle('theme-dlt', state.currentLottery === 'dlt');
       }
     });
+    updatePressedGroup(
+      '.selector-tab',
+      (button) => button.dataset.lottery === state.currentLottery
+    );
 
     // Reset dataCount display state when switching
     setDisplay('dataCount', '');
@@ -626,12 +648,12 @@
     let html = '';
 
     // 上一页
-    html += `<button class="page-btn ${currentPage === 1 ? 'disabled' : ''}"
-              data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
+    html += `<button class="page-btn ${currentPage === 1 ? 'disabled' : ''}" type="button"
+              data-page="${currentPage - 1}" aria-label="上一页" ${currentPage === 1 ? 'disabled' : ''}>‹</button>`;
 
     // 首页
     if (currentPage > 3) {
-      html += `<button class="page-btn" data-page="1">1</button>`;
+      html += `<button class="page-btn" type="button" data-page="1" aria-label="第 1 页">1</button>`;
       if (currentPage > 4) html += `<span class="page-ellipsis">...</span>`;
     }
 
@@ -644,18 +666,19 @@
     }
 
     for (let i = startPage; i <= endPage; i++) {
-      html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</button>`;
+      html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" type="button"
+                data-page="${i}" aria-label="第 ${i} 页" ${i === currentPage ? 'aria-current="page"' : ''}>${i}</button>`;
     }
 
     // 末页
     if (currentPage < totalPages - 2) {
       if (currentPage < totalPages - 3) html += `<span class="page-ellipsis">...</span>`;
-      html += `<button class="page-btn" data-page="${totalPages}">${totalPages}</button>`;
+      html += `<button class="page-btn" type="button" data-page="${totalPages}" aria-label="第 ${totalPages} 页">${totalPages}</button>`;
     }
 
     // 下一页
-    html += `<button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}"
-              data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
+    html += `<button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}" type="button"
+              data-page="${currentPage + 1}" aria-label="下一页" ${currentPage === totalPages ? 'disabled' : ''}>›</button>`;
     
     container.innerHTML = html;
   }
@@ -847,7 +870,8 @@
     let html = '<div class="trend-nums">';
     for (let i = minNum; i <= maxNum; i++) {
       const isSelected = state.selectedTrendNumbers.includes(i);
-      html += `<button class="trend-num-btn ${isSelected ? 'active' : ''}" data-num="${i}">${padNum(i)}</button>`;
+      html += `<button class="trend-num-btn ${isSelected ? 'active' : ''}" type="button"
+                data-num="${i}" aria-label="号码 ${padNum(i)}" aria-pressed="${isSelected}">${padNum(i)}</button>`;
     }
     html += '</div>';
     selector.innerHTML = html;
@@ -1204,7 +1228,7 @@
             </div>
             <div class="history-record-actions">
               <span class="history-status ${statusClass}">${statusText}</span>
-              <button class="history-copy-btn" data-copy-record-id="${escapeHtml(record.id)}" onclick="App.copyPredictionRecord('${escapeHtml(record.id)}')">
+              <button class="history-copy-btn" type="button" data-copy-record-id="${escapeHtml(record.id)}" onclick="App.copyPredictionRecord('${escapeHtml(record.id)}')">
                 复制本轮
               </button>
             </div>
@@ -1252,22 +1276,12 @@
     list.innerHTML = state.predictionRecords
       .map(record => renderPredictionRecordItem(record, isPl3))
       .join('');
-    _lastFocusedBeforeModal = document.activeElement;
-    modal.style.display = 'flex';
-    requestAnimationFrame(() => {
-      const closeBtn = modal.querySelector('.modal-close');
-      if (closeBtn) closeBtn.focus();
-    });
+    openModal(modal, modal.querySelector('.modal-close'));
   }
 
   function hidePredictionHistoryModal() {
     const modal = document.getElementById('predictionHistoryModal');
-    if (!modal) return;
-    modal.style.display = 'none';
-    if (_lastFocusedBeforeModal && typeof _lastFocusedBeforeModal.focus === 'function') {
-      _lastFocusedBeforeModal.focus();
-    }
-    _lastFocusedBeforeModal = null;
+    closeModal(modal);
   }
 
   function formatPredictionLines(predictions, isPl3) {
@@ -1395,6 +1409,67 @@
 
   // ==================== 号码比对模块 ====================
   let _lastFocusedBeforeModal = null;
+  let _activeModal = null;
+
+  function getModalFocusableElements(modal) {
+    return Array.from(modal.querySelectorAll(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), ' +
+      'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter((element) => element.getClientRects().length > 0);
+  }
+
+  function openModal(modal, initialFocus) {
+    if (!modal) return;
+    _lastFocusedBeforeModal = document.activeElement;
+    _activeModal = modal;
+    modal.style.display = 'flex';
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('is-modal-open');
+    requestAnimationFrame(() => {
+      const target = initialFocus || getModalFocusableElements(modal)[0];
+      if (target && typeof target.focus === 'function') target.focus();
+    });
+  }
+
+  function closeModal(modal) {
+    if (!modal) return;
+    modal.style.display = 'none';
+    modal.setAttribute('aria-hidden', 'true');
+    if (_activeModal === modal) _activeModal = null;
+    document.body.classList.remove('is-modal-open');
+    if (_lastFocusedBeforeModal && typeof _lastFocusedBeforeModal.focus === 'function') {
+      _lastFocusedBeforeModal.focus();
+    }
+    _lastFocusedBeforeModal = null;
+  }
+
+  function handleActiveModalKeydown(event) {
+    if (!_activeModal || _activeModal.style.display === 'none') return;
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      if (_activeModal.id === 'winningCheckerModal') hideWinningChecker();
+      else if (_activeModal.id === 'predictionHistoryModal') hidePredictionHistoryModal();
+      return;
+    }
+
+    if (event.key !== 'Tab') return;
+    const focusable = getModalFocusableElements(_activeModal);
+    if (focusable.length === 0) {
+      event.preventDefault();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
 
   function showWinningChecker() {
     const modal = document.getElementById('winningCheckerModal');
@@ -1407,24 +1482,12 @@
     resultsContainer.innerHTML = '';
     resultsContainer.style.display = 'none';
 
-    _lastFocusedBeforeModal = document.activeElement;
-    modal.style.display = 'flex';
-    // 下一帧再 focus，避免被 display 切换打断
-    requestAnimationFrame(() => {
-      const input = document.getElementById('customNumbersInput');
-      if (input) input.focus();
-    });
+    openModal(modal, document.getElementById('customNumbersInput'));
   }
 
   function hideWinningChecker() {
     const modal = document.getElementById('winningCheckerModal');
-    if (modal) {
-      modal.style.display = 'none';
-      if (_lastFocusedBeforeModal && typeof _lastFocusedBeforeModal.focus === 'function') {
-        _lastFocusedBeforeModal.focus();
-      }
-      _lastFocusedBeforeModal = null;
-    }
+    closeModal(modal);
   }
 
   function getPrizeTierName(fCount, bCount) {
@@ -1570,7 +1633,7 @@
       if (!tab) return;
       const lottery = tab.dataset.lottery;
       if (tab.classList.contains('active')) return;
-      document.querySelectorAll('.selector-tab').forEach(t => t.classList.toggle('active', t === tab));
+      updatePressedGroup('.selector-tab', (button) => button === tab);
       window.location.hash = lottery;
     });
 
@@ -1591,8 +1654,7 @@
       const stat = tab.dataset.stat;
       
       // 切换标签样式
-      document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
+      updatePressedGroup('.sub-tab', (button) => button === tab);
       
       // 切换面板
       document.querySelectorAll('.stat-panel').forEach(p => p.classList.remove('active'));
@@ -1649,19 +1711,26 @@
       if (idx >= 0) {
         state.selectedTrendNumbers.splice(idx, 1);
         btn.classList.remove('active');
+        btn.setAttribute('aria-pressed', 'false');
       } else {
         if (state.selectedTrendNumbers.length >= 5) {
           const oldNum = state.selectedTrendNumbers.shift();
           const oldBtn = document.querySelector(`.trend-num-btn[data-num="${oldNum}"]`);
-          if (oldBtn) oldBtn.classList.remove('active');
+          if (oldBtn) {
+            oldBtn.classList.remove('active');
+            oldBtn.setAttribute('aria-pressed', 'false');
+          }
           showToast('最多选择 5 个号码');
         }
         state.selectedTrendNumbers.push(num);
         btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
       }
       
       Charts.drawTrendChart('chartTrend', state.data, state.selectedTrendNumbers);
     });
+
+    document.addEventListener('keydown', handleActiveModalKeydown);
   }
 
   function switchSection(name) {
@@ -1672,13 +1741,16 @@
     state.currentSection = name;
     
     // 切换标签
-    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    updatePressedGroup('.nav-tab', (button) => button.dataset.section === name);
     const activeTab = document.querySelector(`.nav-tab[data-section="${name}"]`);
-    if (activeTab) activeTab.classList.add('active');
+    if (activeTab) activeTab.setAttribute('aria-current', 'page');
+    document.querySelectorAll('.nav-tab').forEach((button) => {
+      if (button !== activeTab) button.removeAttribute('aria-current');
+    });
     
     // 切换区域
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById('section' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+    const activeSectionId = 'section' + name.charAt(0).toUpperCase() + name.slice(1);
+    updateSectionVisibility(activeSectionId);
     
     // 按需渲染
     switch(name) {
@@ -1698,22 +1770,22 @@
     const overlay = document.getElementById('loadingOverlay');
     overlay.style.display = 'flex';
     overlay.classList.remove('fade-out');
+    overlay.setAttribute('aria-busy', 'true');
+    overlay.setAttribute('aria-hidden', 'false');
 
     state.currentLottery = 'worldcup';
+    state.currentSection = 'worldcup';
     applyLotteryCopy();
-
-    document.querySelectorAll('.selector-tab').forEach(t => {
-      t.classList.toggle('active', t.dataset.lottery === 'worldcup');
-    });
+    updatePressedGroup('.selector-tab', (button) => button.dataset.lottery === 'worldcup');
 
     if (state.countdownTimerId !== null) {
       clearInterval(state.countdownTimerId);
       state.countdownTimerId = null;
     }
 
-    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById('sectionWorldcup').classList.add('active');
+    updatePressedGroup('.nav-tab', () => false);
+    document.querySelectorAll('.nav-tab').forEach((button) => button.removeAttribute('aria-current'));
+    updateSectionVisibility('sectionWorldcup');
 
     const loadStart = Date.now();
     if (window.WorldCup && typeof window.WorldCup.init === 'function') {
@@ -1726,7 +1798,11 @@
     if (elapsed < minDisplay) await new Promise(r => setTimeout(r, minDisplay - elapsed));
 
     overlay.classList.add('fade-out');
-    setTimeout(() => overlay.style.display = 'none', 500);
+    overlay.setAttribute('aria-busy', 'false');
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      overlay.setAttribute('aria-hidden', 'true');
+    }, 500);
   }
 
   // ==================== 初始化 ====================
@@ -1742,16 +1818,14 @@
     const overlay = document.getElementById('loadingOverlay');
     overlay.style.display = 'flex';
     overlay.classList.remove('fade-out');
+    overlay.setAttribute('aria-busy', 'true');
+    overlay.setAttribute('aria-hidden', 'false');
 
     state.currentLottery = type;
     applyLotteryCopy();
     resetLotteryState();
 
-    // 切换 active tabs
-    document.querySelectorAll('.selector-tab').forEach(t => {
-      if (t.dataset.lottery === type) t.classList.add('active');
-      else t.classList.remove('active');
-    });
+    updatePressedGroup('.selector-tab', (button) => button.dataset.lottery === type);
 
     if (!LOTTERY_SECTION_NAMES.includes(state.currentSection)) {
       state.currentSection = 'home';
@@ -1767,7 +1841,11 @@
     if (elapsed < minDisplay) await new Promise(r => setTimeout(r, minDisplay - elapsed));
 
     overlay.classList.add('fade-out');
-    setTimeout(() => overlay.style.display = 'none', 500);
+    overlay.setAttribute('aria-busy', 'false');
+    setTimeout(() => {
+      overlay.style.display = 'none';
+      overlay.setAttribute('aria-hidden', 'true');
+    }, 500);
 
     if (loaded) {
       renderHome();
