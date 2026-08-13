@@ -7,6 +7,8 @@
 
 - **是什么**：纯前端单页应用，体彩超级大乐透 + 排列三历史开奖分析与 5 大策略预测；附带 2026 世界杯预测 Tab（Elo + The Odds API + Polymarket + LLM 四源融合）。
 - **技术栈**：零前端框架，纯 HTML5 + CSS + 原生 JS。Canvas 自研图表引擎。Node.js scripts 跑爬虫，Python scripts 同步世界杯上游数据。
+- **前端入口**：`index.html` 负责静态结构与脚本顺序；`css/style.css` 保留基础/历史样式，`css/workbench.css` 是当前工作台视觉覆盖层；`js/app.js`、`js/charts.js`、`js/worldcup.js` 分别承载主应用、Canvas 图表和世界杯界面。
+- **设计依据**：视觉改动先读 `docs/design-brief.md`，再核对本机 `project-standards` 当前权威规范；规范要按高密度数据工具适配，不能直接套营销站布局。
 - **部署**：GitHub Pages（演示）+ Vercel（API/CRON 跑赔率抓取）。
 - **存储**：Vercel Storage → Upstash Redis（REST），环境变量 `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`。
 - **关键数据文件**（都在 `data/`，JSON）：
@@ -46,6 +48,9 @@
 
 ### 3. 项目结构约定
 - 新增前端逻辑：放 `js/`，命名小写连字符（参考 `odds-utils.js` / `cloud-sync.js`）。
+- 前端脚本仍使用全局对象协作；新增脚本时必须核对 `index.html` 的同步加载顺序，不要擅自改成打包器、框架或 ES Module 迁移。
+- `#dlt`、`#pl3`、`#worldcup` Hash 路由、现有 DOM ID、`window.App` 方法、表单字段和数据结构属于兼容接口；视觉重构不得改名或删除。
+- `css/workbench.css` 负责工作台 token、布局和状态覆盖；不要把新视觉规则散落回 `index.html` 内联样式或复制到业务 JS。
 - 新增 API endpoint：放 `api/`（Vercel Functions 自动识别），文件名就是路径。
 - API 公共能力复用 `api/_lib/http.js` / `redis.js`；FIFA 实时标准化只放 `api/_lib/worldcup-matches.js`。
 - 新增 Python 脚本：放 `scripts/`，同步类加前缀 `sync_`。
@@ -64,6 +69,17 @@
 - 抓取脚本是 `api/cron/sync-odds.js`（Vercel Cron），别手动 `curl` 模拟。
 - 改融合权重前先看 `js/odds-utils.js` 的 `devig` / `EV` / `Kelly` 工具函数，别自己重写。
 
+### 5.1 视觉、颜色模式与交互契约
+- 最新视觉基线是白纸、黑墨、荧光黄和 32px 网格。荧光黄是唯一品牌强调色；红/蓝彩票球、冷热号、成功、警告、错误继续作为业务语义色，不能被品牌色替代。
+- 这是高密度数据工作台：保留真实号码、图表、历史表格和多列分析作为视觉主体；不要新增营销 Hero、装饰性大标题、低密度全站窄栏、玻璃拟态或持续环境动画。
+- 常态表面使用实底、细边框和低/无阴影；只有可交互悬停、浮层和模态框允许抬升。焦点必须清晰，状态不能只靠颜色表达。
+- 颜色模式实现统一由 `js/color-mode.js` 提供 `window.TicaiColorMode`，接口固定为 `getPreference()`、`getResolved()`、`setPreference(mode)`、`subscribe(listener)`；偏好值仅允许 `light | dark | system`，默认 `system`。
+- 颜色偏好只写设备本地 `localStorage` 的 `ticai.colorMode`，不得进入云同步、预测记录或设备绑定协议。存储不可用或值无效时必须安全回退到 `system`。
+- 首次绘制前同步设置根节点 `data-color-preference`、`data-color-mode`、`color-scheme` 和 `theme-color`；模式解析变化后重绘当前可见 Canvas。二维码固定黑码白底，确保扫描可靠。
+- Canvas、世界杯渲染字符串和设备面板不得新增散落的主题硬编码色；优先读取 CSS token 或使用语义 CSS 类。
+- 加载反馈不得在 JavaScript 失效时遮挡静态内容。运行时若改加载机制，采用延迟出现的非阻塞状态条，保留旧内容并正确维护 `aria-busy`，不要人为设置最短展示时间。
+- 动效只用于首屏轻量编排、面板一次性揭示和按压反馈；`prefers-reduced-motion: reduce` 下直接显示最终状态，不保留持续漂移、指针跟随或循环动画。
+
 ### 6. 大乐透元层信号（v2026-06-22 增强）
 - 彩种边界参数集中在 `js/predictor-config.js`，必须保持不可变；元层信号/能力集中在 `js/predictor.js` 和 `js/dlt-conformal.js`：
   - 双窗口 trendScore（近 10 vs 近 50）+ emergingHot 标记（`computeScores.scoreZone`）
@@ -81,10 +97,19 @@
 - 大乐透健康检查入口：`npm run check:dlt-predictor`（覆盖 Predictor/DltConformal 加载、Conformal 覆盖率、5 注合法性、历史完全重复排除）
 
 ### 7. 测试
-- 统一门禁：`npm run check`（语法、数据、API/Redis、大乐透、排列三）。
+- 统一门禁：`npm run check`（语法、数据、API/Redis、前端运行时、大乐透、排列三）；只改文档也至少执行 `git diff --check`。
+- 颜色模式或视觉运行时改动要扩展 `scripts/check-frontend-runtime.cjs`，覆盖三种偏好、系统偏好变化、无效/不可用存储、首次绘制和 Canvas 重绘。
 - 跑 `npm run dev`（`npx -y serve .`）起本地静态服务。
 - API 本地测：`vercel dev`（Vercel CLI）。注意 Vercel dev 跟生产 env 注入逻辑一样，连了 Storage 才会有 Upstash 变量。
+- `npm run dev` 只提供静态文件；此环境下 `/api/records`、`/api/reviews` 等 404 要记录为本地环境限制，不能当作生产 API 验证结果。
+- 浏览器视觉验收至少覆盖 320、390、768、1024、1440px，以及键盘、触屏、200% 缩放、减弱动效和 JavaScript 禁用；表格允许容器内部横向滚动，页面本身不得横向溢出。
 - 数据更新：`npm run scrape:all` 或 `npm run sync:worldcup:all`。
+
+### 8. Git 与交付范围
+- 开始工作先执行 `git status --short --branch`，识别已有修改和未跟踪文件；它们默认属于用户，禁止回滚、覆盖或顺手纳入提交。
+- 拉取前先 fetch 并检查分支、远端差异和同路径冲突；能安全快进时使用 `git pull --ff-only origin main`，不要为拉取擅自 stash 全工作区。
+- 禁止使用 `git add data/`、`git add .` 打包数据或无关改动；按 owner 文件或本次明确文件逐个暂存。
+- 本地改造、提交、推送和部署是四个独立授权边界。用户只要求改造或验证时，不得自行 commit、push、发版或部署。
 
 ## @import 子规则文件
 
@@ -96,6 +121,7 @@
 
 ## 变更日志
 
+- 2026-08-14：同步当前工作台协作约束：补充前端兼容接口、白纸油墨视觉基线、`light/dark/system` 颜色模式契约、Canvas/加载/减弱动效要求、浏览器验收矩阵，以及 dirty worktree 下的拉取与交付边界。
 - 2026-07-11：渐进式架构治理：新增统一 `npm run check` 和只读 CI；彩票工作流只提交两个 owner 文件；世界杯静态首屏与实时 API 解耦，FIFA 实时同步抽到单一共享实现；Predictor 改用不可变彩种 context；云同步升级设备命名空间 Sorted Set，并兼容读取 v1 数据。
 - 2026-06-29：基于远端 140 条大乐透复盘记录做策略升级（只优化 大乐透，PL3 仅冒烟防回归）。`js/predictor.js`：
   - 复盘结论：`gap/cold` 前区表现优于 `hot/danTuo`；原默认 5 注中 `danTuo` 前区命中偏弱，且 `hotColdAnalysis` 在长窗口 + 时间衰减下把选中号码/开奖号几乎全判成 `warm`，导致 hot/cold 策略名义存在、实际失效

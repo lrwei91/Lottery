@@ -1,0 +1,282 @@
+[
+  {
+    "runStarted": "2026-08-06T10:00:30.114Z",
+    "finishedAt": "2026-08-06T10:00:31.753Z",
+    "dryRun": false,
+    "deviceId": "3722bf95-31b6-452b-9ced-76a39ccceeb0",
+    "baseIssue": "26088",
+    "targetIssue": "26089",
+    "upload": {
+      "ok": true,
+      "status": 200,
+      "body": {
+        "ok": true,
+        "id": "dlt-cron-1786010430161"
+      }
+    },
+    "record": {
+      "id": "dlt-cron-1786010430161",
+      "type": "dlt",
+      "createdAt": "2026-08-06T10:00:30.161Z",
+      "baseIssue": "26088",
+      "targetIssue": "26089",
+      "source": "cron-daily-1800",
+      "predictions": [
+        {
+          "strategy": "gap",
+          "front": [
+            6,
+            8,
+            17,
+            26,
+            29
+          ],
+          "back": [
+            2,
+            8
+          ],
+          "reasoning": "【遗漏追号 · 统计约束模型】\n区间过渡: 8-14(降权), 15-21(升权), 22-28(降权)\n偏态检测: 区间4 聚集 (反聚集加权)\n前区误杀预警: 1 2 9 11 15 19 20 27 28\n后区误杀预警: 4 6 9\n后区策略: 遗漏回补 + 观察层软排 (非硬约束)\n前区奇偶: 2:3 | 大小: 2:3\n前区和值: 86 (62-121 · 训练区间) | 后区高阶: 观察层 (软排, 和10)\n连号状态: 无 (散号组合) | 同尾状态: 有 (1组同尾)\n前区AC值: 5 (>=4) | 覆盖 5 个分区 (>=3)\n冷热结构: 1热 / 3温 / 1冷\n结合伴生概率矩阵、近期时间衰减权重、元层信号 (transition/bias/overKill/conformal) 及全库去重生成 (计算碰撞: 1次)",
+          "confidence": "balanced",
+          "minScore": 0.1196,
+          "meta": {
+            "overKillHit": {
+              "front": [],
+              "back": []
+            },
+            "overKillWarn": {
+              "front": [
+                20,
+                2,
+                11,
+                19,
+                15,
+                27,
+                28,
+                1,
+                9
+              ],
+              "back": [
+                9,
+                4,
+                6
+              ]
+            },
+            "transitionSignalApplied": true,
+            "biasDetected": true,
+            "backSoftKill": true,
+            "useDanLayer": false
+          }
+        },
+        {
+          "strategy": "cold",
+          "front": [
+            7,
+            14,
+            26,
+            28,
+            31
+          ],
+          "back": [
+            1,
+            3
+          ],
+          "reasoning": "【冷号优先 · 统计约束模型】\n区间过渡: 8-14(降权), 15-21(升权), 22-28(降权)\n偏态检测: 区间4 聚集 (反聚集加权)\n前区误杀预警: 1 2 9 11 15 19 20 27 28\n后区误杀预警: 4 6 9\n后区策略: 遗漏回补 + 观察层软排 (非硬约束)\n前区奇偶: 2:3 | 大小: 3:2\n前区和值: 106 (62-121 · 训练区间) | 后区高阶: 观察层 (软排, 和4)\n连号状态: 无 (散号组合) | 同尾状态: 无 (全异尾)\n前区AC值: 6 (>=4) | 覆盖 4 个分区 (>=3)\n冷热结构: 1热 / 2温 / 2冷\n结合伴生概率矩阵、近期时间衰减权重、元层信号 (transition/bias/overKill/conformal) 及全库去重生成 (计算碰撞: 1次)",
+          "confidence": "aggressive",
+          "minScore": 0.0101,
+          "meta": {
+            "overKillHit": {
+              "front": [
+                28
+              ],
+              "back": []
+            },
+            "overKillWarn": {
+              "front": [
+                20,
+                2,
+                11,
+                19,
+                15,
+                27,
+                28,
+                1,
+                9
+              ],
+              "back": [
+                9,
+                4,
+                6
+              ]
+            },
+            "transitionSignalApplied": true,
+            "biasDetected": true,
+            "backSoftKill": true,
+            "useDanLayer": false
+          }
+        },
+        {
+          "strategy": "random",
+          "front": [
+            6,
+            8,
+            13,
+            19,
+            23
+          ],
+          "back": [
+            4,
+            7
+          ],
+          "reasoning": "【布林线策略 · 统计约束模型】\n布林趋势: 前区下降 / 后区上升 | 目标和值: 前区70.84, 后区14.19\n近50期热号池: 前区13 26 20 21 27 6 10 15 23 24 | 后区2 11 4 7 5\n区间过渡: 8-14(降权), 15-21(升权), 22-28(降权)\n偏态检测: 区间4 聚集 (反聚集加权)\n前区误杀预警: 1 2 9 11 15 19 20 27 28\n后区误杀预警: 4 6 9\n后区策略: 遗漏回补 + 观察层软排 (非硬约束)\n前区奇偶: 3:2 | 大小: 2:3\n前区和值: 69 (62-121 · 训练区间) | 后区高阶: 观察层 (软排, 和11)\n连号状态: 无 (散号组合) | 同尾状态: 有 (1组同尾)\n前区AC值: 6 (>=4) | 覆盖 4 个分区 (>=3)\n冷热结构: 2热 / 3温 / 0冷\n结合布林线和值约束与70%热号抽样、近期时间衰减权重、元层信号 (transition/bias/overKill/conformal) 及全库去重生成 (计算碰撞: 1次)",
+          "confidence": "high",
+          "minScore": 0.1543,
+          "meta": {
+            "overKillHit": {
+              "front": [
+                19
+              ],
+              "back": [
+                4
+              ]
+            },
+            "overKillWarn": {
+              "front": [
+                20,
+                2,
+                11,
+                19,
+                15,
+                27,
+                28,
+                1,
+                9
+              ],
+              "back": [
+                9,
+                4,
+                6
+              ]
+            },
+            "transitionSignalApplied": true,
+            "biasDetected": true,
+            "backSoftKill": true,
+            "useDanLayer": false
+          }
+        },
+        {
+          "strategy": "balanced",
+          "front": [
+            1,
+            17,
+            23,
+            26,
+            35
+          ],
+          "back": [
+            8,
+            10
+          ],
+          "reasoning": "【均衡策略 · 统计约束模型】\n区间过渡: 8-14(降权), 15-21(升权), 22-28(降权)\n偏态检测: 区间4 聚集 (反聚集加权)\n前区误杀预警: 1 2 9 11 15 19 20 27 28\n后区误杀预警: 4 6 9\n后区策略: 遗漏回补 + 观察层软排 (非硬约束)\n前区奇偶: 4:1 | 大小: 3:2\n前区和值: 102 (62-121 · 训练区间) | 后区高阶: 观察层 (软排, 和18)\n连号状态: 无 (散号组合) | 同尾状态: 无 (全异尾)\n前区AC值: 5 (>=4) | 覆盖 4 个分区 (>=3)\n冷热结构: 2热 / 2温 / 1冷\n结合冷热分层抽样、近期时间衰减权重、元层信号 (transition/bias/overKill/conformal) 及全库去重生成 (计算碰撞: 0次)",
+          "confidence": "balanced",
+          "minScore": 0.0899,
+          "meta": {
+            "overKillHit": {
+              "front": [
+                1
+              ],
+              "back": []
+            },
+            "overKillWarn": {
+              "front": [
+                20,
+                2,
+                11,
+                19,
+                15,
+                27,
+                28,
+                1,
+                9
+              ],
+              "back": [
+                9,
+                4,
+                6
+              ]
+            },
+            "transitionSignalApplied": true,
+            "biasDetected": true,
+            "backSoftKill": true,
+            "useDanLayer": false
+          }
+        },
+        {
+          "strategy": "hot",
+          "front": [
+            2,
+            15,
+            22,
+            29,
+            31
+          ],
+          "back": [
+            3,
+            8
+          ],
+          "reasoning": "【热号优先 · 统计约束模型】\n区间过渡: 8-14(降权), 15-21(升权), 22-28(降权)\n偏态检测: 区间4 聚集 (反聚集加权)\n前区误杀预警: 1 2 9 11 15 19 20 27 28\n后区误杀预警: 4 6 9\n后区策略: 遗漏回补 + 观察层软排 (非硬约束)\n前区奇偶: 3:2 | 大小: 3:2\n前区和值: 99 (62-121 · 训练区间) | 后区高阶: 观察层 (软排, 和11)\n连号状态: 无 (散号组合) | 同尾状态: 有 (1组同尾)\n前区AC值: 5 (>=4) | 覆盖 4 个分区 (>=3)\n冷热结构: 0热 / 4温 / 1冷\n结合伴生概率矩阵、近期时间衰减权重、元层信号 (transition/bias/overKill/conformal) 及全库去重生成 (计算碰撞: 0次)",
+          "confidence": "aggressive",
+          "minScore": 0.0187,
+          "meta": {
+            "overKillHit": {
+              "front": [
+                2,
+                15
+              ],
+              "back": []
+            },
+            "overKillWarn": {
+              "front": [
+                20,
+                2,
+                11,
+                19,
+                15,
+                27,
+                28,
+                1,
+                9
+              ],
+              "back": [
+                9,
+                4,
+                6
+              ]
+            },
+            "transitionSignalApplied": true,
+            "biasDetected": true,
+            "backSoftKill": true,
+            "useDanLayer": false
+          }
+        }
+      ],
+      "overKillWarn": {
+        "front": [
+          1,
+          2,
+          9,
+          11,
+          15,
+          19,
+          20,
+          27,
+          28
+        ],
+        "back": [
+          4,
+          6,
+          9
+        ]
+      }
+    }
+  }
+]
