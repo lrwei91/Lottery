@@ -90,6 +90,7 @@
   - `tagPredictionsWithConfidence` + `computeMinScoreForPrediction` — 5 注置信度 3 档分层
   - `BACK_SOFT_KILL_DEFAULT` — 后区观察层软排（默认开启）
 - 列表 5 注默认策略顺序（v2026-06-29）：`gap / cold / random / balanced / hot`（`buildStrategyOrder(count, type)`）；`danTuo` 保留为可选能力，但不再占默认 5 注名额
+- 大乐透五注后区默认独立映射为 `random / balanced / random / balanced / random`；可通过 `backStrategyOrder` 覆盖，且整注与后区对子均去重（排列三不启用后区对子去重）
 - `generatePrediction` 新增 `backSoftKill` / `useDanLayer` 选项；返回里多 `meta` 字段（overKillHit / transitionSignalApplied / biasDetected / backSoftKill / useDanLayer）
 - `generateMultiplePredictions` 输出里每注带 `confidence: 'high'|'balanced'|'aggressive'` + `minScore`
 - 误杀预警阈值存在 `_overKillRuntime`，由 `app.js` 的 `backtestOverKillHitRate` 在每期复盘时回写校准
@@ -129,7 +130,7 @@
   - 新增 `HOT_COLD_CONFIG`：大乐透预测用近 120 期窗口，`hotRatio=1.25` / `coldRatio=0.75`，并设置最小冷热分组（前区 4 个、后区 2 个），避免全量 `warm`
   - `RECENT_FREQ_CONFIG` 放松短期冷号惩罚：`absentPenalty 0.5→0.7`、`underHalf 0.7→0.82`、`underThird 0.85→0.92`、`overHotBoost 1.15→1.10`，减少对冷回补的错杀
   - `computeFrontConstraints` 和值分位放宽到 10%-90%，避免低和值继续被训练区间排掉
-  - 后区默认独立走 `gap`（遗漏回补）+ `BACK_SOFT_KILL_DEFAULT` 观察层软排，避免前区 cold/hot 策略牵连后区
+  - 后区规则从前区策略绑定调整为独立策略映射：默认五注按 `random / balanced / random / balanced / random` 分配，并在大乐透主循环与兜底循环禁止重复后区对子；`gap` 仍可通过 `backStrategyOrder` 显式覆盖
   - `computeMetaWeight` 优先使用 `conformalStability`，旧报告才回退 `conformalHalfWidth`；新增 `conformalStableThreshold=0.75` / `conformalUnstableThreshold=0.35`
   - `generateMultiplePredictions` 兜底循环增加 `fallbackMaxAttempts`，不足注数时显式抛错，避免极端约束下无限循环。`js/dlt-conformal.js`：
   - 从单纯 Wilson CI 升级为旧数据训练 + 最近 holdout 校准：输出 `trainSize` / `calSize` / `qhat.front` / `qhat.back` / `conformalHalfWidth` / `recentDrift` / `stabilityScore`
