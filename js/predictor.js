@@ -26,6 +26,8 @@
   const DEFAULT_STRATEGIES = ['balanced', 'random', 'gap', 'hot', 'cold'];
   // 140 条大乐透远端复盘显示：gap/cold 前区稳定性优于 hot/danTuo，默认 5 注恢复五个基础策略。
   const DLT_DEFAULT_STRATEGIES = ['gap', 'cold', 'random', 'balanced', 'hot'];
+  // 后区与前区拆模：随机/均衡后区在滚动留出中更有利于覆盖 2 个后区号码。
+  const DLT_BACK_STRATEGIES = Object.freeze(['random', 'balanced', 'random', 'balanced', 'random']);
 
   const STRATEGY_WEIGHTS = {
     cold:     { gap: 0.3, freqDev: 0.2, trend: 0.1, statusBonus: { cold: 2.0, warm: 0.5, hot: 0.1 } },
@@ -1920,7 +1922,8 @@
       if (strategy === 'random') {
         bollingerResult = generateBollingerPrediction(data, context, rng);
         front = bollingerResult.front;
-        back = bollingerResult.back;
+        // random 只负责前区探索，后区使用独立的 backStrategy。
+        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng, params);
       } else if (useDanLayer) {
         const result = selectWithDanLayer(frontScores, coMatrix, { rng, frontCount: FRONT_COUNT });
         front = result.front;
@@ -1949,7 +1952,8 @@
       if (strategy === 'random') {
         bollingerResult = generateBollingerPrediction(data, context, rng);
         front = bollingerResult.front;
-        back = bollingerResult.back;
+        // random 只负责前区探索，后区使用独立的 backStrategy。
+        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng, params);
       } else if (useDanLayer) {
         const result = selectWithDanLayer(frontScores, coMatrix, { rng, frontCount: FRONT_COUNT });
         front = result.front;
@@ -2068,6 +2072,7 @@
         transitionSignalApplied: !!transitionSignal,
         biasDetected: biasReport ? (biasReport.zone.detected || biasReport.tail.detected || biasReport.ac.detected) : false,
         backSoftKill,
+        backStrategy,
         useDanLayer
       },
       reasoning
@@ -2239,6 +2244,14 @@
     const strategies = buildStrategyOrder(count, context.type);
     const rng = options.rng || Math.random;
     const seen = new Set();
+    const seenBackKeys = new Set();
+    const enforceBackDiversity = context.type === 'dlt';
+    const configuredBackOrder = Array.isArray(options.backStrategyOrder) && options.backStrategyOrder.length
+      ? options.backStrategyOrder
+      : null;
+    const backStrategyOrder = configuredBackOrder
+      || (context.type === 'dlt' ? DLT_BACK_STRATEGIES : [options.backStrategy || 'gap']);
+    const getBackStrategy = index => backStrategyOrder[index % backStrategyOrder.length] || 'gap';
     const maxAttempts = Math.max(count * 25, strategies.length);
     let attempts = 0;
 
@@ -2247,17 +2260,21 @@
       // 胆码分层策略 + 5 策略轮转
       const useDanLayer = strategy === 'danTuo';
       const realStrategy = useDanLayer ? 'balanced' : strategy;
+      const backStrategy = getBackStrategy(predictions.length);
       const prediction = generatePrediction(data, realStrategy, {
         ...options,
         rng,
         context,
         useDanLayer,
+        backStrategy,
         backSoftKill: options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT
       });
       const key = predictionKey(prediction.front, prediction.back, context.type);
+      const backKey = prediction.back.join(',');
 
-      if (!seen.has(key)) {
+      if (!seen.has(key) && (!enforceBackDiversity || !seenBackKeys.has(backKey))) {
         seen.add(key);
+        if (enforceBackDiversity) seenBackKeys.add(backKey);
         predictions.push({
           ...prediction,
           strategy: useDanLayer ? 'danTuo' : strategy
@@ -2272,17 +2289,21 @@
       const strategy = strategies[predictions.length % strategies.length];
       const useDanLayer = strategy === 'danTuo';
       const realStrategy = useDanLayer ? 'balanced' : strategy;
+      const backStrategy = getBackStrategy(predictions.length);
       const prediction = generatePrediction(data, realStrategy, {
         ...options,
         rng,
         context,
         useDanLayer,
+        backStrategy,
         backSoftKill: options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT
       });
       // v2026-06-27: 兜底循环也要去重，避免主循环未凑齐时产生重复注
       const key = predictionKey(prediction.front, prediction.back, context.type);
-      if (!seen.has(key)) {
+      const backKey = prediction.back.join(',');
+      if (!seen.has(key) && (!enforceBackDiversity || !seenBackKeys.has(backKey))) {
         seen.add(key);
+        if (enforceBackDiversity) seenBackKeys.add(backKey);
         predictions.push({
           ...prediction,
           strategy: useDanLayer ? 'danTuo' : strategy

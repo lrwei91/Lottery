@@ -99,6 +99,19 @@ function main() {
     assert(prediction.reasoning.includes('conformal'), `第 ${idx + 1} 注说明缺少 conformal 信号`);
   }
 
+  const expectedBackStrategies = ['random', 'balanced', 'random', 'balanced', 'random'];
+  assert(
+    predictions.every((prediction, index) => prediction.meta && prediction.meta.backStrategy === expectedBackStrategies[index]),
+    '五注后区未按独立回测后的策略分配生成'
+  );
+
+  // 五注覆盖回归：不同随机种子下不应出现完全相同的后区对子。
+  for (let seed = 0; seed < 32; seed += 1) {
+    const batch = Predictor.generateMultiplePredictions(data, 5, { rng: seededRng(seed) });
+    const backKeys = batch.map(prediction => prediction.back.join(','));
+    assert(new Set(backKeys).size === backKeys.length, `seed=${seed} 出现重复后区对子`);
+  }
+
   console.log(JSON.stringify({
     ok: true,
     latestIssue: data[0].issue,
