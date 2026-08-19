@@ -1808,12 +1808,13 @@
   // ==================== 初始化 ====================
   // ==================== 彩种智能切换 ====================
   async function switchLottery(type) {
-    if (!LOTTERY_CONFIG[type] || state.currentLottery === type) return;
-
     if (type === 'worldcup') {
-      await showWorldCup();
+      // 世界杯模块当前隐藏（保留代码可恢复），路由回退到大乐透。
+      window.location.hash = 'dlt';
       return;
     }
+
+    if (!LOTTERY_CONFIG[type] || state.currentLottery === type) return;
 
     const overlay = document.getElementById('loadingOverlay');
     overlay.style.display = 'flex';
@@ -1878,7 +1879,7 @@
 
   async function handleHashRoute() {
     const hash = window.location.hash.substring(1);
-    const validRoutes = ['dlt', 'pl3', 'worldcup'];
+    const validRoutes = ['dlt', 'pl3'];
     if (!hash || !validRoutes.includes(hash)) {
       window.location.hash = 'dlt';
       return;

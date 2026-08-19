@@ -11,15 +11,16 @@
    Semantic design tokens
    ============================================================ */
 :root {
-  --palette-paper-0: #fffefb;
-  --palette-paper-50: #faf8f3;
-  --palette-paper-100: #f4f1ea;
-  --palette-paper-200: #e9e5dc;
-  --palette-ink-950: #172027;
-  --palette-ink-800: #29343c;
-  --palette-ink-650: #4f5b63;
-  --palette-ink-550: #667078;
-  --palette-line: #d9d5cc;
+  /* 白纸 · 黑墨 · 荧光黄（project-standards 现行基线） */
+  --palette-paper-0: #fdfdf9;
+  --palette-paper-50: #efefe8;
+  --palette-paper-100: #f7f7f2;
+  --palette-paper-200: #e6e6de;
+  --palette-ink-950: #171715;
+  --palette-ink-800: #2a2a27;
+  --palette-ink-650: #53534e;
+  --palette-ink-550: #76766f;
+  --palette-line: #d8d8cf;
   --palette-line-strong: #b9b4aa;
 
   --color-canvas: var(--palette-paper-100);
@@ -30,8 +31,12 @@
   --color-text-secondary: var(--palette-ink-650);
   --color-text-muted: var(--palette-ink-550);
   --color-border: var(--palette-line);
-  --color-border-strong: var(--palette-line-strong);
-  --color-focus: #1f5fbf;
+  --color-border-strong: #171715;
+  --color-accent: #ffd84d;
+  --color-accent-strong: #f0c73a;
+  --color-accent-tint: #fff0a8;
+  --color-on-accent: #171715;
+  --color-focus: #315efb;
   --color-success: #166449;
   --color-success-soft: #e7f3ed;
   --color-warning: #8a570f;
@@ -41,9 +46,9 @@
   --color-info: #24589c;
   --color-info-soft: #e8eef7;
 
-  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
 
   --text-display: clamp(2rem, 4vw, 3.25rem);
   --text-title: clamp(1.4rem, 2vw, 1.75rem);
@@ -62,28 +67,27 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
 
-  --radius-control: 0.625rem;
-  --radius-card: 1rem;
-  --radius-panel: 1.25rem;
+  --radius-control: 0.5rem;
+  --radius-card: 0.75rem;
+  --radius-panel: 1rem;
   --radius-pill: 999px;
 
   --border-default: 1px solid var(--color-border);
-  --shadow-card: 0 1px 2px rgba(23, 32, 39, 0.04),
-    0 10px 28px rgba(23, 32, 39, 0.055);
-  --shadow-raised: 0 16px 48px rgba(23, 32, 39, 0.13);
-  --shadow-focus: 0 0 0 3px rgba(31, 95, 191, 0.2);
+  --shadow-card: 0 2px 6px rgba(23, 23, 21, 0.05), 0 12px 28px rgba(23, 23, 21, 0.08);
+  --shadow-raised: 0 24px 56px rgba(23, 23, 21, 0.18);
+  --shadow-focus: 0 0 0 3px rgba(49, 94, 251, 0.22);
 
   --duration-fast: 140ms;
   --duration-normal: 220ms;
-  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-standard: cubic-bezier(0.19, 1, 0.22, 1);
 
   --page-max: 1360px;
   --page-gutter: clamp(1rem, 3vw, 2.25rem);
   --reading-max: 72ch;
 
-  --chart-grid: rgba(23, 32, 39, 0.1);
-  --chart-text: #536069;
-  --chart-text-muted: #707980;
+  --chart-grid: rgba(23, 23, 21, 0.1);
+  --chart-text: #4c4c46;
+  --chart-text-muted: #6f6f66;
 
   /* Legacy aliases used by the existing implementation. */
   --space-xs: var(--space-1);
@@ -140,7 +144,7 @@ body.theme-dlt {
   --success: var(--color-success);
   --warning: var(--color-warning);
   --danger: var(--color-error);
-  --shadow-ball: 0 3px 8px rgba(23, 32, 39, 0.16);
+  --shadow-ball: 0 3px 8px rgba(23, 23, 21, 0.16);
   --shadow-glow-front: 0 3px 10px rgba(183, 45, 53, 0.18);
   --shadow-glow-back: 0 3px 10px rgba(40, 105, 167, 0.18);
 }
@@ -186,8 +190,15 @@ body.theme-worldcup {
   min-width: 0;
   overflow-x: hidden;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.58), transparent 25rem),
+    radial-gradient(42rem 26rem at 50% -2rem, rgba(255, 216, 77, 0.07), transparent 70%),
+    linear-gradient(rgba(23, 23, 21, 0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(23, 23, 21, 0.032) 1px, transparent 1px),
     var(--color-canvas);
+  background-size:
+    auto,
+    32px 32px,
+    32px 32px,
+    auto;
   color: var(--color-text);
   font-family: var(--font-sans);
   font-size: var(--text-body);
@@ -200,7 +211,7 @@ body.is-modal-open {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--color-brand) 20%, white);
+  background: var(--color-accent-tint);
   color: var(--color-text);
 }
 
@@ -214,13 +225,13 @@ body.is-modal-open {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c7c2b8;
+  background: #c6c5bd;
   border: 2px solid var(--color-surface-subtle);
   border-radius: var(--radius-pill);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #aaa59b;
+  background: #adaca4;
 }
 
 a {
@@ -295,8 +306,8 @@ body.theme-worldcup .header {
   margin: 0;
   border: 0;
   border-bottom: var(--border-default);
-  background: rgba(255, 254, 251, 0.94);
-  box-shadow: 0 1px 0 rgba(23, 32, 39, 0.02);
+  background: rgba(253, 253, 249, 0.94);
+  box-shadow: 0 1px 0 rgba(23, 23, 21, 0.02);
   padding: var(--space-3) 0;
   backdrop-filter: blur(16px) saturate(120%);
   -webkit-backdrop-filter: blur(16px) saturate(120%);
@@ -330,7 +341,7 @@ body.theme-worldcup .header {
   top: 4px;
   border: 2px solid var(--color-surface);
   background: var(--color-front);
-  box-shadow: 0 2px 5px rgba(23, 32, 39, 0.15);
+  box-shadow: 0 2px 5px rgba(23, 23, 21, 0.15);
   font-size: 0.68rem;
 }
 
@@ -407,21 +418,15 @@ body.theme-worldcup .header {
 }
 
 .selector-tab.active,
-.selector-tab[aria-pressed="true"] {
-  border-color: var(--color-border);
-  background: var(--color-surface);
-  box-shadow: 0 1px 3px rgba(23, 32, 39, 0.08);
-  color: var(--color-brand-strong);
-}
-
+.selector-tab[aria-pressed="true"],
 body.theme-pl3 .selector-tab.active,
 body.theme-pl3 .selector-tab[aria-pressed="true"],
 body.theme-worldcup .selector-tab.active,
 body.theme-worldcup .selector-tab[aria-pressed="true"] {
-  border-color: var(--color-border);
-  background: var(--color-surface);
-  box-shadow: 0 1px 3px rgba(23, 32, 39, 0.08);
-  color: var(--color-brand-strong);
+  border-color: transparent;
+  background: var(--color-accent);
+  box-shadow: none;
+  color: var(--color-on-accent);
 }
 
 .selector-tab .tab-icon {
@@ -541,12 +546,12 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   right: 0;
   bottom: -1px;
   left: 0;
-  height: 3px;
-  border-radius: 3px 3px 0 0;
-  background: var(--color-brand);
+  height: 10px;
+  border-radius: 2px 2px 0 0;
+  background: var(--color-accent);
   content: "";
   opacity: 0;
-  transform: scaleX(0.5);
+  transform: scaleX(0.6);
   transition:
     opacity var(--duration-fast) var(--ease-standard),
     transform var(--duration-fast) var(--ease-standard);
@@ -562,7 +567,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 .nav-tab[aria-pressed="true"] {
   border-color: transparent;
   background: transparent;
-  color: var(--color-brand-strong);
+  color: var(--color-text);
 }
 
 .nav-tab.active::after,
@@ -607,7 +612,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   border: var(--border-default);
   border-radius: var(--radius-panel);
   background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
   padding: clamp(1.125rem, 2vw, 1.65rem);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -621,7 +626,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .card:hover {
-  border-color: var(--color-border);
+  border-color: var(--color-border-strong);
   background: var(--color-surface);
   box-shadow: var(--shadow-card);
 }
@@ -859,8 +864,8 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   filter: none;
   transform: translateY(-1px);
   box-shadow:
-    inset 0 -3px 0 rgba(23, 32, 39, 0.2),
-    0 5px 12px rgba(23, 32, 39, 0.18);
+    inset 0 -3px 0 rgba(23, 23, 21, 0.2),
+    0 5px 12px rgba(23, 23, 21, 0.18);
 }
 
 .ball::before {
@@ -1184,15 +1189,15 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .page-btn:hover:not(.disabled):not(.active) {
-  border-color: var(--color-brand);
-  background: var(--color-brand-soft);
-  color: var(--color-brand-strong);
+  border-color: var(--color-border-strong);
+  background: var(--color-accent-tint);
+  color: var(--color-on-accent);
 }
 
 .page-btn.active {
-  border-color: var(--color-brand);
-  background: var(--color-brand);
-  color: #fff;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .page-btn.disabled,
@@ -1280,11 +1285,17 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .sub-tab.active,
-.sub-tab[aria-pressed="true"],
+.sub-tab[aria-pressed="true"] {
+  border-color: var(--color-border);
+  background: var(--color-accent-tint);
+  box-shadow: none;
+  color: var(--color-on-accent);
+}
+
 .wc-tab.active {
   border-color: var(--color-border);
   background: var(--color-surface);
-  box-shadow: 0 1px 3px rgba(23, 32, 39, 0.07);
+  box-shadow: 0 1px 3px rgba(23, 23, 21, 0.07);
   color: var(--color-brand-strong);
 }
 
@@ -1601,15 +1612,15 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 
 .btn-primary,
 .btn-generate {
-  border-color: var(--color-brand);
-  background: var(--color-brand);
-  color: #fff;
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 .btn-primary:hover,
 .btn-generate:hover {
-  border-color: var(--color-brand-strong);
-  background: var(--color-brand-strong);
+  border-color: var(--color-accent-strong);
+  background: var(--color-accent-strong);
   box-shadow: none;
   transform: translateY(-1px);
 }
@@ -1664,7 +1675,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .progress-fill {
-  background: var(--color-brand);
+  background: var(--color-accent);
 }
 
 /* ============================================================
@@ -1673,7 +1684,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 .modal-overlay,
 .device-panel-overlay {
   padding: var(--space-4);
-  background: rgba(23, 32, 39, 0.48);
+  background: rgba(23, 23, 21, 0.48);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
 }
@@ -1813,7 +1824,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .loading-overlay {
-  background: rgba(244, 241, 234, 0.94);
+  background: rgba(247, 247, 242, 0.94);
   color: var(--color-text);
   backdrop-filter: blur(8px);
 }
@@ -1828,7 +1839,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 
 .loading-spinner {
   border-color: var(--color-border);
-  border-top-color: var(--color-brand);
+  border-top-color: var(--color-accent);
 }
 
 .app-toast {
@@ -2769,6 +2780,29 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   .hotcold-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+/* ============================================================
+   世界杯模块暂时隐藏（保留 HTML/JS/CSS 代码，便于日后恢复）
+   ============================================================ */
+.selector-tab[data-lottery="worldcup"] {
+  display: none;
+}
+
+.lottery-selector {
+  grid-template-columns: repeat(2, minmax(6.25rem, 1fr));
+  min-width: min(23rem, 44vw);
+}
+
+@media (max-width: 720px) {
+  .lottery-selector {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+  }
+}
+
+#sectionWorldcup {
+  display: none !important;
 }
 
 /* ============================================================
