@@ -30,7 +30,11 @@
     cold: '#3b82f6',
     warm: '#f59e0b',
     purple: '#36c5f0',
-    green: '#10b981'
+    green: '#10b981',
+    series3: '#187657',
+    series4: '#7a4da3',
+    series5: '#a26412',
+    sliceBorder: '#fdfdf9'
   };
 
   // 用于多线条的颜色组
@@ -45,7 +49,7 @@
         return v || fallback;
       };
 
-      COLORS.accent = getVal('--accent', '#31d997');
+      COLORS.accent = getVal('--chart-accent', '#765a00');
       COLORS.front = getVal('--front-start', '#ff4757');
       COLORS.back = getVal('--back-start', '#00d2ff');
       COLORS.hot = getVal('--hot', '#ef4444');
@@ -55,10 +59,17 @@
       COLORS.grid = getVal('--chart-grid', 'rgba(23, 32, 39, 0.10)');
       COLORS.text = getVal('--chart-text', '#536069');
       COLORS.textLight = getVal('--chart-text-muted', '#707980');
+      COLORS.series3 = getVal('--chart-series-3', '#187657');
+      COLORS.series4 = getVal('--chart-series-4', '#7a4da3');
+      COLORS.series5 = getVal('--chart-series-5', '#a26412');
+      COLORS.sliceBorder = getVal('--chart-slice-border', '#fdfdf9');
 
       LINE_COLORS[0] = COLORS.front;
       LINE_COLORS[1] = COLORS.back;
-      LINE_COLORS[2] = COLORS.accent;
+      LINE_COLORS[2] = COLORS.series3;
+      LINE_COLORS[3] = COLORS.series4;
+      LINE_COLORS[4] = COLORS.series5;
+      COLORS.purple = COLORS.series4;
     } catch (e) {
       console.warn('Failed to dynamically update chart colors:', e);
     }
@@ -239,7 +250,7 @@
 
     // Y轴标签
     ctx.fillStyle = COLORS.text;
-    ctx.font = '11px Outfit, sans-serif';
+    ctx.font = '11px system-ui, sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     for (let i = 0; i <= 5; i++) {
@@ -264,7 +275,7 @@
 
     // 平均值标签：右上角固定位置，避免与柱顶数值撞车
     ctx.fillStyle = COLORS.accent;
-    ctx.font = '10px Outfit, sans-serif';
+    ctx.font = '10px system-ui, sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'top';
     ctx.fillText(`平均 ${avgVal.toFixed(0)}`, w - padding.right, 6);
@@ -312,15 +323,15 @@
 
       // X轴号码标签
       ctx.fillStyle = COLORS.text;
-      ctx.font = `${count > 20 ? 9 : 11}px Outfit, sans-serif`;
+      ctx.font = `${count > 20 ? 9 : 11}px system-ui, sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       ctx.fillText(padNum(minNum + i), x + barW / 2, padding.top + plotH + 6);
 
       // 柱顶数值：仅在柱子够宽时显示
       if (showTopNumber && barH > 18) {
-        ctx.fillStyle = '#fff';
-        ctx.font = '9px Outfit, sans-serif';
+        ctx.fillStyle = COLORS.text;
+        ctx.font = '9px system-ui, sans-serif';
         ctx.textBaseline = 'bottom';
         ctx.textAlign = 'center';
         ctx.fillText(displayVal.toString(), x + barW / 2, y - 3);
@@ -329,7 +340,7 @@
 
     // 标题
     ctx.fillStyle = COLORS.text;
-    ctx.font = '12px Outfit, sans-serif';
+    ctx.font = '12px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(zone === 'front' ? '前区号码 (1-35)' : '后区号码 (1-12)', padding.left, 6);
@@ -389,7 +400,7 @@
 
     // X轴标签
     ctx.fillStyle = COLORS.text;
-    ctx.font = '10px Outfit, sans-serif';
+    ctx.font = '10px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     for (let i = 0; i <= 5; i++) {
@@ -427,21 +438,21 @@
 
       // 号码标签
       ctx.fillStyle = COLORS.text;
-      ctx.font = `${count > 20 ? 9 : 11}px Outfit, sans-serif`;
+      ctx.font = `${count > 20 ? 9 : 11}px system-ui, sans-serif`;
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillText(padNum(item.num), padding.left - 6, y + barH / 2);
 
       // 数值标签
       ctx.fillStyle = color;
-      ctx.font = '10px Outfit, sans-serif';
+      ctx.font = '10px system-ui, sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText(`${item.current} (平均${item.avg})`, padding.left + bw + 6, y + barH / 2);
     }
 
     // 标题
     ctx.fillStyle = COLORS.text;
-    ctx.font = '12px Outfit, sans-serif';
+    ctx.font = '12px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(`当前遗漏值 - ${zone === 'front' ? '前区' : '后区'}`, padding.left, 6);
@@ -478,7 +489,7 @@
     if (selectedNumbers.length === 0 || data.length === 0) {
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = COLORS.textLight;
-      ctx.font = '14px Outfit, sans-serif';
+      ctx.font = '14px system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText('请点击号码查看走势', w / 2, h / 2);
@@ -500,7 +511,7 @@
     // X轴标签（每隔几期显示）
     const step = Math.max(1, Math.floor(periods / 10));
     ctx.fillStyle = COLORS.textLight;
-    ctx.font = '9px Outfit, sans-serif';
+    ctx.font = '9px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     for (let i = 0; i < periods; i += step) {
@@ -542,7 +553,7 @@
 
       // 号码标签
       ctx.fillStyle = color;
-      ctx.font = 'bold 12px Outfit, sans-serif';
+      ctx.font = 'bold 12px system-ui, sans-serif';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillText(padNum(num), padding.left - 10, yBase);
@@ -550,7 +561,7 @@
 
     // 标题
     ctx.fillStyle = COLORS.text;
-    ctx.font = '12px Outfit, sans-serif';
+    ctx.font = '12px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText('号码走势 (最近 60 期)', padding.left, 6);
@@ -599,7 +610,7 @@
 
     // Y轴标签
     ctx.fillStyle = COLORS.text;
-    ctx.font = '10px Outfit, sans-serif';
+    ctx.font = '10px system-ui, sans-serif';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'middle';
     for (let i = 0; i <= 5; i++) {
@@ -633,7 +644,7 @@
 
       // 标签
       ctx.fillStyle = COLORS.text;
-      ctx.font = '9px Outfit, sans-serif';
+      ctx.font = '9px system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       // 旋转标签
@@ -645,8 +656,8 @@
 
       // 柱顶数值
       if (bh > 12) {
-        ctx.fillStyle = '#fff';
-        ctx.font = '10px Outfit, sans-serif';
+        ctx.fillStyle = COLORS.text;
+        ctx.font = '10px system-ui, sans-serif';
         ctx.textBaseline = 'bottom';
         ctx.textAlign = 'center';
         ctx.fillText(val.toString(), x + barW / 2, y - 3);
@@ -682,7 +693,7 @@
 
     // 标题
     ctx.fillStyle = COLORS.text;
-    ctx.font = '12px Outfit, sans-serif';
+    ctx.font = '12px system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(`和值分布 (平均: ${avg.toFixed(1)}, 标准差: ${sd.toFixed(1)})`, padding.left, 6);
@@ -725,8 +736,8 @@
     const innerR = outerR * 0.55;
 
     const pieColors = [
-      '#ff4757', '#00d2ff', '#31d997', '#36c5f0', '#f59e0b', '#10b981',
-      '#ec4899', '#8b5cf6'
+      COLORS.front, COLORS.back, COLORS.series3, COLORS.series4,
+      COLORS.series5, COLORS.green, COLORS.hot, COLORS.cold
     ];
 
     let startAngle = -Math.PI / 2;
@@ -745,7 +756,7 @@
       ctx.fill();
 
       // 边框
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.82)';
+      ctx.strokeStyle = COLORS.sliceBorder;
       ctx.lineWidth = 2;
       ctx.stroke();
 
@@ -759,7 +770,7 @@
         const ly = cy + Math.sin(midAngle) * labelR;
 
         ctx.fillStyle = COLORS.text;
-        ctx.font = '11px Outfit, sans-serif';
+        ctx.font = '11px system-ui, sans-serif';
         ctx.textAlign = midAngle > Math.PI / 2 && midAngle < Math.PI * 1.5 ? 'right' : 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(`${label} (${pct}%)`, lx, ly);
@@ -770,17 +781,17 @@
 
     // 中心文字
     ctx.fillStyle = COLORS.text;
-    ctx.font = 'bold 16px Outfit, sans-serif';
+    ctx.font = 'bold 16px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(total.toString(), cx, cy - 6);
-    ctx.font = '10px Outfit, sans-serif';
+    ctx.font = '10px system-ui, sans-serif';
     ctx.fillStyle = COLORS.textLight;
     ctx.fillText('总期数', cx, cy + 12);
 
     // 标题
     ctx.fillStyle = COLORS.text;
-    ctx.font = '13px Outfit, sans-serif';
+    ctx.font = '13px system-ui, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText(title, cx, 8);

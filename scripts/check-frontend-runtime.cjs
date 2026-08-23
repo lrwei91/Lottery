@@ -62,7 +62,22 @@ async function main() {
   assert.equal(requested.filter((url) => String(url).includes('data/')).length, 3);
   assert.deepEqual(await vercel.WorldCupData.loadApi('/api/matches'), { ok: true });
 
-  console.log(JSON.stringify({ ok: true, scenarios: 2 }));
+  const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.match(indexSource, /<meta name="color-scheme" content="light">/);
+  assert.ok(!indexSource.includes('colorModeSelect'));
+  assert.ok(!indexSource.includes('js/color-mode.js'));
+  assert.match(indexSource, /id="loadingOverlay"[^>]*hidden/);
+  const appSource = fs.readFileSync(path.join(root, 'js/app.js'), 'utf8');
+  const workbenchSource = fs.readFileSync(path.join(root, 'css/workbench.css'), 'utf8');
+  assert.ok(!appSource.includes('TicaiColorMode'));
+  assert.match(appSource, /const validRoutes = \['dlt', 'pl3'\]/);
+  assert.match(appSource, /if \(type === 'worldcup'\) \{[\s\S]*?window\.location\.hash = 'dlt'/);
+  assert.match(workbenchSource, /\.selector-tab\[data-lottery="worldcup"\],[\s\S]*?#sectionWorldcup[\s\S]*?display: none !important/);
+  assert.ok(appSource.includes('}, 150);'));
+  assert.ok(!appSource.includes('minDisplay'));
+  assert.ok(!appSource.includes("classList.add('fade-out')"));
+
+  console.log(JSON.stringify({ ok: true, scenarios: 4 }));
 }
 
 main().catch((error) => {

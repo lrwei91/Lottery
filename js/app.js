@@ -17,6 +17,8 @@
     createState
   } = window.TicaiAppConfig;
   const state = createState();
+  let loadingStatusTimer = null;
+  let loadingStatusRun = 0;
 
   // ==================== 工具函数 ====================
   function getLotteryConfig(type = state.currentLottery) {
@@ -76,6 +78,52 @@
     clearTimeout(toast._hideTimer);
     toast._hideTimer = setTimeout(() => { toast.classList.remove('visible'); }, duration);
   }
+
+  function setProjectSwitchingDisabled(disabled) {
+    document.querySelectorAll('#lotterySelector .selector-tab').forEach((button) => {
+      button.disabled = disabled;
+      button.setAttribute('aria-disabled', String(disabled));
+    });
+  }
+
+  function beginLoadingStatus(message = '正在加载数据...') {
+    const run = ++loadingStatusRun;
+    const overlay = document.getElementById('loadingOverlay');
+    const statusText = document.getElementById('loadingStatusText');
+    const app = document.getElementById('app');
+
+    clearTimeout(loadingStatusTimer);
+    if (statusText) statusText.textContent = message;
+    if (app) app.setAttribute('aria-busy', 'true');
+    setProjectSwitchingDisabled(true);
+
+    loadingStatusTimer = setTimeout(() => {
+      if (run !== loadingStatusRun || !overlay) return;
+      overlay.hidden = false;
+      overlay.classList.add('visible');
+      overlay.setAttribute('aria-busy', 'true');
+      overlay.setAttribute('aria-hidden', 'false');
+    }, 150);
+
+    return run;
+  }
+
+  function endLoadingStatus(run) {
+    if (run !== loadingStatusRun) return;
+    const overlay = document.getElementById('loadingOverlay');
+    const app = document.getElementById('app');
+
+    clearTimeout(loadingStatusTimer);
+    if (overlay) {
+      overlay.classList.remove('visible');
+      overlay.hidden = true;
+      overlay.setAttribute('aria-busy', 'false');
+      overlay.setAttribute('aria-hidden', 'true');
+    }
+    if (app) app.setAttribute('aria-busy', 'false');
+    setProjectSwitchingDisabled(false);
+  }
+
   function formatMoney(num) {
     if (!num) return '--';
     if (num >= 100000000) return (num / 100000000).toFixed(2) + ' 亿元';
@@ -1767,92 +1815,62 @@
   }
 
   async function showWorldCup() {
-    const overlay = document.getElementById('loadingOverlay');
-    overlay.style.display = 'flex';
-    overlay.classList.remove('fade-out');
-    overlay.setAttribute('aria-busy', 'true');
-    overlay.setAttribute('aria-hidden', 'false');
+    const loadingRun = beginLoadingStatus('正在加载世界杯数据...');
+    try {
+      state.currentLottery = 'worldcup';
+      state.currentSection = 'worldcup';
+      applyLotteryCopy();
+      updatePressedGroup('.selector-tab', (button) => button.dataset.lottery === 'worldcup');
 
-    state.currentLottery = 'worldcup';
-    state.currentSection = 'worldcup';
-    applyLotteryCopy();
-    updatePressedGroup('.selector-tab', (button) => button.dataset.lottery === 'worldcup');
+      if (state.countdownTimerId !== null) {
+        clearInterval(state.countdownTimerId);
+        state.countdownTimerId = null;
+      }
 
-    if (state.countdownTimerId !== null) {
-      clearInterval(state.countdownTimerId);
-      state.countdownTimerId = null;
+      updatePressedGroup('.nav-tab', () => false);
+      document.querySelectorAll('.nav-tab').forEach((button) => button.removeAttribute('aria-current'));
+      updateSectionVisibility('sectionWorldcup');
+
+      if (window.WorldCup && typeof window.WorldCup.init === 'function') {
+        await window.WorldCup.init();
+      }
+      applyLotteryCopy();
+    } finally {
+      endLoadingStatus(loadingRun);
     }
-
-    updatePressedGroup('.nav-tab', () => false);
-    document.querySelectorAll('.nav-tab').forEach((button) => button.removeAttribute('aria-current'));
-    updateSectionVisibility('sectionWorldcup');
-
-    const loadStart = Date.now();
-    if (window.WorldCup && typeof window.WorldCup.init === 'function') {
-      await window.WorldCup.init();
-    }
-    applyLotteryCopy();
-
-    const elapsed = Date.now() - loadStart;
-    const minDisplay = 300;
-    if (elapsed < minDisplay) await new Promise(r => setTimeout(r, minDisplay - elapsed));
-
-    overlay.classList.add('fade-out');
-    overlay.setAttribute('aria-busy', 'false');
-    setTimeout(() => {
-      overlay.style.display = 'none';
-      overlay.setAttribute('aria-hidden', 'true');
-    }, 500);
   }
 
   // ==================== 初始化 ====================
   // ==================== 彩种智能切换 ====================
   async function switchLottery(type) {
     if (type === 'worldcup') {
-      // 世界杯模块当前隐藏（保留代码可恢复），路由回退到大乐透。
+      // 世界杯模块暂时隐藏，保留实现与数据供后续恢复。
       window.location.hash = 'dlt';
       return;
     }
 
     if (!LOTTERY_CONFIG[type] || state.currentLottery === type) return;
 
-    const overlay = document.getElementById('loadingOverlay');
-    overlay.style.display = 'flex';
-    overlay.classList.remove('fade-out');
-    overlay.setAttribute('aria-busy', 'true');
-    overlay.setAttribute('aria-hidden', 'false');
+    const loadingRun = beginLoadingStatus(`正在加载${getLotteryConfig(type).label || '开奖'}数据...`);
+    try {
+      state.currentLottery = type;
+      applyLotteryCopy();
+      resetLotteryState();
 
-    state.currentLottery = type;
-    applyLotteryCopy();
-    resetLotteryState();
+      updatePressedGroup('.selector-tab', (button) => button.dataset.lottery === type);
 
-    updatePressedGroup('.selector-tab', (button) => button.dataset.lottery === type);
+      if (!LOTTERY_SECTION_NAMES.includes(state.currentSection)) {
+        state.currentSection = 'home';
+      }
 
-    if (!LOTTERY_SECTION_NAMES.includes(state.currentSection)) {
-      state.currentSection = 'home';
-    }
+      const loaded = await loadData();
+      loadPredictionRecords();
+      renderPredictionHistory();
 
-    const loadStart = Date.now();
-    const loaded = await loadData();
-    loadPredictionRecords();
-    renderPredictionHistory();
-
-    const elapsed = Date.now() - loadStart;
-    const minDisplay = 300;
-    if (elapsed < minDisplay) await new Promise(r => setTimeout(r, minDisplay - elapsed));
-
-    overlay.classList.add('fade-out');
-    overlay.setAttribute('aria-busy', 'false');
-    setTimeout(() => {
-      overlay.style.display = 'none';
-      overlay.setAttribute('aria-hidden', 'true');
-    }, 500);
-
-    if (loaded) {
       renderHome();
-      switchSection(state.currentSection);
-    } else {
-      renderHome();
+      if (loaded) switchSection(state.currentSection);
+    } finally {
+      endLoadingStatus(loadingRun);
     }
   }
 

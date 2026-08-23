@@ -117,8 +117,7 @@
 
     if (typeof QRCode === 'undefined') {
       // CDN 不可用时降级：展示手动复制提示（不影响功能）
-      qrEl.style.background = 'rgba(255, 200, 100, 0.06)';
-      qrEl.style.color = '#d4a558';
+      qrEl.classList.add('is-unavailable');
       qrEl.style.fontSize = '0.82rem';
       qrEl.style.padding = '20px';
       qrEl.style.lineHeight = '1.6';
@@ -127,12 +126,13 @@
       return;
     }
     try {
+      qrEl.classList.remove('is-unavailable');
       qrEl.style.cssText = '';
       qrInstance = new QRCode(qrEl, {
         text: window.TicaiDevice.getId(),
         width: 200,
         height: 200,
-        colorDark: '#1a1d29',
+        colorDark: '#000000',
         colorLight: '#ffffff',
         correctLevel: QRCode.CorrectLevel.M,
       });

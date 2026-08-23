@@ -1,9 +1,9 @@
 /*
- * 体彩数据工作台 · 2026-07-31
+ * 体彩数据工作台 · 2026-08-23
  *
  * 设计方向：
  * - 结果与操作优先，减少装饰性容器和持续动效。
- * - 浅色数据档案台作为共同基底，彩种颜色只承担身份与状态。
+ * - 白纸、黑墨与荧光黄统一品牌语言，彩种颜色只承担业务数据语义。
  * - 本文件在旧样式后加载，保留现有业务结构并统一视觉与交互语义。
  */
 
@@ -27,15 +27,22 @@
   --color-surface: var(--palette-paper-0);
   --color-surface-subtle: var(--palette-paper-50);
   --color-surface-raised: #ffffff;
+  --color-surface-inverse: #171715;
   --color-text: var(--palette-ink-950);
   --color-text-secondary: var(--palette-ink-650);
   --color-text-muted: var(--palette-ink-550);
+  --color-text-inverse: #fdfdf9;
   --color-border: var(--palette-line);
   --color-border-strong: #171715;
+  --color-divider: var(--palette-line);
   --color-accent: #ffd84d;
   --color-accent-strong: #f0c73a;
   --color-accent-tint: #fff0a8;
   --color-on-accent: #171715;
+  --color-hover: #efefe8;
+  --color-active: #fff0a8;
+  --color-overlay: rgba(23, 23, 21, 0.52);
+  --color-disabled: #c9c9c0;
   --color-focus: #315efb;
   --color-success: #166449;
   --color-success-soft: #e7f3ed;
@@ -45,6 +52,8 @@
   --color-error-soft: #f9e9e6;
   --color-info: #24589c;
   --color-info-soft: #e8eef7;
+  --color-factor-neutral-1: #787878;
+  --color-factor-neutral-2: #9b6734;
 
   --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Helvetica Neue",
     "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
@@ -88,6 +97,13 @@
   --chart-grid: rgba(23, 23, 21, 0.1);
   --chart-text: #4c4c46;
   --chart-text-muted: #6f6f66;
+  --chart-accent: #765a00;
+  --chart-series-3: #187657;
+  --chart-series-4: #7a4da3;
+  --chart-series-5: #a26412;
+  --chart-slice-border: #fdfdf9;
+  --chart-tooltip: #171715;
+  --chart-tooltip-text: #fdfdf9;
 
   /* Legacy aliases used by the existing implementation. */
   --space-xs: var(--space-1);
@@ -110,9 +126,9 @@
 :root,
 body,
 body.theme-dlt {
-  --color-brand: #176b5a;
-  --color-brand-strong: #0d5144;
-  --color-brand-soft: #e4f1ed;
+  --color-brand: var(--color-accent);
+  --color-brand-strong: var(--color-text);
+  --color-brand-soft: var(--color-accent-tint);
   --color-front: #b72d35;
   --color-front-strong: #90212a;
   --color-front-soft: #fae9e9;
@@ -150,9 +166,6 @@ body.theme-dlt {
 }
 
 body.theme-pl3 {
-  --color-brand: #9a5d14;
-  --color-brand-strong: #74430c;
-  --color-brand-soft: #f6ead6;
   --color-front: #b76715;
   --color-front-strong: #87480b;
   --color-front-soft: #f8ead9;
@@ -162,9 +175,6 @@ body.theme-pl3 {
 }
 
 body.theme-worldcup {
-  --color-brand: #284e82;
-  --color-brand-strong: #19375f;
-  --color-brand-soft: #e8eef7;
   --color-front: #21705b;
   --color-front-strong: #155242;
   --color-front-soft: #e6f1ed;
@@ -190,9 +200,9 @@ body.theme-worldcup {
   min-width: 0;
   overflow-x: hidden;
   background:
-    radial-gradient(42rem 26rem at 50% -2rem, rgba(255, 216, 77, 0.07), transparent 70%),
-    linear-gradient(rgba(23, 23, 21, 0.032) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(23, 23, 21, 0.032) 1px, transparent 1px),
+    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--color-accent) 12%, transparent) 0, transparent 29rem),
+    linear-gradient(color-mix(in srgb, var(--color-text) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-text) 3.5%, transparent) 1px, transparent 1px),
     var(--color-canvas);
   background-size:
     auto,
@@ -211,8 +221,8 @@ body.is-modal-open {
 }
 
 ::selection {
-  background: var(--color-accent-tint);
-  color: var(--color-text);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
 }
 
 ::-webkit-scrollbar {
@@ -225,13 +235,13 @@ body.is-modal-open {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c6c5bd;
+  background: var(--color-border-strong);
   border: 2px solid var(--color-surface-subtle);
   border-radius: var(--radius-pill);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #adaca4;
+  background: var(--color-text-muted);
 }
 
 a {
@@ -272,8 +282,8 @@ button,
   left: var(--space-3);
   transform: translateY(-180%);
   border-radius: var(--radius-control);
-  background: var(--color-text);
-  color: #fff;
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
   font-size: var(--text-small);
   font-weight: 700;
   padding: var(--space-3) var(--space-4);
@@ -306,8 +316,8 @@ body.theme-worldcup .header {
   margin: 0;
   border: 0;
   border-bottom: var(--border-default);
-  background: rgba(253, 253, 249, 0.94);
-  box-shadow: 0 1px 0 rgba(23, 23, 21, 0.02);
+  background: color-mix(in srgb, var(--color-surface) 94%, transparent);
+  box-shadow: none;
   padding: var(--space-3) 0;
   backdrop-filter: blur(16px) saturate(120%);
   -webkit-backdrop-filter: blur(16px) saturate(120%);
@@ -413,7 +423,7 @@ body.theme-worldcup .header {
 }
 
 .selector-tab:hover {
-  background: rgba(255, 255, 255, 0.65);
+  background: var(--color-hover);
   color: var(--color-text);
 }
 
@@ -437,6 +447,11 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 
 .selector-slider {
   display: none;
+}
+
+.selector-tab:disabled {
+  cursor: wait;
+  opacity: 0.52;
 }
 
 .header-meta {
@@ -626,9 +641,9 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .card:hover {
-  border-color: var(--color-border-strong);
+  border-color: var(--color-border);
   background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  box-shadow: none;
 }
 
 .card-header {
@@ -725,7 +740,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 .latest-draw {
   position: relative;
   overflow: hidden;
-  border-top: 4px solid var(--color-brand);
+  border-top: 4px solid var(--color-accent);
 }
 
 .latest-draw::before {
@@ -744,13 +759,14 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .draw-issue {
-  border-radius: var(--radius-pill);
-  background: var(--color-brand-soft);
-  color: var(--color-brand-strong);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
   font-family: var(--font-mono);
-  font-size: var(--text-small);
-  font-weight: 760;
-  padding: 0.35rem 0.65rem;
+  font-size: clamp(1.25rem, 2.6vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  padding: 0;
 }
 
 .draw-date {
@@ -917,41 +933,46 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .countdown {
-  border-color: color-mix(in srgb, var(--color-brand) 20%, var(--color-border));
-  background: var(--color-brand-soft);
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.7fr) minmax(20rem, 1.3fr);
+  align-items: center;
+  gap: var(--space-5);
+  border-color: var(--color-border);
+  background: var(--color-surface-subtle);
   box-shadow: none;
+  padding-block: var(--space-4);
 }
 
 .countdown .card-header {
   align-items: center;
-  margin-bottom: var(--space-4);
+  margin-bottom: 0;
 }
 
 .countdown-label {
-  border: 1px solid color-mix(in srgb, var(--color-brand) 20%, var(--color-border));
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.55);
-  color: var(--color-brand-strong);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
   font-size: var(--text-caption);
   font-variant-numeric: tabular-nums;
   padding: 0.3rem 0.65rem;
 }
 
 .countdown-timer {
-  justify-content: flex-start;
+  justify-content: flex-end;
   gap: var(--space-2);
 }
 
 .countdown-unit {
   align-items: flex-start;
-  min-width: 4.25rem;
+  min-width: 3.25rem;
 }
 
 .countdown-value {
   background: none;
   color: var(--color-text);
   font-family: var(--font-mono);
-  font-size: clamp(1.6rem, 3vw, 2.15rem);
+  font-size: clamp(1.35rem, 2.4vw, 1.8rem);
   font-weight: 760;
   font-variant-numeric: tabular-nums;
   -webkit-text-fill-color: currentColor;
@@ -964,7 +985,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .countdown-sep {
-  margin-top: -0.65rem;
+  margin-top: -0.45rem;
   color: var(--color-border-strong);
   font-size: 1.55rem;
   animation: none;
@@ -1210,7 +1231,11 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
    ============================================================ */
 .stats-overview {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--space-3);
+  gap: 0;
+  overflow: hidden;
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
   margin-bottom: var(--space-5);
 }
 
@@ -1218,8 +1243,21 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   gap: var(--space-3);
   min-width: 0;
   margin: 0;
-  padding: var(--space-4);
+  border: 0;
+  border-left: var(--border-default);
+  border-radius: 0;
+  background: transparent;
+  padding: var(--space-4) var(--space-5);
   box-shadow: none;
+}
+
+.stat-card:first-child {
+  border-left: 0;
+}
+
+.stat-card:hover {
+  border-color: var(--color-border);
+  background: var(--color-surface-subtle);
 }
 
 .stat-icon {
@@ -1612,15 +1650,15 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 
 .btn-primary,
 .btn-generate {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-  color: var(--color-on-accent);
+  border-color: var(--color-surface-inverse);
+  background: var(--color-surface-inverse);
+  color: var(--color-text-inverse);
 }
 
 .btn-primary:hover,
 .btn-generate:hover {
-  border-color: var(--color-accent-strong);
-  background: var(--color-accent-strong);
+  border-color: var(--color-text-secondary);
+  background: var(--color-text-secondary);
   box-shadow: none;
   transform: translateY(-1px);
 }
@@ -1684,7 +1722,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 .modal-overlay,
 .device-panel-overlay {
   padding: var(--space-4);
-  background: rgba(23, 23, 21, 0.48);
+  background: var(--color-overlay);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
 }
@@ -1795,6 +1833,15 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   background: var(--color-surface-subtle);
 }
 
+.device-panel-qr {
+  background: #ffffff;
+}
+
+.device-panel-qr.is-unavailable {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
 .device-panel-id {
   color: var(--color-brand-strong);
   font-family: var(--font-mono);
@@ -1824,30 +1871,65 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .loading-overlay {
-  background: rgba(247, 247, 242, 0.94);
+  position: fixed;
+  z-index: 140;
+  top: 0;
+  right: 0;
+  bottom: auto;
+  left: 0;
+  display: none;
+  justify-content: center;
+  background: transparent;
   color: var(--color-text);
-  backdrop-filter: blur(8px);
+  pointer-events: none;
+  backdrop-filter: none;
+}
+
+.loading-overlay.visible:not([hidden]) {
+  display: flex;
 }
 
 .loading {
-  border: var(--border-default);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
-  padding: var(--space-6) var(--space-8);
+  position: relative;
+  width: min(100%, var(--page-max));
+  overflow: hidden;
+  border: 0;
+  border-bottom: var(--border-default);
+  border-radius: 0;
+  background: var(--color-surface-inverse);
+  box-shadow: none;
+  color: var(--color-text-inverse);
+  padding: 0.55rem var(--page-gutter);
 }
 
-.loading-spinner {
-  border-color: var(--color-border);
-  border-top-color: var(--color-accent);
+.loading p {
+  margin: 0;
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+.loading-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: var(--color-accent);
+  transform-origin: left;
+  animation: loading-progress 1.2s var(--ease-standard) infinite alternate;
+}
+
+@keyframes loading-progress {
+  from { transform: scaleX(0.2); }
+  to { transform: scaleX(0.82); }
 }
 
 .app-toast {
   border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: var(--radius-control);
-  background: var(--color-text);
+  background: var(--color-surface-inverse);
   box-shadow: var(--shadow-raised);
-  color: #fff;
+  color: var(--color-text-inverse);
 }
 
 /* ============================================================
@@ -1905,7 +1987,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .wc-top-strip {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 0.86fr);
   gap: var(--space-2);
   margin: 0;
 }
@@ -1914,10 +1996,15 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 .theme-worldcup .wc-top-card {
   min-width: 0;
   border: var(--border-default);
-  border-top: 2px solid var(--color-brand);
+  border-top: 2px solid var(--color-accent);
   border-radius: var(--radius-control);
   background: var(--color-surface-subtle);
   padding: var(--space-3);
+}
+
+.wc-top-card:first-child {
+  background: var(--color-accent-tint);
+  padding-block: var(--space-4);
 }
 
 .wc-top-card strong {
@@ -1932,7 +2019,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 
 .wc-code {
   background: var(--color-brand);
-  color: #fff;
+  color: var(--color-on-accent);
 }
 
 .wc-tabs {
@@ -2064,6 +2151,21 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   border-color: color-mix(in srgb, var(--color-success) 30%, var(--color-border));
   background: var(--color-success-soft);
   color: var(--color-success);
+}
+
+.wc-today-pct-inline-value.is-certain,
+.cp-confidence.is-certain {
+  color: var(--color-success);
+}
+
+.wc-today-pct-inline-value.is-caution,
+.cp-confidence.is-caution {
+  color: var(--color-warning);
+}
+
+.wc-today-pct-inline-value.is-uncertain,
+.cp-confidence.is-uncertain {
+  color: var(--color-error);
 }
 
 .wc-today-chip.is-muted {
@@ -2301,6 +2403,97 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 
 .attr-bar {
   background: var(--color-border);
+}
+
+.attr-seg.is-positive {
+  background: var(--color-success);
+}
+
+.attr-seg.is-negative {
+  background: var(--color-error);
+}
+
+.cp-set-box {
+  border: var(--border-default);
+  border-radius: var(--radius-card);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+}
+
+.cp-set-box.is-certain {
+  border-color: color-mix(in srgb, var(--color-success) 45%, var(--color-border));
+  background: var(--color-success-soft);
+}
+
+.cp-set-box.is-caution {
+  border-color: color-mix(in srgb, var(--color-warning) 45%, var(--color-border));
+  background: var(--color-warning-soft);
+}
+
+.cp-set-box.is-uncertain {
+  border-color: color-mix(in srgb, var(--color-error) 45%, var(--color-border));
+  background: var(--color-error-soft);
+}
+
+.cp-set-badge {
+  color: var(--color-text-inverse);
+}
+
+.cp-set-badge.is-certain {
+  background: var(--color-success);
+}
+
+.cp-set-badge.is-caution {
+  background: var(--color-warning);
+}
+
+.cp-set-badge.is-uncertain {
+  background: var(--color-error);
+}
+
+.wc-h2h-modal-missing {
+  max-width: 29rem;
+}
+
+.wc-h2h-modal-missing .wc-h2h-modal-header {
+  margin-bottom: 0;
+  border-bottom: var(--border-default);
+}
+
+.wc-h2h-modal-missing .wc-h2h-modal-header h3,
+.wc-h2h-modal-missing .wc-modal-prediction-title strong {
+  color: var(--color-error);
+}
+
+.wc-h2h-modal-missing .wc-modal-prediction-title {
+  margin: 0;
+  text-align: left;
+}
+
+.wc-h2h-modal-missing .wc-modal-prediction-title h4 {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text);
+  font-size: 1.05rem;
+}
+
+.wc-h2h-modal-missing .wc-modal-prediction-title p {
+  margin: 0 0 var(--space-5);
+  color: var(--color-text-secondary);
+  font-size: var(--text-small);
+  line-height: 1.65;
+}
+
+.wc-missing-mark {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  margin-bottom: var(--space-4);
+  border: 1px solid var(--color-error);
+  border-radius: 50%;
+  color: var(--color-error);
+  font-family: var(--font-mono);
+  font-weight: 800;
 }
 
 .wc-h2h-meta {
@@ -2782,11 +2975,138 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   }
 }
 
-/* ============================================================
-   世界杯模块暂时隐藏（保留 HTML/JS/CSS 代码，便于日后恢复）
-   ============================================================ */
-.selector-tab[data-lottery="worldcup"] {
-  display: none;
+/* 760px 以下：全局头部回到普通流，功能导航独立吸顶。 */
+@media (max-width: 760px) {
+  :root {
+    --page-gutter: 1rem;
+  }
+
+  html {
+    scroll-padding-top: 4.5rem;
+  }
+
+  .header,
+  body.theme-dlt .header,
+  body.theme-pl3 .header,
+  body.theme-worldcup .header {
+    position: relative;
+    top: auto;
+    padding: var(--space-3) 0;
+  }
+
+  .header-inner {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .logo {
+    width: auto;
+    flex: 1 1 auto;
+  }
+
+  .header-meta {
+    order: 2;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .lottery-selector {
+    order: 3;
+    width: 100%;
+  }
+
+  .app {
+    padding-top: 0;
+  }
+
+  .nav-tabs {
+    position: sticky;
+    z-index: 80;
+    top: 0;
+    margin: 0 calc(var(--page-gutter) * -1) var(--space-5);
+    border-top: var(--border-default);
+    background: var(--color-surface);
+    padding: 0 var(--page-gutter);
+  }
+
+  .countdown {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .countdown-timer {
+    justify-content: flex-start;
+  }
+
+  .stats-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-card,
+  .stat-card:first-child,
+  .stat-card:last-child {
+    border-left: 0;
+    border-bottom: var(--border-default);
+  }
+
+  .stat-card:last-child {
+    border-bottom: 0;
+  }
+
+  .predictions-grid,
+  .wc-top-strip,
+  .wc-value-grid,
+  .wc-meta-grid,
+  .wc-h2h-metrics,
+  .wc-mystic-grid,
+  .wc-ensemble-sources,
+  .wc-expected-grid,
+  .wc-score-grid,
+  .wc-squad-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .wc-top-strip {
+    overflow: visible;
+  }
+
+  .theme-worldcup .wc-hero,
+  .wc-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-5);
+  }
+}
+
+@media (max-width: 390px) {
+  :root {
+    --page-gutter: 0.75rem;
+  }
+
+  .header-meta {
+    gap: var(--space-1);
+  }
+
+  .data-badge {
+    max-width: 7.75rem;
+  }
+
+}
+
+@media (hover: none), (pointer: coarse) {
+  .btn:hover,
+  .wc-today-card:hover,
+  .theme-worldcup .wc-match-card:hover {
+    box-shadow: none;
+    transform: none;
+  }
+}
+
+/* 世界杯模块暂时隐藏：保留 HTML、JS 和数据实现，入口统一回退到大乐透。 */
+.selector-tab[data-lottery="worldcup"],
+#sectionWorldcup {
+  display: none !important;
 }
 
 .lottery-selector {
@@ -2794,15 +3114,11 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   min-width: min(23rem, 44vw);
 }
 
-@media (max-width: 720px) {
+@media (max-width: 760px) {
   .lottery-selector {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     min-width: 0;
   }
-}
-
-#sectionWorldcup {
-  display: none !important;
 }
 
 /* ============================================================
@@ -2829,6 +3145,11 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
     animation: none !important;
     opacity: 1;
     transform: none;
+  }
+
+  .loading-progress {
+    animation: none;
+    transform: scaleX(1);
   }
 }
 

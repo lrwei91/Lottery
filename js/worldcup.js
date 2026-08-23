@@ -230,8 +230,8 @@
     { key: 'elo_score', label: 'Elo 锚点', color: 'var(--back-start)', scale: 0.15 },
     { key: 'age_score', label: '年龄结构', color: 'var(--accent)', scale: 0.10 },
     { key: 'exp_score', label: '大赛经验', color: 'var(--warning)', scale: 0.12 },
-    { key: 'form_score', label: '近期状态', color: '#9ca3af', scale: 0.06 },
-    { key: 'coach_score', label: '教练因素', color: '#ac8e68', scale: 0.06 },
+    { key: 'form_score', label: '近期状态', color: 'var(--color-factor-neutral-1)', scale: 0.06 },
+    { key: 'coach_score', label: '教练因素', color: 'var(--color-factor-neutral-2)', scale: 0.06 },
     { key: 'mystic_score', label: '玄学因子', color: 'var(--front-start)', scale: 0.08 }
   ];
 
@@ -821,7 +821,7 @@
   // 给 today 卡用的精选比分 + 综合推荐 + 校准胜率
   // 跟 modal 里同源（用 scorePredictions + ensemblePredict + Conformal）
   function computeTodayExtras(match) {
-    const out = { featured: null, recLabel: null, recPct: null, calPct: null, calColor: null, calSet: null };
+    const out = { featured: null, recLabel: null, recPct: null, calPct: null, calTone: null, calSet: null };
     try {
       const teamA = findTeam(match.home);
       const teamB = findTeam(match.away);
@@ -862,7 +862,7 @@
                      : adj.away >= adj.draw ? 'away' : 'draw';
         out.calPct = Math.round((adj[maxKey] || 0) * 100);
         const size = cp.set_size;
-        out.calColor = size === 1 ? '#00a86b' : size === 2 ? '#faad14' : '#ff4757';
+        out.calTone = size === 1 ? 'is-certain' : size === 2 ? 'is-caution' : 'is-uncertain';
         out.calSet = cp.prediction_set.join('/');
       }
     } catch (e) {
@@ -947,7 +947,7 @@
     const calChip = (extras && extras.calPct != null && extras.calSet)
       ? `<span class="wc-today-pct-inline is-cal" title="校准后 (${escapeHtml(extras.calSet)})">
            <span class="wc-today-pct-inline-label">🛡 校准</span>
-           <span class="wc-today-pct-inline-value" style="color:${extras.calColor || '#6ee7b7'}">${extras.calPct}%</span>
+           <span class="wc-today-pct-inline-value ${extras.calTone || 'is-certain'}">${extras.calPct}%</span>
            <span class="wc-today-pct-inline-sub">${escapeHtml(extras.calSet)}</span>
          </span>`
       : '';
@@ -1185,11 +1185,10 @@
           const sign = isPos ? '+' : '';
           const width = Math.min(100, Math.abs(a.contribution) * 2000);
           // 主题适配：worldcup 主题的 --accent 是红色，正向贡献用 --front-start（绿色）
-          const bg = isPos ? 'var(--front-start, #00a86b)' : 'var(--danger, #ff4757)';
           return `
           <div class="attr-row">
             <span class="attr-lbl">${a.label}</span>
-            <div class="attr-bar"><div class="attr-seg" style="width:${width.toFixed(1)}%;background:${bg}"></div></div>
+            <div class="attr-bar"><div class="attr-seg ${isPos ? 'is-positive' : 'is-negative'}" style="width:${width.toFixed(1)}%"></div></div>
             <span class="attr-val ${isPos ? 'is-pos' : 'is-neg'}">${sign}${(a.contribution * 100).toFixed(3)}%</span>
           </div>
         `;
@@ -2291,21 +2290,21 @@
       if (!teamB) missingTeams.push(escapeHtml(countryName(away)));
       
       modal.innerHTML = `
-        <div class="modal-card card wc-h2h-modal-card" style="max-width: 460px;">
-          <div class="modal-header wc-h2h-modal-header" style="border-bottom: none; margin-bottom: 0;">
-            <h3 style="font-size: 1.15rem; color: var(--danger); font-weight: 700;">⚠️ 预测数据不足</h3>
+        <div class="modal-card card wc-h2h-modal-card wc-h2h-modal-missing">
+          <div class="modal-header wc-h2h-modal-header">
+            <h3>预测数据不足</h3>
             <button class="modal-close" type="button" id="wcH2hModalClose" aria-label="关闭预测窗口">×</button>
           </div>
-          <div class="modal-body" style="text-align: center; padding: 0 var(--space-lg) var(--space-lg) var(--space-lg);">
-            <div class="wc-modal-prediction-title" style="margin-bottom: var(--space-md);">
-              <span style="font-size: 3rem; display: block; margin-bottom: 12px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.3));">📊</span>
-              <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px;">
+          <div class="modal-body">
+            <div class="wc-modal-prediction-title">
+              <span class="wc-missing-mark" aria-hidden="true">!</span>
+              <h4>
                 ${escapeHtml(countryName(home))} VS ${escapeHtml(countryName(away))}
               </h4>
-              <p style="color: var(--text-secondary); font-size: 0.82rem; line-height: 1.6; margin-bottom: var(--space-md);">
-                非常抱歉！由于队伍 <strong style="color: var(--danger); font-weight: 800;">${missingTeams.join(' 和 ')}</strong> 缺失 Elo 历史战绩、战术因子及球员身价等核心模型数据，系统无法对此场比赛进行 Poisson 模拟和对战推演。
+              <p>
+                队伍 <strong>${missingTeams.join(' 和 ')}</strong> 缺失 Elo 历史战绩、战术因子及球员身价等核心模型数据，系统无法对此场比赛进行 Poisson 模拟和对战推演。
               </p>
-              <button class="btn btn-secondary" type="button" id="wcH2hModalCloseBtn" style="min-height: 38px; padding: 6px 24px; font-weight: 700;">我知道了</button>
+              <button class="btn btn-secondary" type="button" id="wcH2hModalCloseBtn">我知道了</button>
             </div>
           </div>
         </div>
@@ -2407,7 +2406,7 @@
             const rawPa = (raw.away * 100).toFixed(1);
             const setLbl = cp.prediction_set.join('/');
             const size = cp.set_size;
-            const setColor = size === 1 ? '#00a86b' : size === 2 ? '#faad14' : '#ff4757';
+            const setTone = size === 1 ? 'is-certain' : size === 2 ? 'is-caution' : 'is-uncertain';
             const conf = (adj.keep * 100).toFixed(0);  // 用实际 keep (可能跟 cp.confidence 不同)
             // 各结果的偏移 (校正后 - 4 维融合)
             const dHome = (adj.home - raw.home) * 100;
@@ -2425,11 +2424,11 @@
                 <div class="wc-ensemble-banner">
                   <div class="wc-ensemble-rec">
                     <span class="wc-ensemble-rec-label">🛡 校准胜率</span>
-                    <strong style="color:${setColor}">${setLbl}</strong>
+                    <strong class="cp-confidence ${setTone}">${setLbl}</strong>
                   </div>
                   <div class="wc-ensemble-conf">
                     <span class="wc-ensemble-rec-label">🎯 校准置信度</span>
-                    <strong style="color:${setColor}">${conf}%</strong>
+                    <strong class="cp-confidence ${setTone}">${conf}%</strong>
                   </div>
                 </div>
                 <div class="cp-raw-compare">
@@ -2476,16 +2475,13 @@
             if (!cp) return '';
             const setLbl = cp.prediction_set.join('/');
             const size = cp.set_size;
-            // 主题适配：worldcup 主题 --accent 是红色，不适合做"绿色"语义
-            // 用显式语义色：size=1 高度确定=绿，size=2=黄，size=3=红
-            const color = size === 1 ? '#00a86b' : size === 2 ? '#faad14' : '#ff4757';
-            const bg = size === 1 ? 'rgba(0,168,107,0.10)' : size === 2 ? 'rgba(250,173,20,0.10)' : 'rgba(255,71,87,0.10)';
+            const setTone = size === 1 ? 'is-certain' : size === 2 ? 'is-caution' : 'is-uncertain';
             const confidence = (cp.confidence * 100).toFixed(0);
             return `
-              <div class="cp-set-box" style="background:${bg};border:1px solid ${color};border-radius:12px;padding:12px 14px;margin-bottom:14px">
+              <div class="cp-set-box ${setTone}">
                 <div class="cp-set-hd">
                   <span class="cp-set-lbl">Conformal 预测集</span>
-                  <span class="cp-set-badge" style="background:${color};color:#0a0a0a">${setLbl}</span>
+                  <span class="cp-set-badge ${setTone}">${setLbl}</span>
                 </div>
                 <div class="cp-set-exp">${escapeHtml(cp.explanation)}</div>
                 <div class="cp-set-conf">置信度 ${confidence}% · 基于 2006-2022 世界杯历史校准（约 90% 覆盖率）</div>
