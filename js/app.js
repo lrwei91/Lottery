@@ -942,6 +942,16 @@
 
     try {
       const predictions = Predictor.generateMultiplePredictions(state.data, 5);
+      if (state.currentLottery === 'dlt') {
+        const expectedStrategies = ['gap', 'cold', 'random', 'balanced', 'hot'];
+        const actualStrategies = predictions.map(prediction => prediction && prediction.strategy);
+        const validStrategySet = actualStrategies.length === expectedStrategies.length
+          && new Set(actualStrategies).size === expectedStrategies.length
+          && expectedStrategies.every(strategy => actualStrategies.includes(strategy));
+        if (!validStrategySet) {
+          throw new Error(`五注策略集合异常：${actualStrategies.join(',') || '空'}`);
+        }
+      }
       state.predictions = predictions;
       savePredictionRecord(predictions);
 

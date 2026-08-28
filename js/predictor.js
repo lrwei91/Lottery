@@ -2252,68 +2252,45 @@
     const backStrategyOrder = configuredBackOrder
       || (context.type === 'dlt' ? DLT_BACK_STRATEGIES : [options.backStrategy || 'gap']);
     const getBackStrategy = index => backStrategyOrder[index % backStrategyOrder.length] || 'gap';
-    const maxAttempts = Math.max(count * 25, strategies.length);
-    let attempts = 0;
+    // 每个槽位固定自己的策略；重复/后区碰撞时只重试当前策略，不能让后续策略顶替。
+    const maxAttemptsPerSlot = Math.max(count * 25, 50);
 
-    while (predictions.length < count && attempts < maxAttempts) {
-      const strategy = strategies[attempts % strategies.length];
-      // 胆码分层策略 + 5 策略轮转
+    function generateForSlot(strategy, slotIndex) {
       const useDanLayer = strategy === 'danTuo';
       const realStrategy = useDanLayer ? 'balanced' : strategy;
-      const backStrategy = getBackStrategy(predictions.length);
-      const prediction = generatePrediction(data, realStrategy, {
-        ...options,
-        rng,
-        context,
-        useDanLayer,
-        backStrategy,
-        backSoftKill: options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT
-      });
-      const key = predictionKey(prediction.front, prediction.back, context.type);
-      const backKey = prediction.back.join(',');
+      const backStrategy = getBackStrategy(slotIndex);
 
-      if (!seen.has(key) && (!enforceBackDiversity || !seenBackKeys.has(backKey))) {
+      for (let slotAttempts = 0; slotAttempts < maxAttemptsPerSlot; slotAttempts += 1) {
+        const prediction = generatePrediction(data, realStrategy, {
+          ...options,
+          rng,
+          context,
+          useDanLayer,
+          backStrategy,
+          backSoftKill: options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT
+        });
+        const key = predictionKey(prediction.front, prediction.back, context.type);
+        const backKey = prediction.back.join(',');
+
+        if (seen.has(key) || (enforceBackDiversity && seenBackKeys.has(backKey))) continue;
+
         seen.add(key);
         if (enforceBackDiversity) seenBackKeys.add(backKey);
         predictions.push({
           ...prediction,
           strategy: useDanLayer ? 'danTuo' : strategy
         });
+        return true;
       }
-      attempts++;
+
+      return false;
     }
 
-    let fallbackAttempts = 0;
-    const fallbackMaxAttempts = Math.max(count * 50, strategies.length * 10);
-    while (predictions.length < count && fallbackAttempts < fallbackMaxAttempts) {
-      const strategy = strategies[predictions.length % strategies.length];
-      const useDanLayer = strategy === 'danTuo';
-      const realStrategy = useDanLayer ? 'balanced' : strategy;
-      const backStrategy = getBackStrategy(predictions.length);
-      const prediction = generatePrediction(data, realStrategy, {
-        ...options,
-        rng,
-        context,
-        useDanLayer,
-        backStrategy,
-        backSoftKill: options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT
-      });
-      // v2026-06-27: 兜底循环也要去重，避免主循环未凑齐时产生重复注
-      const key = predictionKey(prediction.front, prediction.back, context.type);
-      const backKey = prediction.back.join(',');
-      if (!seen.has(key) && (!enforceBackDiversity || !seenBackKeys.has(backKey))) {
-        seen.add(key);
-        if (enforceBackDiversity) seenBackKeys.add(backKey);
-        predictions.push({
-          ...prediction,
-          strategy: useDanLayer ? 'danTuo' : strategy
-        });
+    for (let slotIndex = 0; slotIndex < count; slotIndex += 1) {
+      const strategy = strategies[slotIndex];
+      if (!generateForSlot(strategy, slotIndex)) {
+        throw new Error(`策略 ${strategy} 生成失败：重试 ${maxAttemptsPerSlot} 次仍无法满足去重约束`);
       }
-      fallbackAttempts++;
-    }
-
-    if (predictions.length < count) {
-      throw new Error(`预测生成不足：需要 ${count} 注，实际 ${predictions.length} 注`);
     }
 
     // 置信度分层输出

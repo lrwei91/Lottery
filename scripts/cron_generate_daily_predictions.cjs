@@ -112,6 +112,17 @@ function inferNextIssue(issue) {
   return String(Number(raw) + 1).padStart(raw.length, '0');
 }
 
+function assertDltStrategySet(predictions) {
+  const expected = ['gap', 'cold', 'random', 'balanced', 'hot'];
+  const actual = Array.isArray(predictions) ? predictions.map((p) => p && p.strategy) : [];
+  const valid = actual.length === expected.length
+    && new Set(actual).size === expected.length
+    && expected.every((strategy) => actual.includes(strategy));
+  if (!valid) {
+    throw new Error(`五注策略集合异常：${actual.join(',') || '空'}`);
+  }
+}
+
 function buildRecord(predictions, latestDraw) {
   const allOverKillFront = new Set();
   const allOverKillBack = new Set();
@@ -242,6 +253,11 @@ function printSummary({ latestDraw, draws, record, predictions, uploadResult }) 
   }
   if (!Array.isArray(predictions) || predictions.length !== 5) {
     fatal('预测数量不是 5 注', `实际数量：${predictions && predictions.length}`);
+  }
+  try {
+    assertDltStrategySet(predictions);
+  } catch (err) {
+    fatal('五注策略集合不完整', err && err.message || err);
   }
   trace(`已生成 5 注预测，目标期号 ${inferNextIssue(latestDraw.issue)}：\n${summarize(predictions)}`);
 

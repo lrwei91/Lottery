@@ -83,6 +83,13 @@ function main() {
 
   const predictions = Predictor.generateMultiplePredictions(data, 5, { rng: seededRng() });
   assert(predictions.length === 5, `应生成 5 注，实际 ${predictions.length}`);
+  const expectedStrategies = ['gap', 'cold', 'random', 'balanced', 'hot'];
+  const actualStrategies = predictions.map(prediction => prediction.strategy);
+  assert(
+    new Set(actualStrategies).size === expectedStrategies.length
+      && expectedStrategies.every(strategy => actualStrategies.includes(strategy)),
+    `五注策略集合异常：${actualStrategies.join(',')}`
+  );
 
   const historyKeys = new Set(data.map(d => drawKey(d.front, d.back || [])));
   const predictionKeys = new Set();
@@ -108,6 +115,12 @@ function main() {
   // 五注覆盖回归：不同随机种子下不应出现完全相同的后区对子。
   for (let seed = 0; seed < 32; seed += 1) {
     const batch = Predictor.generateMultiplePredictions(data, 5, { rng: seededRng(seed) });
+    const batchStrategies = batch.map(prediction => prediction.strategy);
+    assert(
+      new Set(batchStrategies).size === expectedStrategies.length
+        && expectedStrategies.every(strategy => batchStrategies.includes(strategy)),
+      `seed=${seed} 五注策略集合异常：${batchStrategies.join(',')}`
+    );
     const backKeys = batch.map(prediction => prediction.back.join(','));
     assert(new Set(backKeys).size === backKeys.length, `seed=${seed} 出现重复后区对子`);
   }
