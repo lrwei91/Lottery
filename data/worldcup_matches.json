@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "lastUpdated": "2026-08-29T02:10:04.184736+00:00",
+    "lastUpdated": "2026-08-29T21:42:59.756389+00:00",
     "generatedBy": "scripts/sync_worldcup_matches.py",
     "sourceName": "FIFA public calendar API",
     "sourceUrl": "https://api.fifa.com/api/v3/calendar/matches?language=en&count=500&idCompetition=17&idSeason=285023",
