@@ -1,0 +1,71 @@
+name: Auto Sync Upstream
+
+on:
+  workflow_dispatch:
+    inputs:
+      upstream_repo:
+        description: Upstream repository in owner/repo format
+        required: false
+        default: lrwei91/Lottery
+      upstream_branch:
+        description: Upstream branch to sync from
+        required: false
+        default: main
+      target_branch:
+        description: Branch in this repository to sync
+        required: false
+        default: main
+  schedule:
+    - cron: '0 */6 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-upstream
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.target_branch || 'main' }}
+
+      - name: Fast-forward sync from upstream
+        env:
+          UPSTREAM_REPO: ${{ github.event.inputs.upstream_repo || 'lrwei91/Lottery' }}
+          UPSTREAM_BRANCH: ${{ github.event.inputs.upstream_branch || 'main' }}
+          TARGET_BRANCH: ${{ github.event.inputs.target_branch || 'main' }}
+        run: |
+          set -euo pipefail
+
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git remote add upstream "https://github.com/${UPSTREAM_REPO}.git"
+          git fetch origin "${TARGET_BRANCH}"
+          git fetch upstream "${UPSTREAM_BRANCH}"
+
+          LOCAL_SHA="$(git rev-parse "origin/${TARGET_BRANCH}")"
+          UPSTREAM_SHA="$(git rev-parse "upstream/${UPSTREAM_BRANCH}")"
+
+          echo "origin/${TARGET_BRANCH}: ${LOCAL_SHA}"
+          echo "upstream/${UPSTREAM_BRANCH}: ${UPSTREAM_SHA}"
+
+          if [ "${LOCAL_SHA}" = "${UPSTREAM_SHA}" ]; then
+            echo "Already up to date."
+            exit 0
+          fi
+
+          if git merge-base --is-ancestor "${LOCAL_SHA}" "${UPSTREAM_SHA}"; then
+            git checkout "${TARGET_BRANCH}"
+            git merge --ff-only "upstream/${UPSTREAM_BRANCH}"
+            git push origin "HEAD:${TARGET_BRANCH}"
+            echo "Fast-forward sync completed."
+          else
+            echo "Skipped: target branch has diverged from upstream and cannot be fast-forwarded automatically."
+          fi
