@@ -21,15 +21,17 @@
       label: '排列三', logo: ['排', '三'], subtitle: '位置概率分析与智能预测',
       filepath: 'data/pl3_data.json', drawLabel: '最新开奖结果', frontLabel: '开奖号码', backLabel: '',
       historyFrontHeader: '开奖号码', rulesNote: '排列三直选、组三、组六中奖条件及奖金对照表',
-      statsLabels: ['最热中奖号码', '最冷中奖号码', '最热后区号码', '最冷后区号码'], selectedTrendNumbers: [1, 3, 5],
+      // 排列三无后区（BACK_COUNT=0），后区指标卡固定显示 '--'，此处标签需明确标注不适用
+      statsLabels: ['最热中奖号码', '最冷中奖号码', '后区（不适用）', '后区（不适用）'], selectedTrendNumbers: [1, 3, 5],
       checkerPlaceholder: '输入格式示例：\n5 4 4\n4 6 6\n039',
       checkerHelp: '请输入您的排列三号码，支持核对多组（每组一行），每组 3 位数字。'
     })
   });
 
-  const STRATEGY_LABELS = Object.freeze({
-    cold: '冷号优先', hot: '热号优先', balanced: '均衡推荐', gap: '遗漏回补', random: '布林线策略', danTuo: '胆码分层'
-  });
+  // 策略中文名统一由 PredictorConfig.STRATEGY_LABELS 提供（predictor-config.js 先于本文件加载）
+  const STRATEGY_LABELS = global.PredictorConfig
+    ? global.PredictorConfig.STRATEGY_LABELS
+    : Object.freeze({ cold: '冷号优先', hot: '热号优先', balanced: '均衡推荐', gap: '遗漏回补', random: '布林线策略', danTuo: '胆码分层' });
   const CONFIDENCE_LABELS = Object.freeze({
     high: { text: '高把握', color: '#22c55e' },
     balanced: { text: '平衡', color: '#fbbf24' },

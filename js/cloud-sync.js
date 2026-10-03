@@ -7,7 +7,9 @@
 ;(function () {
   'use strict';
 
-  const REVIEW_DEDUP_MAX = 2000; // 防止 Set 无限膨胀
+  // 云端每设备最多保留 1000 条复盘（api/_lib/device-sync.js 的 V1_REVIEW_LIMIT），
+  // 超出后云端裁剪最旧记录。客户端去重上限必须 >= 云端上限，否则会误判"已同步"并阻止重传。
+  const REVIEW_DEDUP_MAX = 2000;
   const syncedReviewKeys = new Set();
 
   function getDeviceId() {
@@ -77,15 +79,18 @@
     if (!key || key === '::') return;
     if (syncedReviewKeys.has(key)) return;
 
-    // Set 上限保护
+    // Set 上限保护：淘汰最旧项而非整体清空，避免丢失仍在云端的记录标记导致重复上传
     if (syncedReviewKeys.size >= REVIEW_DEDUP_MAX) {
-      // 超过上限直接清空（实际场景远到不了）
-      syncedReviewKeys.clear();
+      const oldest = syncedReviewKeys.values().next().value;
+      if (oldest !== undefined) syncedReviewKeys.delete(oldest);
     }
     syncedReviewKeys.add(key);
 
     const deviceId = getDeviceId();
-    if (!deviceId) return;
+    if (!deviceId) {
+      syncedReviewKeys.delete(key);
+      return;
+    }
 
     window.TicaiRuntime.fetchWithTimeout('/api/reviews', {
       method: 'POST',

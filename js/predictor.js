@@ -21,7 +21,8 @@
   // 彩种配置独立于计算核心，不保存“当前彩种”状态。
   // ============================================================
   if (!window.PredictorConfig) throw new Error('PredictorConfig 未加载');
-  const { LOTTERY_PARAMS, detectLotteryType, getParams: getLotteryParams } = window.PredictorConfig;
+  const { LOTTERY_PARAMS, STRATEGY_LABELS, detectLotteryType, getParams: getLotteryParams } = window.PredictorConfig;
+  const strategyLabel = (strategy) => STRATEGY_LABELS[strategy] || strategy;
 
   const DEFAULT_STRATEGIES = ['balanced', 'random', 'gap', 'hot', 'cold'];
   // 140 条大乐透远端复盘显示：gap/cold 前区稳定性优于 hot/danTuo，默认 5 注恢复五个基础策略。
@@ -1967,14 +1968,6 @@
       backEvalResult = evaluateBackCombination(back, backConstraints);
     }
 
-    const strategyNames = {
-      cold: '冷号优先',
-      hot: '热号优先',
-      balanced: '均衡策略',
-      gap: '遗漏追号',
-      random: '布林线策略',
-      danTuo: '胆码分层'
-    };
     const displayStrategy = useDanLayer ? 'danTuo' : strategy;
 
     const hotCold = context.hotCold || hotColdAnalysis(data);
@@ -2035,7 +2028,7 @@
     }
 
     const reasoning = [
-      `【${strategyNames[displayStrategy] || displayStrategy} · 统计约束模型】`,
+      `【${strategyLabel(displayStrategy)} · 统计约束模型】`,
       ...bollingerLines,
       ...metaLines,
       `前区奇偶: ${evalResult.oddEven} | 大小: ${evalResult.bigSmall}`,
@@ -2043,7 +2036,15 @@
       `连号状态: ${consecLabel} | 同尾状态: ${tailLabel}`,
       `前区AC值: ${evalResult.ac} (>=${evalResult.minAC}) | 覆盖 ${evalResult.zonesCovered} 个分区 (>=${evalResult.minZonesCovered})`,
       `冷热结构: ${frontHot.length}热 / ${frontWarm.length}温 / ${frontCold.length}冷`,
-      `结合${strategy === 'random' ? '布林线和值约束与70%热号抽样' : useDanLayer ? '胆码分层 + 伴生矩阵补位' : strategy === 'balanced' ? '冷热分层抽样' : '伴生概率矩阵'}、近期时间衰减权重、元层信号 (transition/bias/overKill/conformal) 及全库去重生成 (计算碰撞: ${attempts}次)`
+      `结合${(() => {
+        if (strategy === 'random') return '布林线和值约束与70%热号抽样';
+        if (useDanLayer) return '胆码分层 + 伴生矩阵补位';
+        if (strategy === 'balanced') return '冷热分层抽样';
+        if (strategy === 'hot') return '热号加权(×1.50) + 伴生概率矩阵';
+        if (strategy === 'cold') return '冷号加权(×1.50) + 伴生概率矩阵';
+        if (strategy === 'gap') return '大遗漏加权(×1.40) + 伴生概率矩阵';
+        return '伴生概率矩阵';
+      })()}、近期时间衰减权重、元层信号 (transition/bias/overKill/conformal) 及全库去重生成 (计算碰撞: ${attempts}次)`
     ].join('\n');
 
     // 误杀预警：标记选中的号码是否在预警集合里
@@ -2150,16 +2151,8 @@
     const uniqueCount = new Set(finalNums).size;
     const patternLabel = uniqueCount === 1 ? '豹子组合' : uniqueCount === 2 ? '组三组合' : '组六组合';
 
-    const strategyNames = {
-      cold: '冷号优先',
-      hot: '热号优先',
-      balanced: '均衡推荐',
-      gap: '遗漏回补',
-      random: '布林线策略'
-    };
-
     const reasoning = [
-      `【${strategyNames[strategy] || strategy} · 排列三位置概率引擎】`,
+      `【${strategyLabel(strategy)} · 排列三位置概率引擎】`,
       `号码形态: ${patternLabel} | 跨度大小: ${evalResult.span} (${evalResult.spanMin}-${evalResult.spanMax})`,
       `组合和值: ${evalResult.sum} (${evalResult.sumMin}-${evalResult.sumMax})`,
       `依据百/十/个位位置频率、遗漏与近期趋势生成 (碰撞尝试: ${attempts}次)`
