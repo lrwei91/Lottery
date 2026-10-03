@@ -45,52 +45,6 @@ const SPEC = {
     fallback: 'KV_REST_API_TOKEN',
     detected: () => !!process.env.UPSTASH_REDIS_REST_TOKEN || !!process.env.KV_REST_API_TOKEN
   },
-  // ─── Vercel: Odds 数据源 (cron sync-odds.js) ───
-  ODDS_API_KEY: {
-    required: 'optional',
-    scope: 'vercel',
-    purpose: 'The Odds API — 单场赔率 (h2h/spreads/totals)',
-    obtain: 'https://the-odds-api.com/ (免费 500 req/月)',
-    detected: () => !!process.env.ODDS_API_KEY
-  },
-  POLYMARKET_PUBLIC_ENABLED: {
-    required: 'optional',
-    scope: 'vercel',
-    purpose: '启用 Polymarket 公开 API (h2h + outright)',
-    obtain: '设 true 即可，Polymarket 公开 API 不用 key',
-    detected: () => process.env.POLYMARKET_PUBLIC_ENABLED === 'true'
-  },
-  POLYMARKET_TAG_ID: {
-    required: 'optional',
-    scope: 'vercel',
-    purpose: 'Polymarket h2h tag (默认 102350 = 2026 WC)',
-    detected: () => !!process.env.POLYMARKET_TAG_ID
-  },
-  POLYMARKET_OUTRIGHT_TAG_ID: {
-    required: 'optional',
-    scope: 'vercel',
-    purpose: 'Polymarket outright tag (默认 100350 = WC Winner)',
-    detected: () => !!process.env.POLYMARKET_OUTRIGHT_TAG_ID
-  },
-  FOOTBALL_DATA_API_KEY: {
-    required: 'optional',
-    scope: 'vercel',
-    purpose: 'football-data.org — 赛程+实时比分',
-    obtain: 'https://www.football-data.org/ (免费)',
-    detected: () => !!process.env.FOOTBALL_DATA_API_KEY
-  },
-  ODDS_REGIONS: {
-    required: 'optional',
-    scope: 'vercel',
-    purpose: 'The Odds API 区域 (默认 us,uk,eu)',
-    detected: () => !!process.env.ODDS_REGIONS
-  },
-  ODDS_MARKETS: {
-    required: 'optional',
-    scope: 'vercel',
-    purpose: 'The Odds API 盘口 (默认 h2h,spreads,totals)',
-    detected: () => !!process.env.ODDS_MARKETS
-  },
   // ─── 本地: 彩票爬虫 ───
   JISU_API_KEY: {
     required: 'optional',
@@ -98,31 +52,6 @@ const SPEC = {
     purpose: '极速数据 API — 彩票历史 (scraper.js / scraper_pl3.js)',
     obtain: 'https://www.jisuapi.com/ (免费)',
     detected: () => !!process.env.JISU_API_KEY || !!process.env.JISU_APPKEY
-  },
-  // ─── 本地: LLM 预测 ───
-  LLM_PROVIDER: {
-    required: 'optional',
-    scope: 'local',
-    purpose: 'LLM provider: ollama / openai / xiaomi',
-    detected: () => !!process.env.LLM_PROVIDER
-  },
-  XIAOMI_API_KEY: {
-    required: 'optional',
-    scope: 'local',
-    purpose: 'Xiaomi MiMo API key (本项目当前唯一 LLM provider,2026-06-12 从 LLM_API_KEY 改名)',
-    detected: () => !!process.env.XIAOMI_API_KEY
-  },
-  LLM_BASE_URL: {
-    required: 'optional',
-    scope: 'local',
-    purpose: 'LLM base URL (默认走 provider defaults)',
-    detected: () => !!process.env.LLM_BASE_URL
-  },
-  LLM_MODEL: {
-    required: 'optional',
-    scope: 'local',
-    purpose: 'LLM 模型名',
-    detected: () => !!process.env.LLM_MODEL
   }
 };
 

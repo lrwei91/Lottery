@@ -24,9 +24,6 @@
       statsLabels: ['最热中奖号码', '最冷中奖号码', '最热后区号码', '最冷后区号码'], selectedTrendNumbers: [1, 3, 5],
       checkerPlaceholder: '输入格式示例：\n5 4 4\n4 6 6\n039',
       checkerHelp: '请输入您的排列三号码，支持核对多组（每组一行），每组 3 位数字。'
-    }),
-    worldcup: Object.freeze({
-      label: '2026 世界杯', logo: ['世', '杯'], subtitle: '冠军概率与对战预测', updateTime: '数据日期 2026-05-30'
     })
   });
 

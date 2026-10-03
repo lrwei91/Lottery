@@ -3,11 +3,5 @@
     "api/**/*.js": {
       "maxDuration": 30
     }
-  },
-  "crons": [
-    {
-      "path": "/api/cron/sync-odds",
-      "schedule": "0 0 * * *"
-    }
-  ]
+  }
 }

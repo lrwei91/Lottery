@@ -174,14 +174,6 @@ body.theme-pl3 {
   --color-back-soft: #f8eddc;
 }
 
-body.theme-worldcup {
-  --color-front: #21705b;
-  --color-front-strong: #155242;
-  --color-front-soft: #e6f1ed;
-  --color-back: #315f9e;
-  --color-back-strong: #244878;
-  --color-back-soft: #e8eef7;
-}
 
 /* ============================================================
    Base, focus and document surfaces
@@ -195,8 +187,7 @@ html {
 
 body,
 body.theme-dlt,
-body.theme-pl3,
-body.theme-worldcup {
+body.theme-pl3 {
   min-width: 0;
   overflow-x: hidden;
   background:
@@ -307,8 +298,7 @@ button,
    ============================================================ */
 .header,
 body.theme-dlt .header,
-body.theme-pl3 .header,
-body.theme-worldcup .header {
+body.theme-pl3 .header {
   position: sticky;
   top: 0;
   z-index: 100;
@@ -363,8 +353,7 @@ body.theme-worldcup .header {
   min-width: 0;
 }
 
-.logo-text h1,
-.theme-worldcup .logo-text h1 {
+.logo-text h1 {
   overflow: hidden;
   margin: 0;
   background: none;
@@ -403,8 +392,7 @@ body.theme-worldcup .header {
   isolation: isolate;
 }
 
-.selector-tab,
-.theme-worldcup .selector-tab {
+.selector-tab {
   position: relative;
   z-index: 1;
   min-height: 42px;
@@ -430,9 +418,7 @@ body.theme-worldcup .header {
 .selector-tab.active,
 .selector-tab[aria-pressed="true"],
 body.theme-pl3 .selector-tab.active,
-body.theme-pl3 .selector-tab[aria-pressed="true"],
-body.theme-worldcup .selector-tab.active,
-body.theme-worldcup .selector-tab[aria-pressed="true"] {
+body.theme-pl3 .selector-tab[aria-pressed="true"] {
   border-color: transparent;
   background: var(--color-accent);
   box-shadow: none;
@@ -536,8 +522,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .nav-tabs::-webkit-scrollbar,
-.sub-tabs::-webkit-scrollbar,
-.wc-tabs::-webkit-scrollbar {
+.sub-tabs::-webkit-scrollbar {
   display: none;
 }
 
@@ -621,9 +606,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 .card,
 .latest-draw,
 .countdown,
-.predict-header,
-.wc-hero,
-.wc-today {
+.predict-header {
   border: var(--border-default);
   border-radius: var(--radius-panel);
   background: var(--color-surface);
@@ -670,8 +653,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .sub-note,
-.predict-desc,
-.wc-desc {
+.predict-desc {
   max-width: var(--reading-max);
   color: var(--color-text-secondary);
   font-size: var(--text-small);
@@ -1150,7 +1132,6 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 
 .search-input,
 .search-select,
-.wc-select,
 .device-panel-manual-row input,
 .modal-textarea {
   min-height: 44px;
@@ -1171,7 +1152,6 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 
 .search-input:focus,
 .search-select:focus,
-.wc-select:focus,
 .device-panel-manual-row input:focus,
 .modal-textarea:focus {
   border-color: var(--color-focus);
@@ -1184,13 +1164,11 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   color: #7b8389;
 }
 
-.search-select,
-.wc-select {
+.search-select {
   background-color: var(--color-surface);
 }
 
-.search-select option,
-.wc-select option {
+.search-select option {
   background: var(--color-surface);
   color: var(--color-text);
 }
@@ -1289,8 +1267,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   font-weight: 760;
 }
 
-.sub-tabs,
-.wc-tabs {
+.sub-tabs {
   display: flex;
   gap: var(--space-2);
   margin-bottom: var(--space-5);
@@ -1302,8 +1279,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   scrollbar-width: none;
 }
 
-.sub-tab,
-.wc-tab {
+.sub-tab {
   min-height: 40px;
   flex: 0 0 auto;
   border: 1px solid transparent;
@@ -1315,8 +1291,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   padding: 0.5rem 0.85rem;
 }
 
-.sub-tab:hover,
-.wc-tab:hover {
+.sub-tab:hover {
   border-color: transparent;
   background: rgba(255, 255, 255, 0.65);
   color: var(--color-text);
@@ -1330,12 +1305,6 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   color: var(--color-on-accent);
 }
 
-.wc-tab.active {
-  border-color: var(--color-border);
-  background: var(--color-surface);
-  box-shadow: 0 1px 3px rgba(23, 23, 21, 0.07);
-  color: var(--color-brand-strong);
-}
 
 .stat-panel {
   animation: none;
@@ -1704,11 +1673,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   opacity: 0.7;
 }
 
-.progress-bar,
-.wc-progress,
-.wc-factor-bar > div,
-.wc-h2h-factor > div,
-.wc-market-bars {
+.progress-bar {
   background: var(--color-surface-subtle);
 }
 
@@ -1728,8 +1693,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 .modal-card,
-.device-panel-card,
-.wc-h2h-modal-card {
+.device-panel-card {
   width: min(100%, 46rem);
   max-height: min(90dvh, 54rem);
   overflow: hidden;
@@ -1935,270 +1899,21 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 /* ============================================================
    World Cup: same system, higher data density
    ============================================================ */
-.theme-worldcup h2,
-.theme-worldcup h3,
-.theme-worldcup .wc-kicker,
-.theme-worldcup .logo-text h1,
-.theme-worldcup .selector-tab {
-  letter-spacing: normal;
-  text-transform: none;
-}
 
-.theme-worldcup .wc-hero,
-.wc-hero {
-  display: grid;
-  grid-template-columns: minmax(13rem, 0.72fr) minmax(0, 1.28fr);
-  align-items: end;
-  gap: var(--space-8);
-  border: var(--border-default) !important;
-  border-top: 4px solid var(--color-brand) !important;
-  background: var(--color-surface) !important;
-  box-shadow: var(--shadow-card);
-}
 
-.wc-hero-main {
-  display: block;
-}
-
-.wc-kicker {
-  margin-bottom: var(--space-2);
-  color: var(--color-brand-strong);
-  font-size: var(--text-caption);
-  letter-spacing: 0.06em;
-}
-
-.theme-worldcup .wc-hero-title,
-.wc-hero-title {
-  margin: 0 0 var(--space-2);
-  background: none !important;
-  color: var(--color-text) !important;
-  font-family: var(--font-sans);
-  font-size: clamp(2rem, 4.5vw, 3.25rem);
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  -webkit-text-fill-color: currentColor !important;
-}
-
-.theme-worldcup .wc-hero-sub,
-.wc-hero-sub {
-  color: var(--color-text-secondary) !important;
-  font-size: var(--text-small) !important;
-}
-
-.wc-top-strip {
-  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 0.86fr);
-  gap: var(--space-2);
-  margin: 0;
-}
-
-.wc-top-card,
-.theme-worldcup .wc-top-card {
-  min-width: 0;
-  border: var(--border-default);
-  border-top: 2px solid var(--color-accent);
-  border-radius: var(--radius-control);
-  background: var(--color-surface-subtle);
-  padding: var(--space-3);
-}
-
-.wc-top-card:first-child {
-  background: var(--color-accent-tint);
-  padding-block: var(--space-4);
-}
-
-.wc-top-card strong {
-  color: var(--color-text);
-  font-family: var(--font-mono);
-}
-
-.wc-rank {
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-}
-
-.wc-code {
-  background: var(--color-brand);
-  color: var(--color-on-accent);
-}
-
-.wc-tabs {
-  flex-wrap: nowrap;
-  margin-top: var(--space-5);
-}
-
-.wc-odds-health-badge {
-  min-height: 36px;
-  margin-left: auto;
-  border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-border));
-  background: var(--color-warning-soft);
-  color: var(--color-warning);
-}
-
-.wc-panel.active {
-  animation: workbench-reveal var(--duration-normal) var(--ease-standard) both;
-}
-
-.wc-today-panel-host {
-  margin-top: 0;
-}
-
-.wc-today,
-.wc-today-empty {
-  border: var(--border-default);
-  background: var(--color-surface);
-  color: var(--color-text);
-}
-
-.wc-today-empty {
-  min-height: 10rem;
-  padding: var(--space-10) var(--space-6);
-}
-
-.wc-today-empty-title {
-  color: var(--color-text);
-}
-
-.wc-today-empty-sub {
-  color: var(--color-text-muted);
-}
-
-.wc-today-h2 {
-  background: none;
-  color: var(--color-text);
-  font-size: var(--text-title);
-  letter-spacing: -0.02em;
-  -webkit-text-fill-color: currentColor;
-}
-
-.wc-today-sub,
-.wc-today-dot-meta,
-.wc-today-disclaimer {
-  color: var(--color-text-muted);
-}
-
-.wc-today-dot-meta {
-  border-color: var(--color-border);
-  background: var(--color-surface-subtle);
-}
-
-.wc-today-card,
-.wc-today-card.is-featured,
-.theme-worldcup .wc-match-card {
-  border: var(--border-default);
-  border-left: var(--border-default);
-  border-right: var(--border-default);
-  border-radius: var(--radius-card);
-  background: var(--color-surface-subtle);
-  box-shadow: none;
-  color: var(--color-text);
-}
-
-.wc-today-card.is-featured {
-  border-top: 3px solid var(--color-brand);
-}
-
-.wc-today-card:hover,
-.theme-worldcup .wc-match-card:hover {
-  border-color: var(--color-border-strong);
-  background: var(--color-surface-subtle);
-  box-shadow: var(--shadow-card);
-  transform: translateY(-1px);
-}
-
-.wc-today-team-flag {
-  filter: none;
-}
-
-.wc-today-team-name {
-  color: var(--color-text);
-  font-size: clamp(1.25rem, 2.5vw, 1.8rem);
-  letter-spacing: -0.02em;
-}
-
-.wc-today-team-code,
-.wc-today-score small,
-.wc-today-question {
-  color: var(--color-text-muted);
-  -webkit-text-fill-color: currentColor;
-}
-
-.wc-today-featured-score,
-.wc-today-featured-score.wc-today-real-score {
-  background: none;
-  color: var(--color-brand-strong);
-  font-size: clamp(2rem, 4vw, 3.25rem);
-  -webkit-text-fill-color: currentColor;
-}
-
-.wc-today-bj-time,
-.wc-today-chip,
-.wc-today-pct-inline {
-  border-color: var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-}
-
-.wc-today-pct-inline.is-rec,
-.wc-today-chip.is-rec {
-  border-color: color-mix(in srgb, var(--color-brand) 30%, var(--color-border));
-  background: var(--color-brand-soft);
-  color: var(--color-brand-strong);
-}
-
-.wc-today-pct-inline.is-cal,
-.wc-today-chip.is-cal {
-  border-color: color-mix(in srgb, var(--color-success) 30%, var(--color-border));
-  background: var(--color-success-soft);
-  color: var(--color-success);
-}
-
-.wc-today-pct-inline-value.is-certain,
 .cp-confidence.is-certain {
   color: var(--color-success);
 }
 
-.wc-today-pct-inline-value.is-caution,
 .cp-confidence.is-caution {
   color: var(--color-warning);
 }
 
-.wc-today-pct-inline-value.is-uncertain,
 .cp-confidence.is-uncertain {
   color: var(--color-error);
 }
 
-.wc-today-chip.is-muted {
-  color: var(--color-text-muted);
-}
 
-.wc-today-foot {
-  border-color: var(--color-border);
-}
-
-.wc-detail-row,
-.wc-board-row,
-.wc-market-row,
-.wc-player-vs,
-.wc-llm-row,
-.wc-match-footer {
-  border-color: var(--color-border);
-}
-
-.wc-meta-item,
-.wc-h2h-metrics > div,
-.wc-mystic-grid > div,
-.wc-info-block,
-.wc-value-card,
-.wc-ucl-card,
-.wc-score-card,
-.wc-h2h-card,
-.wc-expected-card,
-.wc-record div,
-.wc-official-h2h-list > div,
-.wc-squad-head,
-.wc-match-card,
-.wc-ensemble-source,
 .attr-block {
   border: var(--border-default);
   background: var(--color-surface-subtle);
@@ -2206,135 +1921,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   box-shadow: none;
 }
 
-.wc-value-card {
-  border-radius: var(--radius-card);
-}
 
-.wc-detail-row summary {
-  min-height: 44px;
-}
-
-.wc-pill,
-.wc-tags span {
-  border-color: color-mix(in srgb, var(--color-brand) 24%, var(--color-border));
-  background: var(--color-brand-soft);
-  color: var(--color-brand-strong);
-}
-
-.wc-group-selector {
-  border-color: var(--color-border);
-}
-
-.wc-group-tab {
-  min-height: 38px;
-  border: var(--border-default);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-}
-
-.wc-group-tab:hover {
-  border-color: var(--color-border-strong);
-  background: var(--color-surface-subtle);
-  color: var(--color-text);
-}
-
-.theme-worldcup .wc-group-tab.active,
-.wc-group-tab.active {
-  border-color: var(--color-brand) !important;
-  background: var(--color-brand-soft) !important;
-  box-shadow: none !important;
-  color: var(--color-brand-strong) !important;
-}
-
-.theme-worldcup .wc-group-badge {
-  background: var(--color-brand) !important;
-  box-shadow: none;
-  color: #fff;
-}
-
-.wc-match-code,
-.wc-update-badge {
-  border-color: var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-}
-
-.wc-match-score-badge {
-  border-color: color-mix(in srgb, var(--color-brand) 25%, var(--color-border));
-  background: var(--color-brand-soft);
-  box-shadow: none;
-  color: var(--color-brand-strong);
-}
-
-.wc-match-vs-badge {
-  border-color: var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-}
-
-.wc-market-row.has-fused {
-  border-radius: var(--radius-control);
-}
-
-.wc-market-bars span {
-  background: var(--color-back);
-}
-
-.wc-market-bars i {
-  background: var(--color-warning);
-}
-
-.wc-market-bars b,
-.wc-progress span {
-  background: var(--color-brand);
-  box-shadow: none;
-}
-
-.wc-winbar {
-  background: var(--color-surface-subtle);
-  box-shadow: inset 0 0 0 1px var(--color-border);
-}
-
-.wc-expected-card.is-home {
-  border-color: color-mix(in srgb, var(--color-success) 30%, var(--color-border));
-  background: var(--color-success-soft);
-}
-
-.wc-expected-card.is-draw {
-  border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-border));
-  background: var(--color-warning-soft);
-}
-
-.wc-expected-card.is-away {
-  border-color: color-mix(in srgb, var(--color-info) 30%, var(--color-border));
-  background: var(--color-info-soft);
-}
-
-.wc-expected-card.is-home .wc-expected-pct {
-  color: var(--color-success);
-}
-
-.wc-expected-card.is-draw .wc-expected-pct {
-  color: var(--color-warning);
-}
-
-.wc-expected-card.is-away .wc-expected-pct {
-  color: var(--color-info);
-}
-
-.wc-score-grid > div,
-.wc-ensemble-h2h-metrics > div {
-  border: var(--border-default);
-  background: var(--color-surface-subtle);
-}
-
-.wc-score-grid .is-featured {
-  border-color: color-mix(in srgb, var(--color-warning) 35%, var(--color-border));
-  background: var(--color-warning-soft);
-}
-
-.wc-llm-perspective,
-.wc-ensemble-card,
 .cp-calibrated {
   min-width: 0;
   border: var(--border-default);
@@ -2343,61 +1930,18 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   background: var(--color-surface);
 }
 
-.wc-llm-table {
-  max-width: 100%;
-  min-width: 0;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-}
 
-.wc-ensemble-banner,
-.wc-ensemble-card,
-.wc-today-foot,
-.wc-h2h-modal-header {
-  border-color: var(--color-border);
-}
-
-.wc-ensemble-rec strong {
-  color: var(--color-brand-strong);
-}
-
-.wc-ensemble-conf strong {
-  color: var(--color-info);
-}
-
-.wc-ensemble-pct.is-home {
-  border-color: color-mix(in srgb, var(--color-success) 30%, var(--color-border));
-  background: var(--color-success-soft);
-  color: var(--color-success);
-}
-
-.wc-ensemble-pct.is-draw {
-  border-color: color-mix(in srgb, var(--color-warning) 30%, var(--color-border));
-  background: var(--color-warning-soft);
-  color: var(--color-warning);
-}
-
-.wc-ensemble-pct.is-away {
-  border-color: color-mix(in srgb, var(--color-info) 30%, var(--color-border));
-  background: var(--color-info-soft);
-  color: var(--color-info);
-}
-
-.wc-ensemble-weight,
-.cp-delta,
-.wc-value-ci {
+.cp-delta {
   background: var(--color-surface-subtle);
   color: var(--color-text-muted);
 }
 
-.wc-factor-ci,
 .cp-set-conf,
 .cp-raw-compare,
 .cp-calibrate-note,
 .attr-hd,
 .attr-base,
-.attr-lbl,
-.wc-ensemble-detail {
+.attr-lbl {
   color: var(--color-text-secondary);
 }
 
@@ -2451,68 +1995,6 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   background: var(--color-error);
 }
 
-.wc-h2h-modal-missing {
-  max-width: 29rem;
-}
-
-.wc-h2h-modal-missing .wc-h2h-modal-header {
-  margin-bottom: 0;
-  border-bottom: var(--border-default);
-}
-
-.wc-h2h-modal-missing .wc-h2h-modal-header h3,
-.wc-h2h-modal-missing .wc-modal-prediction-title strong {
-  color: var(--color-error);
-}
-
-.wc-h2h-modal-missing .wc-modal-prediction-title {
-  margin: 0;
-  text-align: left;
-}
-
-.wc-h2h-modal-missing .wc-modal-prediction-title h4 {
-  margin: 0 0 var(--space-2);
-  color: var(--color-text);
-  font-size: 1.05rem;
-}
-
-.wc-h2h-modal-missing .wc-modal-prediction-title p {
-  margin: 0 0 var(--space-5);
-  color: var(--color-text-secondary);
-  font-size: var(--text-small);
-  line-height: 1.65;
-}
-
-.wc-missing-mark {
-  display: grid;
-  width: 2.5rem;
-  height: 2.5rem;
-  place-items: center;
-  margin-bottom: var(--space-4);
-  border: 1px solid var(--color-error);
-  border-radius: 50%;
-  color: var(--color-error);
-  font-family: var(--font-mono);
-  font-weight: 800;
-}
-
-.wc-h2h-meta {
-  border-color: color-mix(in srgb, var(--color-info) 28%, var(--color-border));
-  background: var(--color-info-soft);
-  color: var(--color-info);
-}
-
-.wc-modal-prediction-title h3 {
-  color: var(--color-brand-strong);
-}
-
-.wc-modal-flag-badge {
-  color: var(--color-text);
-}
-
-.wc-h2h-modal-body::-webkit-scrollbar-thumb {
-  background: #c7c2b8;
-}
 
 /* ============================================================
    Footer
@@ -2567,21 +2049,11 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .theme-worldcup .wc-hero,
-  .wc-hero {
-    grid-template-columns: 1fr;
-    align-items: start;
-  }
+  
 
-  .wc-top-strip {
-    grid-template-columns: repeat(3, minmax(11rem, 1fr));
-    overflow-x: auto;
-    padding-bottom: var(--space-1);
-  }
+  
 
-  .wc-market-row {
-    border-bottom: var(--border-default);
-  }
+  
 }
 
 @media (max-width: 720px) {
@@ -2628,11 +2100,9 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   }
 
   .card,
-  .latest-draw,
-  .countdown,
-  .predict-header,
-  .wc-hero,
-  .wc-today {
+.latest-draw,
+.countdown,
+.predict-header {
     padding: var(--space-5);
   }
 
@@ -2711,8 +2181,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   }
 
   .modal-card,
-  .device-panel-card,
-  .wc-h2h-modal-card {
+.device-panel-card {
     width: 100%;
     max-width: none;
     max-height: 94dvh;
@@ -2729,24 +2198,13 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
     flex-direction: column;
   }
 
-  .wc-today-stage {
-    gap: var(--space-2);
-  }
+  
 
-  .wc-today-team-name {
-    max-width: 8.5rem;
-    font-size: 1.08rem;
-  }
+  
 
-  .wc-today-featured-score {
-    font-size: 2rem;
-  }
+  
 
-  .wc-ensemble-banner,
-  .wc-today-head-bar {
-    align-items: flex-start;
-    flex-direction: column;
-  }
+  
 
   .footer-inner {
     flex-direction: column;
@@ -2808,11 +2266,9 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   }
 
   .card,
-  .latest-draw,
-  .countdown,
-  .predict-header,
-  .wc-hero,
-  .wc-today {
+.latest-draw,
+.countdown,
+.predict-header {
     border-radius: var(--radius-card);
     padding: var(--space-4);
   }
@@ -2901,30 +2357,17 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
     gap: var(--space-2);
   }
 
-  .wc-top-strip {
-    grid-template-columns: minmax(14rem, 1fr);
-  }
+  
 
-  .wc-tabs {
-    border-radius: var(--radius-control);
-  }
+  
 
-  .wc-today-stage {
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  }
+  
 
-  .wc-today-team-flag {
-    font-size: 2rem;
-  }
+  
 
-  .wc-today-team-name {
-    max-width: 6.8rem;
-    font-size: 0.92rem;
-  }
+  
 
-  .wc-today-score {
-    padding: 0;
-  }
+  
 }
 
 @media (max-width: 340px) {
@@ -2940,8 +2383,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
     display: none;
   }
 
-  .logo-text h1,
-  body.theme-worldcup .logo-text h1 {
+  .logo-text h1 {
     font-size: 0.82rem;
   }
 
@@ -2986,9 +2428,8 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   }
 
   .header,
-  body.theme-dlt .header,
-  body.theme-pl3 .header,
-  body.theme-worldcup .header {
+body.theme-dlt .header,
+body.theme-pl3 .header {
     position: relative;
     top: auto;
     padding: var(--space-3) 0;
@@ -3055,28 +2496,13 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
     border-bottom: 0;
   }
 
-  .predictions-grid,
-  .wc-top-strip,
-  .wc-value-grid,
-  .wc-meta-grid,
-  .wc-h2h-metrics,
-  .wc-mystic-grid,
-  .wc-ensemble-sources,
-  .wc-expected-grid,
-  .wc-score-grid,
-  .wc-squad-grid {
+  .predictions-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .wc-top-strip {
-    overflow: visible;
-  }
+  
 
-  .theme-worldcup .wc-hero,
-  .wc-hero {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-5);
-  }
+  
 }
 
 @media (max-width: 390px) {
@@ -3095,19 +2521,14 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 }
 
 @media (hover: none), (pointer: coarse) {
-  .btn:hover,
-  .wc-today-card:hover,
-  .theme-worldcup .wc-match-card:hover {
+  .btn:hover {
     box-shadow: none;
     transform: none;
   }
 }
 
 /* 世界杯模块暂时隐藏：保留 HTML、JS 和数据实现，入口统一回退到大乐透。 */
-.selector-tab[data-lottery="worldcup"],
-#sectionWorldcup {
-  display: none !important;
-}
+
 
 .lottery-selector {
   grid-template-columns: repeat(2, minmax(6.25rem, 1fr));
@@ -3140,8 +2561,7 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
   }
 
   .section.active,
-  .stat-panel.active,
-  .wc-panel.active {
+.stat-panel.active {
     animation: none !important;
     opacity: 1;
     transform: none;
@@ -3167,19 +2587,17 @@ body.theme-worldcup .selector-tab[aria-pressed="true"] {
 
 @media print {
   body,
-  body.theme-dlt,
-  body.theme-pl3,
-  body.theme-worldcup {
+body.theme-dlt,
+body.theme-pl3 {
     background: #fff;
   }
 
   .header,
-  .nav-tabs,
-  .sub-tabs,
-  .wc-tabs,
-  .footer,
-  .btn,
-  .loading-overlay {
+.nav-tabs,
+.sub-tabs,
+.footer,
+.btn,
+.loading-overlay {
     display: none !important;
   }
 

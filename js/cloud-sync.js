@@ -104,35 +104,6 @@
     syncedReviewKeys.clear();
   }
 
-  // 从云端拉取赔率/赛程快照（Vercel daily cron 刷新）
-  async function pullOddsSnapshots() {
-    if (!window.TicaiRuntime?.canUseApi()) return null;
-    try {
-      const res = await window.TicaiRuntime.fetchWithTimeout('/api/odds/snapshots', {
-        headers: { accept: 'application/json' }
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch (err) {
-      console.warn('[cloud] 拉取 odds 快照失败:', err);
-      return null;
-    }
-  }
-
-  // 从云端拉取 LLM 预测快照（本地 LLM 跑完 git push 后由 Vercel 部署）
-  async function pullLLMPredictions() {
-    try {
-      const res = await fetch('data/wc_llm_predictions.json?t=' + Date.now(), {
-        cache: 'no-cache'
-      });
-      if (!res.ok) return null;
-      return await res.json();
-    } catch (err) {
-      console.warn('[cloud] 拉取 LLM 预测失败:', err);
-      return null;
-    }
-  }
-
   function getStatus() {
     return {
       deviceId: getDeviceId(),
@@ -143,8 +114,6 @@
   window.TicaiCloud = {
     pullRecords,
     pullReviews,
-    pullOddsSnapshots,
-    pullLLMPredictions,
     syncRecord,
     syncReview,
     clearReviewCache,

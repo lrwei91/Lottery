@@ -2,24 +2,28 @@
   "name": "ticai-super-lotto",
   "version": "1.0.0",
   "type": "module",
-  "description": "体彩超级大乐透历史中奖号码展示与预测",
+  "description": "体彩超级大乐透与排列三历史开奖数据分析与智能预测",
+  "license": "MIT",
+  "author": "lrwei91",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lrwei91/Lottery.git"
+  },
+  "homepage": "https://lrwei91.github.io/Lottery/",
+  "bugs": {
+    "url": "https://github.com/lrwei91/Lottery/issues"
+  },
+  "keywords": [
+    "lottery",
+    "sports-lottery",
+    "data-visualization",
+    "prediction",
+    "statistical-analysis"
+  ],
   "scripts": {
     "scrape": "node scripts/scraper.cjs",
     "scrape:pl3": "node scripts/scraper_pl3.cjs",
     "scrape:all": "node scripts/scraper.cjs && node scripts/scraper_pl3.cjs",
-    "sync:worldcup": "python3 scripts/sync_worldcup_upstream.py",
-    "sync:worldcup:matches": "python3 scripts/sync_worldcup_matches.py",
-    "sync:worldcup:all": "python3 scripts/sync_worldcup_upstream.py && python3 scripts/sync_worldcup_matches.py",
-    "llm:predict": "node scripts/llm-predict.js h2h",
-    "llm:predict:dry": "DRY_RUN=1 node scripts/llm-predict.js h2h",
-    "llm:predict:outright": "node scripts/llm-predict.js outright",
-    "llm:predict:outright:dry": "DRY_RUN=1 node scripts/llm-predict.js outright",
-    "llm:predict:all": "node scripts/llm-predict.js all",
-    "llm:predict:all:dry": "DRY_RUN=1 node scripts/llm-predict.js all",
-    "llm:predict:ollama": "LLM_PROVIDER=ollama node scripts/llm-predict.js all",
-    "llm:predict:openai": "LLM_PROVIDER=openai node scripts/llm-predict.js all",
-    "llm:predict:xiaomi": "LLM_PROVIDER=xiaomi node scripts/llm-predict.js all",
-    "llm:predict:xiaomi:dry": "LLM_PROVIDER=xiaomi DRY_RUN=1 node scripts/llm-predict.js all",
     "dev": "npx -y serve .",
     "env:check": "node scripts/check-env.cjs",
     "env:check:vercel": "node scripts/check-env.cjs --vercel",

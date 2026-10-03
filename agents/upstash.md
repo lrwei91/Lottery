@@ -1,6 +1,6 @@
 # agents/upstash.md — Upstash Redis 客户端封装 & 跨端同步 API
 
-> 适用文件：`js/cloud-sync.js`（前端调用层）、`api/records.js` / `api/reviews.js` / `api/odds/*` / `api/cron/sync-odds.js`（Vercel Functions）。
+> 适用文件：`js/cloud-sync.js`（前端调用层）、`api/records.js` / `api/reviews.js` / `api/_lib/*`（Vercel Functions）。
 > 主入口：`AGENTS.md` 规则 1（凭据不入聊天 / commit）+ 规则 2（用 `@upstash/redis`，兼容两种 env 变量名）。
 
 ## 1. 关键事实
@@ -54,10 +54,8 @@ Vercel Storage → Connect Database 改完 env **不会自动 re-deploy**，需�
 | `device:<deviceId>:record:<recordId>` | 单条预测记录 | `POST /api/records` | 同上 |
 | `device:<deviceId>:reviews` | reviewKey 的时间有序 Sorted Set | `POST /api/reviews` | `GET /api/reviews?deviceId=...` |
 | `device:<deviceId>:review:<reviewKey>` | 单条复盘结果 | `POST /api/reviews` | 同上 |
-| `odds:snapshot:<source>` | 最新一份 `polymarket` / `the-odds-api` / `football-data` 快照 | Vercel Cron | `GET /api/odds/snapshots` |
-| `odds:history:the-odds-api` | 最近 28 个时间点的赔率历史（List） | Vercel Cron | `GET /api/odds/history?source=the-odds-api` |
 
-> **约定**：key 前缀分桶（`device:` / `odds:`），便于后续 `SCAN` 或 `KEYS device:*` 切库/清理。
+> **约定**：key 前缀分桶（`device:`），便于后续 `SCAN` 或 `KEYS device:*` 切库/清理。
 
 旧版 `records:byDevice:*` / `reviews:byDevice:*` 只读兼容；GET 合并 v1/v2 并去重，新写入只使用 v2 命名空间。
 
@@ -87,11 +85,10 @@ Vercel Storage → Connect Database 改完 env **不会自动 re-deploy**，需�
 api/
   records.js           # GET / POST  /api/records
   reviews.js           # GET / POST  /api/reviews
-  odds/
-    snapshots.js       # GET  /api/odds/snapshots
-    history.js         # GET  /api/odds/history?source=...
-  cron/
-    sync-odds.js       # Vercel Cron 定时跑，刷新 odds:* keys
+  _lib/
+    redis.js           # Upstash 客户端封装
+    http.js            # CORS / deviceId 校验 / 通用错误
+    device-sync.js     # Sorted Set 读写与裁剪
 ```
 
 **所有 endpoint 必须复用** `api/_lib/redis.js` 和 `api/_lib/http.js`。缺少 env 或内部异常写入 Vercel 日志，公网响应只返回通用错误，避免泄露内部细节。
@@ -102,7 +99,6 @@ api/
 - **CORS preflight (OPTIONS)**：POST 带 `content-type: application/json` 浏览器会先发 OPTIONS 探活。Function 里要么**显式处理** OPTIONS 返回 204，要么**走 Vercel 的 `vercel.json` headers 配置**。
 - **deviceId 未传**：`/api/records?deviceId=` 空字符串会让 Redis 写 `device::records`，污染数据。后端要 `if (!deviceId) return res.status(400).json({ error: 'deviceId required' })`。
 - **写入频率**：前端 fire-and-forget 没事，但批量同步（比如首次 onboarding 把本地一堆记录全 push 上去）要**加个 throttle**，避免触发 Upstash 限流。
-- **CRON 时区**：Vercel Cron 用 UTC。`vercel.json` 里配 `crons: [{ schedule: '0 * * * *' }]` 是 UTC，**不是**北京时间。
 - **删除设备数据**：先 `KEYS device:<id>:*` 找到 key，再 DEL。**不要**写 SCAN 模糊匹配全库删（生产里这俩 prefix 之外可能还有别的 key）。
 
 ## 8. 本地调试
