@@ -112,6 +112,13 @@ function main() {
     '五注后区未按独立回测后的策略分配生成'
   );
 
+  // 跨注分散回归（v2026-10-09）：五注前区/后区号码应尽量跨注互不重复。
+  // 期望并集：前区 25、后区 10；分散不可行时生成器会逐级放宽，这里按保守下限断言。
+  const frontUnion = new Set(predictions.flatMap(prediction => prediction.front)).size;
+  const backUnion = new Set(predictions.flatMap(prediction => prediction.back)).size;
+  assert(frontUnion >= 22, `五注前区并集过低：${frontUnion}（应 ≥22，期望 25）`);
+  assert(backUnion >= 8, `五注后区并集过低：${backUnion}（应 ≥8，期望 10）`);
+
   // 五注覆盖回归：不同随机种子下不应出现完全相同的后区对子。
   for (let seed = 0; seed < 32; seed += 1) {
     const batch = Predictor.generateMultiplePredictions(data, 5, { rng: seededRng(seed) });
@@ -123,6 +130,10 @@ function main() {
     );
     const backKeys = batch.map(prediction => prediction.back.join(','));
     assert(new Set(backKeys).size === backKeys.length, `seed=${seed} 出现重复后区对子`);
+    const batchFrontUnion = new Set(batch.flatMap(prediction => prediction.front)).size;
+    const batchBackUnion = new Set(batch.flatMap(prediction => prediction.back)).size;
+    assert(batchFrontUnion >= 22, `seed=${seed} 五注前区并集过低：${batchFrontUnion}`);
+    assert(batchBackUnion >= 8, `seed=${seed} 五注后区并集过低：${batchBackUnion}`);
   }
 
   console.log(JSON.stringify({
@@ -131,6 +142,8 @@ function main() {
     total: data.length,
     conformalCoverage: report.empiricalCoverage,
     qhat: report.qhat,
+    frontUnion,
+    backUnion,
     predictions: predictions.map(p => ({
       strategy: p.strategy,
       confidence: p.confidence,
