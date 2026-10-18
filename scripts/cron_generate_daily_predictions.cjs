@@ -7,7 +7,7 @@
  *   node scripts/cron_generate_daily_predictions.cjs --dry-run # 只生成、只日志、不 POST
  *
  * 环境变量：
- *   TICAI_DEVICE_ID   目标云端 deviceId（默认 3722bf95-31b6-452b-9ced-76a39ccceeb0）
+ * 设备 ID：复用 js/device-id.js 的统一同步空间，不再按环境覆盖。
  *   TICAI_API_BASE    API base（默认 https://bet.lrwei91.online）
  *
  * 逻辑：
@@ -28,7 +28,9 @@ const ROOT = path.resolve(__dirname, '..');
 const DATA_FILE = path.join(ROOT, 'data', 'lottery_data.json');
 const LOG_DIR = path.join(__dirname, 'logs', 'daily-predictions');
 
-const DEVICE_ID = process.env.TICAI_DEVICE_ID || '3722bf95-31b6-452b-9ced-76a39ccceeb0';
+const deviceSandbox = { window: {} };
+vm.runInNewContext(fs.readFileSync(path.join(ROOT, 'js/device-id.js'), 'utf8'), deviceSandbox, { filename: 'js/device-id.js' });
+const DEVICE_ID = deviceSandbox.window.TicaiDevice.getId();
 const API_BASE = (process.env.TICAI_API_BASE || 'https://bet.lrwei91.online').replace(/\/+$/, '');
 const DRY_RUN = process.argv.includes('--dry-run');
 

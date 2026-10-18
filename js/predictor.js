@@ -1907,6 +1907,9 @@
       transitionSignal, biasReport, overKillWarn } = context;
     const backSoftKill = options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT;
     const useDanLayer = options.useDanLayer === true;
+    const randomExploration = strategy === 'random' && options.randomExploration === true;
+    // 结构指标用于解释，不把训练分位区间当作下一期合法号码边界。
+    const observeFront = randomExploration || options.frontConstraintMode !== 'filter';
     const backStrategy = options.backStrategy || 'gap';
 
     let front = [];
@@ -1921,8 +1924,13 @@
     // 过滤与约束循环：寻找满足高阶指标且非历史一等奖的号码
     while (attempts < maxAttempts) {
       if (strategy === 'random') {
-        bollingerResult = generateBollingerPrediction(data, context, rng);
-        front = bollingerResult.front;
+        if (randomExploration) {
+          // 为极端和值、奇偶、连号等结构保留一注不受历史形态过滤的探索位。
+          front = weightedSample(range(params.FRONT_MIN, FRONT_MAX).map(value => ({ value, weight: 1 })), FRONT_COUNT, rng);
+        } else {
+          bollingerResult = generateBollingerPrediction(data, context, rng);
+          front = bollingerResult.front;
+        }
         // random 只负责前区探索，后区使用独立的 backStrategy。
         back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng, params);
       } else if (useDanLayer) {
@@ -1942,30 +1950,15 @@
 
       // 后区非硬排时跳过 backEvalResult 校验
       const backPass = backSoftKill || backEvalResult.valid;
-      if (evalResult.valid && backPass && !isExactMatch) {
+      if ((observeFront || evalResult.valid) && backPass && !isExactMatch) {
         break;
       }
       attempts++;
     }
 
-    // 保底机制
+    // 重试耗尽时显式失败，不能把未经校验的兜底号码当成有效结果。
     if (attempts >= maxAttempts) {
-      if (strategy === 'random') {
-        bollingerResult = generateBollingerPrediction(data, context, rng);
-        front = bollingerResult.front;
-        // random 只负责前区探索，后区使用独立的 backStrategy。
-        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng, params);
-      } else if (useDanLayer) {
-        const result = selectWithDanLayer(frontScores, coMatrix, { rng, frontCount: FRONT_COUNT });
-        front = result.front;
-        danTuoMeta = { danNums: result.danNums, danCount: result.danNums.length, danStrategy: 'auto' };
-        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng, params);
-      } else {
-        front = selectByStrategy(frontScores, strategy, FRONT_COUNT, coMatrix, rng, params);
-        back = selectByStrategy(backScores, backStrategy, BACK_COUNT, null, rng, params);
-      }
-      evalResult = evaluateFrontCombination(front, frontConstraints, params);
-      backEvalResult = evaluateBackCombination(back, backConstraints);
+      throw new Error('预测生成失败：历史去重或结构约束下重试预算耗尽');
     }
 
     const displayStrategy = useDanLayer ? 'danTuo' : strategy;
@@ -1976,7 +1969,7 @@
     const frontWarm = front.filter(n => hotCold.front.warm.includes(n));
 
     const sumLabel = evalResult.sum;
-    const sumVerdict = evalResult.valid ? '训练区间' : '偏离区间';
+    const sumVerdict = observeFront ? '仅观察，不过滤' : evalResult.valid ? '训练区间' : '偏离区间';
     const consecLabel = evalResult.pairs > 0 ? `有 (${evalResult.pairs}组连号)` : '无 (散号组合)';
     const tailLabel = evalResult.tailPairsCount > 0 ? `有 (${evalResult.tailPairsCount}组同尾)` : '无 (全异尾)';
     const backSumLabel = backSoftKill
@@ -2021,14 +2014,14 @@
       metaLines.push(`后区误杀预警: ${overKillBackNums.sort((a, b) => a - b).join(' ')}`);
     }
     if (backSoftKill) {
-      metaLines.push(`后区策略: 遗漏回补 + 观察层软排 (非硬约束)`);
+      metaLines.push(`后区策略: ${strategyLabel(backStrategy)} + 观察层软排 (非硬约束)`);
     }
     if (useDanLayer && danTuoMeta) {
       metaLines.push(`胆码分层: 胆码 ${danTuoMeta.danCount} 个 + 拖码 ${FRONT_COUNT - danTuoMeta.danCount} 个 (coMatrix 补位)`);
     }
 
     const reasoning = [
-      `【${strategyLabel(displayStrategy)} · 统计约束模型】`,
+      `【${strategyLabel(displayStrategy)} · ${observeFront ? '统计观察模型' : '统计约束模型'}】`,
       ...bollingerLines,
       ...metaLines,
       `前区奇偶: ${evalResult.oddEven} | 大小: ${evalResult.bigSmall}`,
@@ -2037,7 +2030,7 @@
       `前区AC值: ${evalResult.ac} (>=${evalResult.minAC}) | 覆盖 ${evalResult.zonesCovered} 个分区 (>=${evalResult.minZonesCovered})`,
       `冷热结构: ${frontHot.length}热 / ${frontWarm.length}温 / ${frontCold.length}冷`,
       `结合${(() => {
-        if (strategy === 'random') return '布林线和值约束与70%热号抽样';
+        if (strategy === 'random') return randomExploration ? '前区等权随机探索（结构仅观察）' : '布林线和值约束与70%热号抽样';
         if (useDanLayer) return '胆码分层 + 伴生矩阵补位';
         if (strategy === 'balanced') return '冷热分层抽样';
         if (strategy === 'hot') return '热号加权(×1.50) + 伴生概率矩阵';
@@ -2074,6 +2067,8 @@
         biasDetected: biasReport ? (biasReport.zone.detected || biasReport.tail.detected || biasReport.ac.detected) : false,
         backSoftKill,
         backStrategy,
+        randomExploration,
+        frontConstraintMode: observeFront ? 'observe' : 'filter',
         useDanLayer
       },
       reasoning
@@ -2246,77 +2241,39 @@
       || (context.type === 'dlt' ? DLT_BACK_STRATEGIES : [options.backStrategy || 'gap']);
     const getBackStrategy = index => backStrategyOrder[index % backStrategyOrder.length] || 'gap';
 
-    // v2026-10-09 跨注分散层（仅大乐透）：优先保证 5 注前区/后区号码互不重复。
-    // 蒙特卡洛（50 万期抽样）显示该约束把期级"至少一注中奖"从 ~28.9% 提升到 ~32.3%；
-    // 单注边际中奖概率不受影响。分散不可行时逐级放宽（0/1/2/不限 个复用号），
-    // 保证不因分散约束新增生成失败路径。
-    const enforceSpread = context.type === 'dlt' && options.spreadEnforcement !== 'off';
-    const usedFront = new Set();
-    const usedBack = new Set();
-    const spreadStages = enforceSpread
-      ? [{ front: 0, back: 0 }, { front: 1, back: 1 }, { front: 2, back: 2 }, { front: Infinity, back: Infinity }]
-      : [{ front: Infinity, back: Infinity }];
-    const attemptsPerStage = Math.max(count * 25, 50);
-    const SPREAD_DEMOTE = 0.05;
-
-    function demoteUsed(scores, usedSet) {
-      if (!enforceSpread || usedSet.size === 0) return scores;
-      const adjusted = new Map();
-      for (const [num, s] of scores) {
-        adjusted.set(num, usedSet.has(num)
-          ? { ...s, gapScore: (s.gapScore || 0) * SPREAD_DEMOTE, freqDeviationScore: (s.freqDeviationScore || 0) * SPREAD_DEMOTE, trendScore: (s.trendScore || 0) * SPREAD_DEMOTE }
-          : s);
-      }
-      return adjusted;
-    }
+    // 各注独立选号，允许单个号码跨注重合；只排除完全重复的整注和后区对子。
+    const attemptsPerSlot = Math.max(count * 25, 50);
 
     function generateForSlot(strategy, slotIndex) {
       const useDanLayer = strategy === 'danTuo';
       const realStrategy = useDanLayer ? 'balanced' : strategy;
       const backStrategy = getBackStrategy(slotIndex);
 
-      for (const stage of spreadStages) {
-        const slotContext = enforceSpread && stage.front !== Infinity
-          ? { ...context, frontScores: demoteUsed(context.frontScores, usedFront), backScores: demoteUsed(context.backScores, usedBack) }
-          : context;
+      for (let slotAttempts = 0; slotAttempts < attemptsPerSlot; slotAttempts += 1) {
+        const prediction = generatePrediction(data, realStrategy, {
+          ...options,
+          rng,
+          context,
+          useDanLayer,
+          backStrategy,
+          backSoftKill: options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT
+        });
+        const key = predictionKey(prediction.front, prediction.back, context.type);
+        const backKey = prediction.back.join(',');
+        if (seen.has(key) || (enforceBackDiversity && seenBackKeys.has(backKey))) continue;
 
-        for (let slotAttempts = 0; slotAttempts < attemptsPerStage; slotAttempts += 1) {
-          const prediction = generatePrediction(data, realStrategy, {
-            ...options,
-            rng,
-            context: slotContext,
-            useDanLayer,
-            backStrategy,
-            backSoftKill: options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT
-          });
-          const key = predictionKey(prediction.front, prediction.back, context.type);
-          const backKey = prediction.back.join(',');
-
-          if (seen.has(key) || (enforceBackDiversity && seenBackKeys.has(backKey))) continue;
-
-          const reusedFront = prediction.front.reduce((n, num) => n + (usedFront.has(num) ? 1 : 0), 0);
-          const reusedBack = prediction.back.reduce((n, num) => n + (usedBack.has(num) ? 1 : 0), 0);
-          if (enforceSpread && (reusedFront > stage.front || reusedBack > stage.back)) continue;
-
-          seen.add(key);
-          if (enforceBackDiversity) seenBackKeys.add(backKey);
-          prediction.front.forEach(num => usedFront.add(num));
-          prediction.back.forEach(num => usedBack.add(num));
-          predictions.push({
-            ...prediction,
-            strategy: useDanLayer ? 'danTuo' : strategy
-          });
-          return true;
-        }
+        seen.add(key);
+        if (enforceBackDiversity) seenBackKeys.add(backKey);
+        predictions.push({ ...prediction, strategy: useDanLayer ? 'danTuo' : strategy });
+        return true;
       }
-
       return false;
     }
 
     for (let slotIndex = 0; slotIndex < count; slotIndex += 1) {
       const strategy = strategies[slotIndex];
       if (!generateForSlot(strategy, slotIndex)) {
-        throw new Error(`策略 ${strategy} 生成失败：分散与去重约束下重试预算耗尽`);
+        throw new Error(`策略 ${strategy} 生成失败：去重约束下重试预算耗尽`);
       }
     }
 

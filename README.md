@@ -2,6 +2,8 @@
 
 纯前端单页应用：体彩超级大乐透 + 排列三历史开奖统计、多策略预测与复盘。零框架、零构建步骤。
 
+当前主攻 **超级大乐透**。排列三保留现有功能，暂不进行策略分析、调参或专项验证；默认检查只覆盖大乐透和共享基础能力。
+
 - 线上演示（GitHub Pages）：https://lrwei91.github.io/Lottery/
 - 线上部署（Vercel，含 API）：https://ticai-taupe.vercel.app
 
@@ -21,11 +23,11 @@
 
    排列三的 5 注顺序不同，为 `balanced / random / gap / hot / cold`（`buildStrategyOrder` 按彩种分支）。
 
-   另有可选的 `danTuo` 胆码分层（`useDanLayer`），默认不占 5 注名额。大乐透后区独立按 `random / balanced / random / balanced / random` 映射，整注与后区对子均去重。
+   另有可选的 `danTuo` 胆码分层（`useDanLayer`），默认不占 5 注名额。大乐透后区独立按 `random / balanced / random / balanced / random` 映射，整注与后区对子均去重。各注允许单个号码重合；前区和值、奇偶、连号、AC 等结构默认只观察、不作硬过滤。
 
 4. **元层信号调权**（`js/predictor.js`）：双窗口 trendScore（近 10 期 vs 近 50 期）、emergingHot 标记、区间聚集反向加权、区间/尾数/AC 聚集与反聚集权重、误杀预警 + 命中率回写校准、5 注置信度三档分层、后区观察层软排。
 5. **大乐透专属 Conformal Prediction**（`js/dlt-conformal.js`）：旧数据训练 + 最近 20% holdout 校准，输出 `qhat` / `conformalHalfWidth` / `recentDrift` / `stabilityScore`，通过 `computeMetaWeight` 接入选号权重。
-6. **跨端预测同步**：预测记录与复盘结果经 Vercel Functions 写入 Upstash Redis，同一设备 ID 的多端数据自动聚合，本地 `localStorage` 始终可离线使用。
+6. **跨端预测同步**：预测记录与复盘结果经 Vercel Functions 写入 Upstash Redis，网页与定时任务默认使用同一同步 ID，多端数据自动聚合，无需手动绑定；本地 `localStorage` 始终可离线使用。
 7. **全自动数据更新**：GitHub Actions 定时抓取最新开奖，优先第三方接口、失败自动回退体彩官方接口。
 
 ### 页面主要区块
@@ -58,8 +60,8 @@ Lottery/
 │   ├── predictor.js              # 多策略选号、回测、元层信号
 │   ├── dlt-conformal.js          # 大乐透 Conformal Prediction
 │   ├── cloud-sync.js             # 跨端记录同步
-│   ├── device-id.js              # 设备 ID 生成与读取
-│   └── device-panel.js           # 设备面板：ID + 二维码 + 手动绑定
+│   ├── device-id.js              # 统一同步 ID 读取
+│   └── device-panel.js           # 设备面板：统一 ID + 二维码 + 本机记录清理
 ├── data/
 │   ├── lottery_data.json         # 大乐透历史开奖（约 2930 期）
 │   └── pl3_data.json             # 排列三历史开奖（约 7738 期）
@@ -92,8 +94,8 @@ npm run dev            # npx -y serve . ，默认 http://localhost:3000
 ### 手动更新数据
 
 ```bash
-npm run scrape:all                 # 大乐透 + 排列三
-DRY_RUN=1 npm run scrape:all       # 只验证抓取，不写数据文件
+npm run scrape                    # 默认只更新大乐透
+DRY_RUN=1 npm run scrape          # 只验证抓取，不写数据文件
 ```
 
 第三方主源需要 `JISU_API_KEY`（兼容 `JISU_APPKEY`）；未配置时脚本自动走体彩官方副源。
@@ -104,7 +106,15 @@ DRY_RUN=1 npm run scrape:all       # 只验证抓取，不写数据文件
 npm run check
 ```
 
-覆盖 JS 语法、JSON 数据契约、API 与 Redis 封装、前端运行时降级与已删除模块的残留检查、大乐透 Conformal 覆盖率与 5 注合法性、排列三固定 seed 与跨彩种状态隔离。只改文档时至少执行 `git diff --check`。
+覆盖 JS 语法、JSON 数据契约、API 与 Redis 封装、前端运行时降级与已删除模块的残留检查、大乐透 Conformal 覆盖率、5 注合法性、自然重合与结构观察模式。只改文档时至少执行 `git diff --check`。
+
+大乐透策略滚动回测（只读，不上传号码）：
+
+```bash
+node scripts/backtest-dlt-strategies.cjs --seeds 4 --out scratch/dlt-backtest.json
+```
+
+详见 [2026-10-18 策略审计与调整](docs/strategy-review-2026-10-18.md)。回测中的内部评分和短期差异不代表下一期中奖概率。
 
 环境变量诊断：
 
@@ -145,7 +155,7 @@ npm run env:check:strict     # 推荐项缺失也判失败
 - 本地写入后异步推云端（fire-and-forget，不阻塞 UI），启动时从云端拉取增量并 merge
 - 复盘结果以 `recordId::strategy::issue` 为 key 天然去重；读取时兼容合并旧版 key
 - 云端失败只 `console.warn`，本地功能照常运行
-- 面板入口：header 右上角 **设备** 按钮，显示当前 ID、二维码、复制与手动绑定
+- 面板入口：header 右上角 **设备** 按钮，显示当前统一 ID、二维码、复制与本机记录清理
 - **不存**账号、邮箱或任何身份信息；策略统计与进化仍在本机跑
 
 | 方法 | 路径 | 用途 |

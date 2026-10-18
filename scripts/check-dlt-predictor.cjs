@@ -103,6 +103,7 @@ function main() {
     predictionKeys.add(key);
     assert(confidenceSet.has(prediction.confidence), `第 ${idx + 1} 注置信度无效`);
     assert(typeof prediction.minScore === 'number', `第 ${idx + 1} 注缺少 minScore`);
+    assert(prediction.meta.frontConstraintMode === 'observe', '默认不应再以训练形态硬过滤号码');
     assert(prediction.reasoning.includes('conformal'), `第 ${idx + 1} 注说明缺少 conformal 信号`);
   }
 
@@ -112,12 +113,11 @@ function main() {
     '五注后区未按独立回测后的策略分配生成'
   );
 
-  // 跨注分散回归（v2026-10-09）：五注前区/后区号码应尽量跨注互不重复。
-  // 期望并集：前区 25、后区 10；分散不可行时生成器会逐级放宽，这里按保守下限断言。
+  // 并集仅作诊断，不再对不同注的单个号码设置分散下限。
   const frontUnion = new Set(predictions.flatMap(prediction => prediction.front)).size;
   const backUnion = new Set(predictions.flatMap(prediction => prediction.back)).size;
-  assert(frontUnion >= 22, `五注前区并集过低：${frontUnion}（应 ≥22，期望 25）`);
-  assert(backUnion >= 8, `五注后区并集过低：${backUnion}（应 ≥8，期望 10）`);
+  let sawFrontOverlap = false;
+  let sawBackOverlap = false;
 
   // 五注覆盖回归：不同随机种子下不应出现完全相同的后区对子。
   for (let seed = 0; seed < 32; seed += 1) {
@@ -132,9 +132,41 @@ function main() {
     assert(new Set(backKeys).size === backKeys.length, `seed=${seed} 出现重复后区对子`);
     const batchFrontUnion = new Set(batch.flatMap(prediction => prediction.front)).size;
     const batchBackUnion = new Set(batch.flatMap(prediction => prediction.back)).size;
-    assert(batchFrontUnion >= 22, `seed=${seed} 五注前区并集过低：${batchFrontUnion}`);
-    assert(batchBackUnion >= 8, `seed=${seed} 五注后区并集过低：${batchBackUnion}`);
+    sawFrontOverlap ||= batchFrontUnion < 22;
+    sawBackOverlap ||= batchBackUnion < 8;
+    for (const prediction of batch) {
+      assertUniqueSortedRange(prediction.front, 5, 1, 35, `seed=${seed} 前区`);
+      assertUniqueSortedRange(prediction.back, 2, 1, 12, `seed=${seed} 后区`);
+      assert(!historyKeys.has(drawKey(prediction.front, prediction.back)), `seed=${seed} 与历史开奖完全重复`);
+    }
   }
+
+  assert(sawFrontOverlap && sawBackOverlap, '跨注号码仍被强制分散');
+
+  // 极端但合法的组合应能生成，结构观察不能退化为另一层隐藏过滤。
+  const scoreBundle = Predictor.computeScores(data);
+  const context = {
+    ...scoreBundle,
+    type: 'dlt', params: Predictor.getParams('dlt'),
+    exactDrawSet: new Set(),
+    frontConstraints: { sumMin: 1000, sumMax: 2000, maxConsecutive: 0, minAC: 99, minZonesCovered: 99, maxTailPairs: 0 },
+    backConstraints: { sumMin: 0, sumMax: 24, diffMin: 1, diffMax: 11 }
+  };
+  const extreme = Predictor.generatePrediction(data, 'gap', { context, rng: () => 0.0001 });
+  assert(extreme.front.join(',') === '1,2,3,4,5', '合法极端形态仍被过滤');
+  assert(extreme.meta.frontConstraintMode === 'observe', '缺少结构观察标记');
+  assert(extreme.reasoning.includes('仅观察，不过滤'), '结构说明与实际执行不一致');
+  let rejected = false;
+  try {
+    Predictor.generatePrediction(data, 'gap', { context, rng: () => 0.0001, frontConstraintMode: 'filter' });
+  } catch (error) { rejected = error.message.includes('重试预算耗尽'); }
+  assert(rejected, '显式过滤模式不应返回未经校验的兜底号码');
+  rejected = false;
+  try {
+    Predictor.generatePrediction(data, 'gap', { context: { ...context, exactDrawSet: { has: () => true } }, rng: () => 0.0001 });
+  } catch (error) { rejected = error.message.includes('重试预算耗尽'); }
+  assert(rejected, '历史完全重复号码不能通过兜底返回');
+
 
   console.log(JSON.stringify({
     ok: true,

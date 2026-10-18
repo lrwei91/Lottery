@@ -1,7 +1,7 @@
 /**
  * 设备管理面板
  * - 展示当前 deviceId + 二维码（qrcodejs CDN）
- * - 支持复制 ID / 手动绑定其他设备 ID / 重置
+ * - 支持复制统一 ID / 清理本机记录并重新同步
  * - 不依赖 css 文件中的具体选择器，用内联 class
  */
 ;(function () {
@@ -36,8 +36,7 @@
         </div>
         <div class="modal-body device-panel-body">
           <p class="device-panel-desc">
-            首次访问时会自动生成一个<strong>设备 ID</strong>。在另一台设备上把同样的 ID 粘进去，
-            两端的预测记录和复盘结果就会聚合到同一份「全量真相」。
+            所有平台默认使用同一个<strong>设备 ID</strong>，预测记录和复盘结果统一管理，无需手动绑定。
           </p>
 
           <div class="device-panel-id-row">
@@ -48,10 +47,10 @@
 
           <div class="device-panel-qr-wrap">
             <div class="device-panel-qr" id="ticaiDevicePanelQr"></div>
-            <p class="device-panel-qr-hint">用手机扫一扫，把 ID 带到另一台设备</p>
+            <p class="device-panel-qr-hint">所有平台共用此 ID，可复制留存</p>
           </div>
 
-          <details class="device-panel-details">
+          <details class="device-panel-details" hidden>
             <summary>手动绑定（输入另一台设备的 ID）</summary>
             <div class="device-panel-manual-row">
               <label class="sr-only" for="ticaiDevicePanelInput">另一台设备的 ID</label>
@@ -61,9 +60,9 @@
           </details>
 
           <details class="device-panel-details device-panel-danger">
-            <summary>重置当前设备</summary>
-            <p class="device-panel-danger-hint">将生成新的设备 ID，并清空本机<strong>所有</strong>预测记录与策略缓存（云端数据不受影响）。</p>
-            <button class="btn btn-danger" type="button" data-device-action="reset">确认重置</button>
+            <summary>清理本机预测记录</summary>
+            <p class="device-panel-danger-hint">清空本机预测记录，刷新后从统一 ID 重新同步。设备 ID、策略缓存和云端数据保留。</p>
+            <button class="btn btn-danger" type="button" data-device-action="reset">清理并重新同步</button>
           </details>
 
           <p class="device-panel-status" id="ticaiDevicePanelStatus" role="status" aria-live="polite"></p>
@@ -205,7 +204,7 @@
   }
 
   function handleReset() {
-    if (!window.confirm('确定要重置当前设备吗？\n\n将清空本机所有预测记录与策略缓存（云端不受影响）。')) return;
+    if (!window.confirm('确定要清理本机预测记录并重新同步吗？\n\n统一设备 ID、策略缓存和云端数据保留。')) return;
     // 清理本机缓存的所有 lottery 类型
     const keysToRemove = [];
     for (let i = 0; i < localStorage.length; i++) {

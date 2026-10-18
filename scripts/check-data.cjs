@@ -42,15 +42,15 @@ function validateLottery(filename, config) {
   return payload.data.length;
 }
 
-for (const filename of fs.readdirSync(dataDir).filter((name) => name.endsWith('.json'))) readJson(filename);
-
 const dlt = validateLottery('lottery_data.json', {
   frontCount: 5, frontMin: 1, frontMax: 35, frontUnique: true, frontSorted: true,
   backCount: 2, backMin: 1, backMax: 12
 });
-const pl3 = validateLottery('pl3_data.json', {
+const result = { ok: true, dlt };
+// 排列三仅在显式要求时检查；默认工作范围为大乐透。
+if (process.argv.includes('--include-pl3')) result.pl3 = validateLottery('pl3_data.json', {
   frontCount: 3, frontMin: 0, frontMax: 9, frontUnique: false, frontSorted: false,
   backCount: 0, backMin: 1, backMax: 0
 });
 
-console.log(JSON.stringify({ ok: true, dlt, pl3 }));
+console.log(JSON.stringify(result));

@@ -34,7 +34,7 @@
     "check:frontend": "node scripts/check-frontend-runtime.cjs",
     "check:dlt-predictor": "node scripts/check-dlt-predictor.cjs",
     "check:pl3-predictor": "node scripts/check-pl3-predictor.cjs",
-    "check": "npm run check:syntax && npm run check:data && npm run check:api && npm run check:frontend && npm run check:dlt-predictor && npm run check:pl3-predictor"
+    "check": "npm run check:syntax && npm run check:data && npm run check:api && npm run check:frontend && npm run check:dlt-predictor"
   },
   "dependencies": {
     "@upstash/redis": "^1.34.0"

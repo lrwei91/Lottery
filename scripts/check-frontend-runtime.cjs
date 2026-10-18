@@ -85,7 +85,61 @@ async function main() {
   const vercelConfig = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8'));
   assert.ok(!vercelConfig.crons, 'vercel.json 不应再有世界杯赔率 cron');
 
-  console.log(JSON.stringify({ ok: true, scenarios: 5 }));
+  // 场景 6：新设备、已有设备、存储受限设备始终使用统一同步空间。
+  const sharedId = '3722bf95-31b6-452b-9ced-76a39ccceeb0';
+  for (const previous of [null, 'old-device-1234', 'bad', sharedId]) {
+    const store = new Map([['ticai_prediction_records_v1_dlt', '[{"id":"keep"}]']]);
+    if (previous) store.set('ticai_device_id', previous);
+    const device = makeSandbox('lottery.vercel.app', async () => ({ ok: true }));
+    device.localStorage = {
+      getItem: key => store.get(key) ?? null,
+      setItem: (key, value) => store.set(key, value)
+    };
+    runScript(device, 'js/device-id.js');
+    assert.equal(device.TicaiDevice.getId(), sharedId);
+    assert.equal(store.get('ticai_device_id'), sharedId);
+    assert.equal(device.TicaiDevice.setId('other-device-1234'), false);
+    assert.equal(device.TicaiDevice.setId(` ${sharedId} `), true);
+    assert.equal(device.TicaiDevice.resetId(), sharedId);
+    assert.equal(store.get('ticai_prediction_records_v1_dlt'), '[{"id":"keep"}]');
+    if (previous === 'old-device-1234') {
+      assert.equal(store.get('ticai_previous_device_id'), previous, '旧 ID 应保留供追溯');
+    }
+  }
+  for (const storage of [undefined, {
+    getItem() { throw new Error('storage blocked'); },
+    setItem() { throw new Error('storage blocked'); }
+  }, {
+    getItem() { return null; },
+    setItem() { throw new Error('quota exceeded'); }
+  }]) {
+    const device = makeSandbox('lottery.vercel.app', async () => ({ ok: true }));
+    device.localStorage = storage;
+    runScript(device, 'js/device-id.js');
+    assert.equal(device.TicaiDevice.getId(), sharedId);
+    assert.equal(device.TicaiDevice.resetId(), sharedId);
+  }
+
+  // 场景 7：预测与复盘的拉取、写入均携带统一 ID。
+  const syncCalls = [];
+  const sync = makeSandbox('lottery.vercel.app', async (url, options) => {
+    syncCalls.push({ url, options });
+    return { ok: true, json: async () => ({ records: [], reviews: [] }) };
+  });
+  for (const script of ['js/runtime.js', 'js/device-id.js', 'js/cloud-sync.js']) runScript(sync, script);
+  await sync.TicaiCloud.pullRecords();
+  await sync.TicaiCloud.pullReviews();
+  sync.TicaiCloud.syncRecord({ id: 'test-record' });
+  sync.TicaiCloud.syncReview({ recordId: 'test-record', strategy: 'gap', issue: '26100' });
+  assert.equal(syncCalls.length, 4);
+  assert.equal(syncCalls[0].url, `/api/records?deviceId=${sharedId}`);
+  assert.equal(syncCalls[1].url, `/api/reviews?deviceId=${sharedId}`);
+  for (const call of syncCalls.slice(2)) assert.equal(JSON.parse(call.options.body).deviceId, sharedId);
+  const panelSource = fs.readFileSync(path.join(root, 'js/device-panel.js'), 'utf8');
+  assert.ok(!panelSource.includes('将生成新的设备 ID'));
+  assert.ok(panelSource.includes('所有平台默认使用同一个'));
+
+  console.log(JSON.stringify({ ok: true, scenarios: 7 }));
 }
 
 main().catch((error) => {
