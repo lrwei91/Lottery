@@ -36,9 +36,10 @@ function load(source) {
 }
 const models = [
   ...(baselineSource ? [{ name: 'previous-spread', source: baselineSource, options: {} }] : []),
-  { name: 'independent', source: currentSource, options: { randomExploration: false, frontConstraintMode: 'filter' } },
-  { name: 'exploration', source: currentSource, options: { randomExploration: true, frontConstraintMode: 'filter' } },
-  { name: 'observe-all', source: currentSource, options: { randomExploration: false, frontConstraintMode: 'observe' } }
+  { name: 'independent', source: currentSource, options: { randomExploration: false, frontConstraintMode: 'filter', spreadEnforcement: 'off' } },
+  { name: 'exploration', source: currentSource, options: { randomExploration: true, frontConstraintMode: 'filter', spreadEnforcement: 'off' } },
+  { name: 'observe-all', source: currentSource, options: { randomExploration: false, frontConstraintMode: 'observe', spreadEnforcement: 'off' } },
+  { name: 'spread-observe', source: currentSource, options: { randomExploration: false, frontConstraintMode: 'observe' } }
 ].filter(m => !requestedModels.length || requestedModels.includes(m.name)).map(m => ({ ...m, sandbox: load(m.source), phases: {}, issues: [] }));
 if (!models.some(m => m.name === 'independent')) throw new Error('配对回测必须包含 independent 基线');
 function empty() { return { batches: 0, tickets: 0, wins: 0, periodWins: 0, front: Array(6).fill(0), back: Array(3).fill(0), prizes: Array(8).fill(0), frontUnion: 0, backUnion: 0, strategies: {}, confidence: {} }; }

@@ -23,7 +23,7 @@
 
    排列三的 5 注顺序不同，为 `balanced / random / gap / hot / cold`（`buildStrategyOrder` 按彩种分支）。
 
-   另有可选的 `danTuo` 胆码分层（`useDanLayer`），默认不占 5 注名额。大乐透后区独立按 `random / balanced / random / balanced / random` 映射，整注与后区对子均去重。各注允许单个号码重合；前区和值、奇偶、连号、AC 等结构默认只观察、不作硬过滤。
+   另有可选的 `danTuo` 胆码分层（`useDanLayer`），默认不占 5 注名额。大乐透后区独立按 `random / balanced / random / balanced / random` 映射，整注与后区对子均去重。五注默认启用跨注分散，优先减少号码重合，无法满足时逐级放宽；前区和值、奇偶、连号、AC 等保留原有统计结构过滤。
 
 4. **元层信号调权**（`js/predictor.js`）：双窗口 trendScore（近 10 期 vs 近 50 期）、emergingHot 标记、区间聚集反向加权、区间/尾数/AC 聚集与反聚集权重、误杀预警 + 命中率回写校准、5 注置信度三档分层、后区观察层软排。
 5. **大乐透专属 Conformal Prediction**（`js/dlt-conformal.js`）：旧数据训练 + 最近 20% holdout 校准，输出 `qhat` / `conformalHalfWidth` / `recentDrift` / `stabilityScore`，通过 `computeMetaWeight` 接入选号权重。
@@ -106,7 +106,7 @@ DRY_RUN=1 npm run scrape          # 只验证抓取，不写数据文件
 npm run check
 ```
 
-覆盖 JS 语法、JSON 数据契约、API 与 Redis 封装、前端运行时降级与已删除模块的残留检查、大乐透 Conformal 覆盖率、5 注合法性、自然重合与结构观察模式。只改文档时至少执行 `git diff --check`。
+覆盖 JS 语法、JSON 数据契约、API 与 Redis 封装、前端运行时降级与已删除模块的残留检查、大乐透 Conformal 覆盖率、5 注合法性、跨注分散与结构观察模式。只改文档时至少执行 `git diff --check`。
 
 大乐透策略滚动回测（只读，不上传号码）：
 

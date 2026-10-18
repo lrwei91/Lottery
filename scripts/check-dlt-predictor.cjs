@@ -103,7 +103,7 @@ function main() {
     predictionKeys.add(key);
     assert(confidenceSet.has(prediction.confidence), `第 ${idx + 1} 注置信度无效`);
     assert(typeof prediction.minScore === 'number', `第 ${idx + 1} 注缺少 minScore`);
-    assert(prediction.meta.frontConstraintMode === 'observe', '默认不应再以训练形态硬过滤号码');
+    assert(prediction.meta.frontConstraintMode === 'filter', '默认应恢复原有训练形态过滤');
     assert(prediction.reasoning.includes('conformal'), `第 ${idx + 1} 注说明缺少 conformal 信号`);
   }
 
@@ -113,11 +113,13 @@ function main() {
     '五注后区未按独立回测后的策略分配生成'
   );
 
-  // 并集仅作诊断，不再对不同注的单个号码设置分散下限。
+  // 默认恢复跨注分散；不可行时生成器可逐级放宽，使用保守并集下限回归。
   const frontUnion = new Set(predictions.flatMap(prediction => prediction.front)).size;
   const backUnion = new Set(predictions.flatMap(prediction => prediction.back)).size;
-  let sawFrontOverlap = false;
-  let sawBackOverlap = false;
+  assert(frontUnion >= 22, `默认五注前区分散不足：${frontUnion}`);
+  assert(backUnion >= 8, `默认五注后区分散不足：${backUnion}`);
+  let offAllowsFrontOverlap = false;
+  let offAllowsBackOverlap = false;
 
   // 五注覆盖回归：不同随机种子下不应出现完全相同的后区对子。
   for (let seed = 0; seed < 32; seed += 1) {
@@ -132,8 +134,11 @@ function main() {
     assert(new Set(backKeys).size === backKeys.length, `seed=${seed} 出现重复后区对子`);
     const batchFrontUnion = new Set(batch.flatMap(prediction => prediction.front)).size;
     const batchBackUnion = new Set(batch.flatMap(prediction => prediction.back)).size;
-    sawFrontOverlap ||= batchFrontUnion < 22;
-    sawBackOverlap ||= batchBackUnion < 8;
+    assert(batchFrontUnion >= 22, `seed=${seed} 默认前区分散不足：${batchFrontUnion}`);
+    assert(batchBackUnion >= 8, `seed=${seed} 默认后区分散不足：${batchBackUnion}`);
+    const offBatch = Predictor.generateMultiplePredictions(data, 5, { rng: seededRng(seed), spreadEnforcement: 'off' });
+    offAllowsFrontOverlap ||= new Set(offBatch.flatMap(p => p.front)).size < 22;
+    offAllowsBackOverlap ||= new Set(offBatch.flatMap(p => p.back)).size < 8;
     for (const prediction of batch) {
       assertUniqueSortedRange(prediction.front, 5, 1, 35, `seed=${seed} 前区`);
       assertUniqueSortedRange(prediction.back, 2, 1, 12, `seed=${seed} 后区`);
@@ -141,9 +146,9 @@ function main() {
     }
   }
 
-  assert(sawFrontOverlap && sawBackOverlap, '跨注号码仍被强制分散');
+  assert(offAllowsFrontOverlap && offAllowsBackOverlap, '关闭分散的对照选项失效');
 
-  // 极端但合法的组合应能生成，结构观察不能退化为另一层隐藏过滤。
+  // 观察模式保留为显式实验选项，验证它与默认过滤模式的边界。
   const scoreBundle = Predictor.computeScores(data);
   const context = {
     ...scoreBundle,
@@ -152,7 +157,7 @@ function main() {
     frontConstraints: { sumMin: 1000, sumMax: 2000, maxConsecutive: 0, minAC: 99, minZonesCovered: 99, maxTailPairs: 0 },
     backConstraints: { sumMin: 0, sumMax: 24, diffMin: 1, diffMax: 11 }
   };
-  const extreme = Predictor.generatePrediction(data, 'gap', { context, rng: () => 0.0001 });
+  const extreme = Predictor.generatePrediction(data, 'gap', { context, rng: () => 0.0001, frontConstraintMode: 'observe' });
   assert(extreme.front.join(',') === '1,2,3,4,5', '合法极端形态仍被过滤');
   assert(extreme.meta.frontConstraintMode === 'observe', '缺少结构观察标记');
   assert(extreme.reasoning.includes('仅观察，不过滤'), '结构说明与实际执行不一致');

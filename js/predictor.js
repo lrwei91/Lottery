@@ -1908,8 +1908,8 @@
     const backSoftKill = options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT;
     const useDanLayer = options.useDanLayer === true;
     const randomExploration = strategy === 'random' && options.randomExploration === true;
-    // 结构指标用于解释，不把训练分位区间当作下一期合法号码边界。
-    const observeFront = randomExploration || options.frontConstraintMode !== 'filter';
+    // 保留原有结构过滤；只观察模式仅供显式对照实验，默认不启用。
+    const observeFront = randomExploration || options.frontConstraintMode === 'observe';
     const backStrategy = options.backStrategy || 'gap';
 
     let front = [];
@@ -2241,39 +2241,76 @@
       || (context.type === 'dlt' ? DLT_BACK_STRATEGIES : [options.backStrategy || 'gap']);
     const getBackStrategy = index => backStrategyOrder[index % backStrategyOrder.length] || 'gap';
 
-    // 各注独立选号，允许单个号码跨注重合；只排除完全重复的整注和后区对子。
-    const attemptsPerSlot = Math.max(count * 25, 50);
+    // v2026-10-09 跨注分散层（仅大乐透）：优先保证 5 注前区/后区号码互不重复。
+    // 优先减少五注之间的号码重合；不可行时按 0/1/2/不限复用号逐级放宽。
+    // 分散改变五注联合覆盖，不把内部评分或历史差异当作单注中奖概率提升。
+    const enforceSpread = context.type === 'dlt' && options.spreadEnforcement !== 'off';
+    const usedFront = new Set();
+    const usedBack = new Set();
+    const spreadStages = enforceSpread
+      ? [{ front: 0, back: 0 }, { front: 1, back: 1 }, { front: 2, back: 2 }, { front: Infinity, back: Infinity }]
+      : [{ front: Infinity, back: Infinity }];
+    const attemptsPerStage = Math.max(count * 25, 50);
+    const SPREAD_DEMOTE = 0.05;
+
+    function demoteUsed(scores, usedSet) {
+      if (!enforceSpread || usedSet.size === 0) return scores;
+      const adjusted = new Map();
+      for (const [num, s] of scores) {
+        adjusted.set(num, usedSet.has(num)
+          ? { ...s, gapScore: (s.gapScore || 0) * SPREAD_DEMOTE, freqDeviationScore: (s.freqDeviationScore || 0) * SPREAD_DEMOTE, trendScore: (s.trendScore || 0) * SPREAD_DEMOTE }
+          : s);
+      }
+      return adjusted;
+    }
 
     function generateForSlot(strategy, slotIndex) {
       const useDanLayer = strategy === 'danTuo';
       const realStrategy = useDanLayer ? 'balanced' : strategy;
       const backStrategy = getBackStrategy(slotIndex);
 
-      for (let slotAttempts = 0; slotAttempts < attemptsPerSlot; slotAttempts += 1) {
-        const prediction = generatePrediction(data, realStrategy, {
-          ...options,
-          rng,
-          context,
-          useDanLayer,
-          backStrategy,
-          backSoftKill: options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT
-        });
-        const key = predictionKey(prediction.front, prediction.back, context.type);
-        const backKey = prediction.back.join(',');
-        if (seen.has(key) || (enforceBackDiversity && seenBackKeys.has(backKey))) continue;
+      for (const stage of spreadStages) {
+        const slotContext = enforceSpread && stage.front !== Infinity
+          ? { ...context, frontScores: demoteUsed(context.frontScores, usedFront), backScores: demoteUsed(context.backScores, usedBack) }
+          : context;
 
-        seen.add(key);
-        if (enforceBackDiversity) seenBackKeys.add(backKey);
-        predictions.push({ ...prediction, strategy: useDanLayer ? 'danTuo' : strategy });
-        return true;
+        for (let slotAttempts = 0; slotAttempts < attemptsPerStage; slotAttempts += 1) {
+          const prediction = generatePrediction(data, realStrategy, {
+            ...options,
+            rng,
+            context: slotContext,
+            useDanLayer,
+            backStrategy,
+            backSoftKill: options.backSoftKill != null ? options.backSoftKill : BACK_SOFT_KILL_DEFAULT
+          });
+          const key = predictionKey(prediction.front, prediction.back, context.type);
+          const backKey = prediction.back.join(',');
+
+          if (seen.has(key) || (enforceBackDiversity && seenBackKeys.has(backKey))) continue;
+
+          const reusedFront = prediction.front.reduce((n, num) => n + (usedFront.has(num) ? 1 : 0), 0);
+          const reusedBack = prediction.back.reduce((n, num) => n + (usedBack.has(num) ? 1 : 0), 0);
+          if (enforceSpread && (reusedFront > stage.front || reusedBack > stage.back)) continue;
+
+          seen.add(key);
+          if (enforceBackDiversity) seenBackKeys.add(backKey);
+          prediction.front.forEach(num => usedFront.add(num));
+          prediction.back.forEach(num => usedBack.add(num));
+          predictions.push({
+            ...prediction,
+            strategy: useDanLayer ? 'danTuo' : strategy
+          });
+          return true;
+        }
       }
+
       return false;
     }
 
     for (let slotIndex = 0; slotIndex < count; slotIndex += 1) {
       const strategy = strategies[slotIndex];
       if (!generateForSlot(strategy, slotIndex)) {
-        throw new Error(`策略 ${strategy} 生成失败：去重约束下重试预算耗尽`);
+        throw new Error(`策略 ${strategy} 生成失败：分散与去重约束下重试预算耗尽`);
       }
     }
 
