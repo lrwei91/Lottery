@@ -36,7 +36,7 @@
 
 ---
 
-## 技术栈与文件结构
+## 使用的技术与文件结构
 
 ```text
 Lottery/
@@ -106,7 +106,7 @@ DRY_RUN=1 npm run scrape          # 只验证抓取，不写数据文件
 npm run check
 ```
 
-覆盖 JS 语法、JSON 数据契约、API 与 Redis 封装、前端运行时降级与已删除模块的残留检查、大乐透 Conformal 覆盖率、5 注合法性、跨注分散与结构观察模式。只改文档时至少执行 `git diff --check`。
+覆盖 JS 语法、JSON 数据契约、API 与 Redis 封装、前端运行时降级与过期模块引用的残留检查、大乐透 Conformal 覆盖率、5 注合法性、跨注分散与结构观察模式。只改文档时至少执行 `git diff --check`。
 
 大乐透策略滚动回测（只读，不上传号码）：
 
@@ -153,7 +153,7 @@ npm run env:check:strict     # 推荐项缺失也判失败
 | 云端 | Upstash Redis（`device:<deviceId>:*` 命名空间，Sorted Set 按时间裁剪） |
 
 - 本地写入后异步推云端（fire-and-forget，不阻塞 UI），启动时从云端拉取增量并 merge
-- 复盘结果以 `recordId::strategy::issue` 为 key 天然去重；读取时兼容合并旧版 key
+- 复盘结果以 `recordId::strategy::issue` 为 key 天然去重；读取时兼容合并历史 key 格式
 - 云端失败只 `console.warn`，本地功能照常运行
 - 面板入口：header 右上角 **设备** 按钮，显示当前统一 ID、二维码、复制与本机记录清理
 - **不存**账号、邮箱或任何身份信息；策略统计与进化仍在本机跑
