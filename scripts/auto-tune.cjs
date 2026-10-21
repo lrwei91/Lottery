@@ -51,6 +51,9 @@ const BACKTEST_LIMIT = Math.max(180, Number(arg('--backtest-limit', 240)) || 240
 const FORCE_STRATEGY = arg('--force-strategy', null);
 
 const STRATEGIES = ['gap', 'cold', 'random', 'balanced', 'hot'];
+// 策略中文名（与 js/predictor-config.js 的 STRATEGY_LABELS 保持一致；面向人的输出一律用中文名）
+const STRATEGY_LABELS = { gap: '遗漏回补', cold: '冷号优先', random: '布林线策略', balanced: '均衡推荐', hot: '热号优先', danTuo: '胆码分层' };
+const strategyLabel = (s) => STRATEGY_LABELS[s] || s;
 const ROLL_WINDOW = 20;        // 滚动窗口期数
 const SHIFT = 4;               // 第二窗口往前推的期数（持续性检验）
 const LAG_RATIO = 0.85;        // 垫底阈值：< 最优策略均值的 85%
@@ -269,7 +272,7 @@ async function main() {
   if (state.lastAdoptedAt) {
     const days = (Date.now() - new Date(state.lastAdoptedAt).getTime()) / 86400000;
     if (days < (state.cooldownDays || COOLDOWN_DAYS)) {
-      verdict({ ok: true, changed: false, skippedWhy: `触发（${lagging} 垫底）但距上次采纳仅 ${days.toFixed(1)} 天，冷却中`, trigger: triggerInfo });
+      verdict({ ok: true, changed: false, skippedWhy: `触发（${strategyLabel(lagging)}垫底）但距上次采纳仅 ${days.toFixed(1)} 天，冷却中`, trigger: triggerInfo });
       return;
     }
   }
@@ -340,9 +343,9 @@ async function main() {
   const nowIso = new Date().toISOString();
   const fmtPct = (v) => (v * 100).toFixed(2) + '%';
   const commitMessage =
-`auto-tune: ${knob.path} ${curVal}→${win.newValue}
+`auto-tune: ${strategyLabel(lagging)} ${knob.path} ${curVal}→${win.newValue}
 
-触发：${lagging} 在近 ${ROLL_WINDOW} 期云端滚动得分连续两个窗口垫底` +
+触发：${strategyLabel(lagging)}（${lagging}）在近 ${ROLL_WINDOW} 期云端滚动得分连续两个窗口垫底` +
 `（窗口A ${triggerInfo.windowA ? `${triggerInfo.windowA.issues[0]}~${triggerInfo.windowA.issues[1]} 均值 ${triggerInfo.windowA.mean} / 最优 ${triggerInfo.windowA.bestMean}` : '强制触发'}）。` +
 `
 验证（${BACKTEST_LIMIT} 期滚动回放，4 种子×每期 5 套选优，基线=HEAD）：
@@ -354,7 +357,7 @@ async function main() {
 
   state.lastAdoptedAt = nowIso;
   state.adopted.push({
-    at: nowIso, strategy: lagging, param: knob.path,
+    at: nowIso, strategy: lagging, strategyLabel: strategyLabel(lagging), param: knob.path,
     oldValue: curVal, newValue: win.newValue,
     trigger: triggerInfo,
     validation: {
@@ -368,9 +371,9 @@ async function main() {
   fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + '\n');
 
   appendTuningLog(
-`## ${nowIso.slice(0, 10)} 自动调优：${knob.path} ${curVal} → ${win.newValue}
+`## ${nowIso.slice(0, 10)} 自动调优：${strategyLabel(lagging)} ${knob.path} ${curVal} → ${win.newValue}
 
-- 垫底策略：${lagging}（连续两窗口滚动均值 < 最优 ×${LAG_RATIO}）
+- 垫底策略：${strategyLabel(lagging)}（${lagging}，连续两窗口滚动均值 < 最优 ×${LAG_RATIO}）
 - 验证窗（${BACKTEST_LIMIT} 期回放）：期级中奖率 ${fmtPct(win.base.val.periodRate)} → ${fmtPct(win.cand.val.periodRate)}；单注率 ${fmtPct(win.base.val.ticketRate)} → ${fmtPct(win.cand.val.ticketRate)}
 - 留出窗：期级中奖率 ${fmtPct(win.base.holdout.periodRate)} → ${fmtPct(win.cand.holdout.periodRate)}
 - 回放产物：${win.backtestOut}（scratch/ 不进仓库提交，由复盘任务归档）
@@ -379,7 +382,7 @@ async function main() {
 
   verdict({
     ok: true, changed: true,
-    strategy: lagging, param: knob.path, oldValue: curVal, newValue: win.newValue,
+    strategy: lagging, strategyLabel: strategyLabel(lagging), param: knob.path, oldValue: curVal, newValue: win.newValue,
     trigger: triggerInfo,
     validation: {
       baseVal: win.base.val, candVal: win.cand.val,
