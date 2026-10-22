@@ -21,3 +21,8 @@ AGENTS.md
 .codex/
 .workbuddy/
 scripts/logs/
+
+# AI 工具本地产物（会话记忆、权限配置、缓存），不入库
+
+.cursor/
+.pytest_cache/
