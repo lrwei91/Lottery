@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /**
- * 每日大乐透预测：生成 5 套（每套 5 注）→ 推荐置信度最高的一套 + 云端同步
+ * 每日大乐透预测：生成 5 套（每套 5 注）→ 推荐置信度最高的一套 + 全部 5 套云端同步
  *
  * 用法：
- *   node scripts/cron_generate_daily_predictions.cjs           # 生成 + 云端 POST（只上传推荐套）
+ *   node scripts/cron_generate_daily_predictions.cjs           # 生成 + 云端 POST（全部 5 套）
  *   node scripts/cron_generate_daily_predictions.cjs --dry-run # 只生成、只日志、不 POST
  *
  * 环境变量：
@@ -13,9 +13,13 @@
  * 逻辑：
  *   1) 用 vm 沙箱加载浏览器端 predictor-config.js + predictor.js + dlt-conformal.js
  *   2) 读 data/lottery_data.json，调 window.Predictor.generateMultiplePredictions(data, 5) 生成 5 套
- *   3) 按套内 5 注 minScore 均值选出推荐套；通知与云端只使用推荐套，其余 4 套仅进本地归档
- *   4) 组装成和 js/app.js:savePredictionRecord 完全一致的 record shape 并 POST /api/records
- *   5) 每日归档一份 JSON 到 scripts/logs/daily-predictions/<YYYY-MM-DD>.json（含全部候选套）
+ *   3) 按套内 5 注 minScore 均值选出推荐套；通知展示推荐套，5 套全部同步云端
+ *   4) 每套组装成和 js/app.js:savePredictionRecord 完全一致的 record shape 并 POST /api/records；
+ *      记录带 setIndex（1-5）、setCount（5）、recommended（仅推荐套为 true）；
+ *      上传顺序：非推荐套按套号先传，推荐套最后传且 createdAt 最晚（每位 +1 秒）——
+ *      复盘与调优的“每期最新一版记录”口径（按 createdAt 取最晚）因此仍指向推荐套，
+ *      其余 4 套仅作候选参考，不计入策略得分统计
+ *   5) 每日归档一份 JSON 到 scripts/logs/daily-predictions/<YYYY-MM-DD>.json（含全部候选套与全部记录）
  */
 
 'use strict';
@@ -36,7 +40,7 @@ const DRY_RUN = process.argv.includes('--dry-run');
 
 const RUN_STARTED = new Date().toISOString();
 
-// 每次运行生成的候选套数（每套 5 注）；最终只推荐/上报 minScore 均值最高的一套。
+// 每次运行生成的候选套数（每套 5 注）；推荐 minScore 均值最高的一套，全部 5 套都同步云端。
 const SET_COUNT = 5;
 
 // 详细过程只进日志，stdout 只保留最终推送内容。
@@ -119,7 +123,7 @@ function setConfidenceScore(predictions) {
   return values.reduce((sum, v) => sum + v, 0) / (values.length || 1);
 }
 
-function buildRecord(predictions, latestDraw) {
+function buildRecord(predictions, latestDraw, opts = {}) {
   const allOverKillFront = new Set();
   const allOverKillBack = new Set();
   for (const p of predictions) {
@@ -129,14 +133,19 @@ function buildRecord(predictions, latestDraw) {
     (m.overKillWarn.back || []).forEach((n) => allOverKillBack.add(n));
   }
 
-  const now = Date.now();
+  // createdAt 由调用方显式排布（推荐套最晚），保证云端按 createdAt 排序时推荐套排在最前；
+  // id 带套号后缀，保证同一期 5 条记录 id 互不相同且符合 /api/records 的 id 正则。
+  const now = opts.createdAt ? Date.parse(opts.createdAt) : Date.now();
   return {
-    id: `dlt-cron-${now}`,
+    id: `dlt-cron-${now}-set${opts.setIndex || 1}`,
     type: 'dlt',
     createdAt: new Date(now).toISOString(),
     baseIssue: String(latestDraw.issue || ''),
     targetIssue: inferNextIssue(latestDraw.issue),
     source: 'cron-daily-1800',
+    setIndex: opts.setIndex || 1,
+    setCount: SET_COUNT,
+    recommended: !!opts.recommended,
     predictions: predictions.map((prediction) => ({
       strategy: prediction.strategy,
       front: prediction.front,
@@ -202,27 +211,29 @@ function summarize(predictions) {
   }).join('\n');
 }
 
-function syncSummary(uploadResult) {
-  if (DRY_RUN) return '云端同步：已跳过（演练模式）';
-  if (uploadResult.ok) return `云端同步：成功（状态码 ${uploadResult.status}）`;
-  if (uploadResult.status) return `云端同步：失败（状态码 ${uploadResult.status}）`;
-  return '云端同步：异常（未获得响应）';
+function syncLine(upload) {
+  if (upload.dryRun) return `#${upload.setIndex}${upload.recommended ? '(推荐)' : ''}：已跳过（演练模式）`;
+  if (upload.ok) return `#${upload.setIndex}${upload.recommended ? '(推荐)' : ''}：成功（状态码 ${upload.status}）`;
+  if (upload.status) return `#${upload.setIndex}${upload.recommended ? '(推荐)' : ''}：失败（状态码 ${upload.status}）`;
+  return `#${upload.setIndex}${upload.recommended ? '(推荐)' : ''}：异常（未获得响应）`;
 }
 
-function printSummary({ latestDraw, draws, record, predictions, uploadResult }) {
+function printSummary({ latestDraw, draws, record, predictions, rankedSets, recommended, uploadResults }) {
   const title = record.targetIssue === '下一期'
     ? '🎯 大乐透每日预测'
     : `🎯 大乐透第 ${record.targetIssue} 期预测`;
   const baseDate = latestDraw.date ? `（${latestDraw.date}）` : '';
+  const setScores = rankedSets.map((s) => `#${s.index}=${s.score.toFixed(4)}${s.index === recommended.index ? '（推荐）' : ''}`).join('；');
   console.log([
     title,
     '',
     `数据基准：第 ${latestDraw.issue} 期${baseDate}｜历史 ${draws.length} 期`,
+    `候选套得分：${setScores}`,
     '',
     '推荐号码：',
     summarize(predictions),
     '',
-    syncSummary(uploadResult),
+    `云端同步（共 ${uploadResults.length} 套）：${uploadResults.map(syncLine).join('；')}`,
   ].join('\n'));
 }
 
@@ -258,40 +269,52 @@ function printSummary({ latestDraw, draws, record, predictions, uploadResult }) 
     fatal('预测生成失败', err && err.stack || err);
   }
 
-  // 推荐套 = 套内平均置信分最高（并列时取先生成的套）；通知与云端只使用推荐套。
+  // 推荐套 = 套内平均置信分最高（并列时取先生成的套）；通知展示推荐套，云端同步全部 5 套。
   const rankedSets = candidateSets.slice().sort((a, b) => b.score - a.score || a.index - b.index);
   const recommended = rankedSets[0];
   const predictions = recommended.predictions;
   trace(`候选套得分：${rankedSets.map((s) => `#${s.index}=${s.score.toFixed(4)}`).join(' ')}`);
   trace(`已生成 ${SET_COUNT} 套预测，推荐第 ${recommended.index} 套（均分 ${recommended.score.toFixed(4)}），目标期号 ${inferNextIssue(latestDraw.issue)}：\n${summarize(predictions)}`);
 
-  const record = buildRecord(predictions, latestDraw);
+  // 上传顺序：非推荐套按套号先传，推荐套最后传且 createdAt 最晚（每位 +1 秒），
+  // 保证复盘与调优“最新一版”口径仍指向推荐套。
+  const orderedSets = rankedSets.filter((s) => s.index !== recommended.index).concat([recommended]);
+  const runBase = Date.now();
+  const records = orderedSets.map((set, pos) => buildRecord(set.predictions, latestDraw, {
+    setIndex: set.index,
+    recommended: set.index === recommended.index,
+    createdAt: new Date(runBase + pos * 1000).toISOString(),
+  }));
+  const recommendedRecord = records.find((r) => r.recommended) || records[records.length - 1];
 
-  let uploadResult = { ok: null, status: null, body: null, dryRun: DRY_RUN };
+  let uploadResults = records.map((r) => ({ setIndex: r.setIndex, recommended: r.recommended, ok: null, status: null, body: null, dryRun: DRY_RUN }));
   if (DRY_RUN) {
-    trace('演练模式，跳过云端提交');
+    trace('演练模式，跳过云端提交；计划上传顺序：', records.map((r) => `#${r.setIndex}${r.recommended ? '(推荐)' : ''} id=${r.id} createdAt=${r.createdAt}`).join(' | '));
   } else {
-    try {
-      uploadResult = await postRecord(record);
-      if (uploadResult.ok) {
-        trace('云端同步成功：', uploadResult.status);
-      } else {
-        trace('云端同步失败：HTTP', uploadResult.status, uploadResult.body);
+    for (let i = 0; i < records.length; i += 1) {
+      const r = records[i];
+      try {
+        const res = await postRecord(r);
+        uploadResults[i] = { setIndex: r.setIndex, recommended: r.recommended, ok: res.ok, status: res.status, body: res.body };
+        trace(`云端同步 #${r.setIndex}${r.recommended ? '(推荐)' : ''}：`, res.ok ? `成功（${res.status}）` : `失败（${res.status}）`, res.ok ? '' : res.body);
+      } catch (err) {
+        uploadResults[i] = { setIndex: r.setIndex, recommended: r.recommended, ok: false, status: null, error: String(err) };
+        trace(`云端同步 #${r.setIndex} 异常：`, err);
       }
-    } catch (err) {
-      uploadResult = { ok: false, status: null, error: String(err) };
-      trace('云端同步异常：', err);
     }
   }
+  const allOk = uploadResults.every((u) => u.ok);
+  const recommendedUpload = uploadResults.find((u) => u.recommended) || uploadResults[0];
 
   const archivePath = saveArchive({
     runStarted: RUN_STARTED,
     finishedAt: new Date().toISOString(),
     dryRun: DRY_RUN,
     deviceId: DEVICE_ID,
-    baseIssue: record.baseIssue,
-    targetIssue: record.targetIssue,
-    upload: uploadResult,
+    baseIssue: recommendedRecord.baseIssue,
+    targetIssue: recommendedRecord.targetIssue,
+    upload: recommendedUpload,
+    uploads: uploadResults,
     chosenSet: { index: recommended.index, score: Number(recommended.score.toFixed(6)) },
     candidateSets: rankedSets.map((set) => ({
       index: set.index,
@@ -304,13 +327,14 @@ function printSummary({ latestDraw, draws, record, predictions, uploadResult }) 
         back: p.back || [],
       })),
     })),
-    record,
+    record: recommendedRecord,
+    records,
   });
   trace('归档写入：', archivePath);
 
-  printSummary({ latestDraw, draws, record, predictions, uploadResult });
+  printSummary({ latestDraw, draws, record: recommendedRecord, predictions, rankedSets, recommended, uploadResults });
 
-  if (!DRY_RUN && !uploadResult.ok) process.exit(2);
+  if (!DRY_RUN && !allOk) process.exit(2);
 })().catch((err) => {
   fatal('任务执行异常', err && err.stack || err);
 });

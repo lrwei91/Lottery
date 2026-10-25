@@ -2,7 +2,8 @@ import { getRedis } from './_lib/redis.js';
 import { bodySize, internalError, isValidDeviceId, setCors } from './_lib/http.js';
 import { listReviews, makeReviewKey, upsertReview } from './_lib/device-sync.js';
 
-const REVIEW_LIMIT = 1000;
+// 每期 5 条记录 × 5 策略 = 25 条复盘，上限由 1000 提到 2500，保持约 100 期的复盘深度。
+const REVIEW_LIMIT = 2500;
 const MAX_BODY_BYTES = 32 * 1024;
 
 function isValidReview(review) {

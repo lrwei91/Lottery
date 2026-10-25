@@ -2,7 +2,9 @@ import { getRedis } from './_lib/redis.js';
 import { bodySize, internalError, isValidDeviceId, setCors } from './_lib/http.js';
 import { listRecords, upsertRecord } from './_lib/device-sync.js';
 
-const RECORD_LIMIT = 200;
+// 每日任务自 2026-10-26 起每期同步 5 条记录（5 套），上限由 200 提到 1000，
+// 保持约 200 期的云端历史深度（旧上限只够 40 期）。
+const RECORD_LIMIT = 1000;
 const MAX_BODY_BYTES = 128 * 1024;
 
 function isValidRecord(record) {
