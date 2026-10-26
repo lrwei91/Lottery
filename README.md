@@ -1,17 +1,17 @@
 # 体彩数据工作台 · 大乐透 / 排列三分析与预测
 
-纯前端单页应用：体彩超级大乐透 + 排列三历史开奖统计、多策略预测与复盘。零框架、零构建步骤。
+在一个页面里查看体彩超级大乐透与排列三的历史开奖、统计图表和策略选号结果，并在开奖后核对预测记录。前端使用原生 HTML、CSS 和 JavaScript，无需构建即可运行。
 
-当前主攻 **超级大乐透**。排列三保留现有功能，暂不进行策略分析、调参或专项验证；默认检查只覆盖大乐透和共享基础能力。
+当前重点维护 **超级大乐透**。排列三保留现有功能、数据更新和自动化，暂不开展策略分析、调参或专项验证；默认检查覆盖大乐透和共享基础能力。
 
-- 线上演示（GitHub Pages）：https://lrwei91.github.io/Lottery/
-- 线上部署（Vercel，含 API）：https://ticai-taupe.vercel.app
+- [GitHub Pages 演示](https://lrwei91.github.io/Lottery/)：查看开奖、图表和本地预测记录。
+- [Vercel 站点](https://ticai-taupe.vercel.app)：包含预测与复盘记录的云同步 API。
 
-## 项目特色
+## 主要功能
 
-1. **零框架实现**：HTML5 + 原生 CSS + 原生 JavaScript，无构建步骤。`index.html` 直接打开即可运行。
-2. **自研 Canvas 图表引擎**：`js/charts.js` 实现频率、遗漏、走势、奇偶比、大小比、和值分布等图表，原生适配高 DPI（Retina），带过渡动画。
-3. **大乐透多策略预测**（默认 5 注，按历史复盘校准的固定顺序）：
+1. **静态页面即可使用**：通过静态服务器访问 `index.html`，即可加载仓库中的开奖数据。云同步需要另外配置 API 和 Redis。
+2. **历史开奖图表**：查看号码频率、遗漏、走势、奇偶比、大小比和和值分布。图表由 `js/charts.js` 使用 Canvas 绘制，支持高 DPI 屏幕和过渡动画。
+3. **大乐透策略选号**：默认生成 5 注，按以下顺序使用不同策略：
 
    | 顺序 | 策略 | 内部 ID | 思路 |
    |------|------|----------|------|
@@ -23,20 +23,24 @@
 
    排列三的 5 注顺序不同，为 `balanced / random / gap / hot / cold`（`buildStrategyOrder` 按彩种分支）。
 
-   另有可选的 `danTuo` 胆码分层（`useDanLayer`），默认不占 5 注名额。大乐透后区独立按 `random / balanced / random / balanced / random` 映射，整注与后区对子均去重。五注默认启用跨注分散，优先减少号码重合，无法满足时逐级放宽；前区和值、奇偶、连号、AC 等保留原有统计结构过滤。
+   胆码分层 `danTuo` 可通过 `useDanLayer` 选项启用，默认不占这 5 注的名额。后区单独按 `random / balanced / random / balanced / random` 选号，5 注之间不会出现重复的整注或后区对子。
 
-4. **元层信号调权**（`js/predictor.js`）：双窗口 trendScore（近 10 期 vs 近 50 期）、emergingHot 标记、区间聚集反向加权、区间/尾数/AC 聚集与反聚集权重、误杀预警 + 命中率回写校准、5 注置信度三档分层、后区观察层软排。
-5. **大乐透专属 Conformal Prediction**（`js/dlt-conformal.js`）：旧数据训练 + 最近 20% holdout 校准，输出 `qhat` / `conformalHalfWidth` / `recentDrift` / `stabilityScore`，通过 `computeMetaWeight` 接入选号权重。
-6. **跨端预测同步**：预测记录与复盘结果经 Vercel Functions 写入 Upstash Redis，网页与定时任务默认使用同一同步 ID，多端数据自动聚合，无需手动绑定；本地 `localStorage` 始终可离线使用。
-7. **全自动数据更新**：GitHub Actions 定时抓取最新开奖，优先第三方接口、失败自动回退体彩官方接口。
+   生成时优先减少各注之间的号码重合，无法凑齐时再逐级放宽复用限制；前区仍按和值、奇偶、连号、AC 值等历史统计条件筛选。
+
+4. **辅助信号与选号分层**：`js/predictor.js` 比较近 10 期与近 50 期的变化，标记新近热号，并根据号码在区间、尾数和 AC 值上的聚集情况调整权重。预测结果分为三档置信度，同时提供误杀预警、命中率回写校准，以及后区观察号码的降权处理。
+5. **大乐透校准指标**：`js/dlt-conformal.js` 使用较早的数据训练，再用最近 20% 的留出数据校准，计算号码表现的不确定性、近期变化和稳定性。输出的 `qhat`、`conformalHalfWidth`、`recentDrift` 和 `stabilityScore` 通过 `computeMetaWeight` 参与选号权重计算。
+6. **预测与复盘记录同步**：通过 Vercel Functions 将记录写入 Upstash Redis。网页与定时任务默认使用同一同步 ID，无需手动绑定；云端不可用时，仍可使用已保存在浏览器 `localStorage` 中的记录。
+7. **开奖数据更新**：GitHub Actions 工作流支持手动或外部调度触发，优先调用第三方接口，失败后回退到体彩官方接口。
 
 ### 页面主要区块
 
-最新开奖结果 · 下期开奖倒计时 · 近期开奖记录 · 中奖规则与奖级说明 · 历史开奖数据（搜索 / 年份筛选 / 分页）· 前后区频率 · 冷热号分布 · 遗漏值 · 奇偶比 · 大小比 · 和值分布 · 号码走势图 · 智能号码预测 · 预测记录与复盘 · 奖项智能核对 · 历史复盘记录
+- **查开奖**：最新开奖结果、下期开奖倒计时、近期记录、中奖规则与奖级说明。
+- **看统计**：历史数据搜索、年份筛选与分页，以及频率、冷热号、遗漏、奇偶比、大小比、和值和走势图。
+- **做复盘**：策略选号、预测记录、奖项核对与历史复盘。
 
 ---
 
-## 使用的技术与文件结构
+## 技术与文件结构
 
 ```text
 Lottery/
@@ -63,15 +67,15 @@ Lottery/
 │   ├── device-id.js              # 统一同步 ID 读取
 │   └── device-panel.js           # 设备面板：统一 ID + 二维码 + 本机记录清理
 ├── data/
-│   ├── lottery_data.json         # 大乐透历史开奖（约 2930 期）
-│   └── pl3_data.json             # 排列三历史开奖（约 7738 期）
+│   ├── lottery_data.json         # 大乐透历史开奖
+│   └── pl3_data.json             # 排列三历史开奖
 ├── api/
 │   ├── records.js                # 预测记录 GET/POST（按 deviceId）
 │   ├── reviews.js                # 复盘结果 GET/POST
 │   └── _lib/                     # redis / http / device-sync 共享实现
 ├── scripts/
 │   ├── scraper.cjs / scraper_pl3.cjs / lottery_scraper_common.cjs   # 双源抓取
-│   ├── cron_generate_daily_predictions.cjs  # 每日 5 注自动生成 + 云端写入
+│   ├── cron_generate_daily_predictions.cjs  # 大乐透候选套生成 + 云端写入
 │   └── check-*.cjs               # check 门禁与环境诊断实现
 ├── docs/design-brief.md          # 视觉设计依据
 ├── AGENTS.md / CONTEXT.md        # 项目协作规则与上下文
@@ -89,13 +93,15 @@ cd Lottery
 npm run dev            # npx -y serve . ，默认 http://localhost:3000
 ```
 
-也可以用任意静态服务器打开 `index.html`。
+也可以使用其他静态服务器访问 `index.html`。页面需要通过 HTTP 加载 JSON 数据，不建议直接双击 HTML 文件。
+
+`npm run dev` 只提供静态文件，不包含云同步 API；本地访问 `/api/records`、`/api/reviews` 返回 404 时，不能据此判断生产 API 是否正常。
 
 ### 手动更新数据
 
 ```bash
 npm run scrape                    # 默认只更新大乐透
-DRY_RUN=1 npm run scrape          # 只验证抓取，不写数据文件
+DRY_RUN=1 npm run scrape           # 只验证抓取，不写数据文件
 ```
 
 第三方主源需要 `JISU_API_KEY`（兼容 `JISU_APPKEY`）；未配置时脚本自动走体彩官方副源。
@@ -106,7 +112,7 @@ DRY_RUN=1 npm run scrape          # 只验证抓取，不写数据文件
 npm run check
 ```
 
-覆盖 JS 语法、JSON 数据契约、API 与 Redis 封装、前端运行时降级与过期模块引用的残留检查、大乐透 Conformal 覆盖率、5 注合法性、跨注分散与结构观察模式。只改文档时至少执行 `git diff --check`。
+检查包括 JS 语法、JSON 数据格式、API 与 Redis 封装、前端降级行为和已移除模块的残留引用。大乐透专项检查还覆盖 Conformal 校准覆盖率、5 注合法性、跨注分散，以及用于对照实验的结构观察模式。只改文档时，至少执行 `git diff --check`。
 
 大乐透策略滚动回测（只读，不上传号码）：
 
@@ -119,44 +125,44 @@ node scripts/backtest-dlt-strategies.cjs --seeds 4 --out scratch/dlt-backtest.js
 环境变量诊断：
 
 ```bash
-npm run env:check            # 只读本地 process.env，分级列出缺失项
-npm run env:check:vercel     # 附带 Vercel Dashboard 配置位置提示
-npm run env:check:strict     # 推荐项缺失也判失败
+npm run env:check          # 读取当前进程的环境变量，分级列出缺失项
+npm run env:check:vercel   # 同时提示 Vercel Dashboard 中的配置位置
+npm run env:check:strict   # 推荐项缺失时也判定失败
 ```
 
 ---
 
 ## 自动化数据更新
 
-- **触发方式**：外部调度器每天北京时间 **21:36** 通过 `workflow_dispatch` 推送（大乐透在周一、三、六 21:25 开奖，排列三每天 21:25 开奖，21:36 即可获取完整官方开奖数据）。
-- **运行机制**：工作流优先使用 `JisuAPI` 拉取最新开奖，失败时切换体彩官方接口；检查通过后**只提交** `lottery_data.json` 和 `pl3_data.json`。
-- **防缓存机制**：前端请求自动附加时间戳参数，确保每次加载都能获取最新开奖数据，避免浏览器缓存导致的数据延迟。
+- **触发方式**：仓库中的工作流只配置了 `workflow_dispatch`，可在 GitHub Actions 中手动运行，也可由外部调度器调用。具体运行时间由外部调度配置决定。
+- **更新流程**：优先使用 JisuAPI 抓取开奖，失败时切换到体彩官方接口。检查通过且数据发生变化后，只提交 `data/lottery_data.json` 和 `data/pl3_data.json`。
+- **缓存处理**：前端加载数据时附加时间戳，并使用 `cache: 'no-cache'`，减少浏览器缓存造成的延迟。页面能否显示最新一期，仍取决于抓取和部署是否完成。
 
-### 需要的密钥
+### 环境变量
 
 | 变量 | 位置 | 用途 |
 |------|------|------|
 | `JISU_API_KEY` | GitHub Actions Secrets / 本地 env | 彩票抓取第三方主源 |
 | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | Vercel Storage → Marketplace → Upstash Redis | 跨端预测与复盘同步 |
 
-`.env` 已在 `.gitignore`，任何密钥都不入库。
+`.env` 已加入 `.gitignore`。密钥应通过本地环境变量或平台配置提供，不要写入代码、文档或提交记录。
 
 ---
 
 ## 跨端预测同步
 
-用于让「每周比对预测 vs 实际开奖」有完整样本。任意浏览器、任意设备，只要设备 ID 相同，数据自动聚合。
+云同步把不同设备上的预测与复盘记录汇总到同一空间，方便开奖后核对。当前网页和定时任务使用统一同步 ID，设备面板中可以查看该 ID。
 
 | 端 | 存储 |
 |----|------|
 | 本机 | `localStorage`（最近 20 条预测 + 策略缓存） |
 | 云端 | Upstash Redis（`device:<deviceId>:*` 命名空间，Sorted Set 按时间裁剪） |
 
-- 本地写入后异步推云端（fire-and-forget，不阻塞 UI），启动时从云端拉取增量并 merge
-- 复盘结果以 `recordId::strategy::issue` 为 key 天然去重；读取时兼容合并历史 key 格式
-- 云端失败只 `console.warn`，本地功能照常运行
-- 面板入口：header 右上角 **设备** 按钮，显示当前统一 ID、二维码、复制与本机记录清理
-- **不存**账号、邮箱或任何身份信息；策略统计与进化仍在本机跑
+- 记录先保存在本地，再异步上传，不阻塞页面操作；启动时拉取云端记录并与本地合并。
+- 复盘结果按 `recordId::strategy::issue` 去重，读取时兼容历史键格式。
+- 同步失败时在控制台记录警告，本地记录仍可使用。GitHub Pages 演示站不调用云同步 API。
+- 点击页面右上角的 **设备** 按钮，可以查看同步 ID 和二维码、复制 ID，或清理本机记录。
+- 同步内容以预测与复盘记录为主，不要求账号或邮箱；策略统计与进化在本机运行。
 
 | 方法 | 路径 | 用途 |
 |------|------|------|
@@ -165,13 +171,15 @@ npm run env:check:strict     # 推荐项缺失也判失败
 | `GET` | `/api/reviews?deviceId=xxx` | 拉取该设备的复盘结果 |
 | `POST` | `/api/reviews` `{ deviceId, review }` | 写入一条复盘 |
 
-后端约束：`deviceId` 限 8–64 位字母数字与连字符，单设备最多保留 200 条预测记录，请求体上限 128KB。
+后端约束：`deviceId` 限 8–64 位字母数字与连字符，单设备最多保留 200 条预测记录，请求体上限 128 KB。
 
-> Vercel KV 已 deprecated，新项目走 Marketplace 的 Upstash Redis integration，代码同时兼容 `KV_REST_API_*` 旧变量名。改完 env 不会自动重新部署，需要 `vercel deploy --prod` 或在 Dashboard 点 Redeploy。
+> Redis 配置优先读取 `UPSTASH_REDIS_REST_*`，同时兼容 `KV_REST_API_*` 旧变量名。修改 Vercel 环境变量后，需要重新部署才能生效，可使用 `vercel deploy --prod` 或在 Dashboard 中选择 Redeploy。
 
 ### 每日自动出注
 
-`scripts/cron_generate_daily_predictions.cjs` 用 vm 沙箱加载浏览器端 predictor 脚本，生成当日 5 注并 POST 到 `/api/records`，同时归档到 `scripts/logs/daily-predictions/`。`--dry-run` 只生成不写入云端。
+`scripts/cron_generate_daily_predictions.cjs` 在 Node.js 的 `vm` 沙箱中加载浏览器端预测脚本，生成 5 套候选，每套 5 注，再按套内平均置信分选出推荐套。运行时会将全部 5 套写入 `/api/records`，并归档到 `scripts/logs/daily-predictions/`。
+
+加上 `--dry-run` 后仍会生成候选、记录日志并写入本地归档，但不会上传云端。内部置信分用于比较候选，不代表实际中奖概率。
 
 ---
 
@@ -184,13 +192,13 @@ npm run env:check:strict     # 推荐项缺失也判失败
 - JS 失效时静态内容仍可读，加载反馈采用延迟出现的非阻塞指示层。
 - 验收视口：320 / 390 / 768 / 1024 / 1440px，含键盘、触屏、200% 缩放与 JS 禁用场景；表格允许容器内横向滚动，页面本身不横向溢出。
 
-详细依据见 `docs/design-brief.md`。
+详细依据见 [设计简报](docs/design-brief.md)。
 
 ---
 
 ## 免责声明
 
-本项目为体彩超级大乐透与排列三数据分析与概率研究工具，图表展示及预测结果均基于历史公开数据计算。彩票开奖号码纯属随机，任何预测策略都不能保证中奖。请理性购彩，量力而行，仅作数据研究与娱乐参考之用。
+本项目用于研究体彩超级大乐透与排列三的历史公开数据。图表、选号结果和回测评分都来自历史数据计算，不能保证中奖，也不能据此推断下一期的中奖概率。请仅将结果用于数据研究与娱乐参考，理性购彩，量力而行。
 
 ## 许可协议
 
