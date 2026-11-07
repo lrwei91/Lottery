@@ -36,6 +36,10 @@ function load(source) {
 }
 const models = [
   ...(baselineSource ? [{ name: 'previous-spread', source: baselineSource, options: {} }] : []),
+  // 与 independent 同选项的基线：供调优器做单变量对照，基线与候选只差被测参数本身，
+  // 不混入 spreadEnforcement 等选项口径差（2026-11-07 修正；此前 previous-spread 用默认选项，
+  // 零改动自检的验证窗相对差为 -17.4%，任何候选都先背口径差）。
+  ...(baselineSource ? [{ name: 'baseline-matched', source: baselineSource, options: { randomExploration: false, frontConstraintMode: 'filter', spreadEnforcement: 'off' } }] : []),
   { name: 'independent', source: currentSource, options: { randomExploration: false, frontConstraintMode: 'filter', spreadEnforcement: 'off' } },
   { name: 'exploration', source: currentSource, options: { randomExploration: true, frontConstraintMode: 'filter', spreadEnforcement: 'off' } },
   { name: 'observe-all', source: currentSource, options: { randomExploration: false, frontConstraintMode: 'observe', spreadEnforcement: 'off' } },

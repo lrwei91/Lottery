@@ -18,7 +18,9 @@
  *      - 正则锚定改 js/predictor.js 工作区（锚定失败则放弃，绝不猜）；
  *      - 跑语法 + 预测器结构校验；
  *      - 用 scripts/backtest-dlt-strategies.cjs 做 240 期滚动回放（6 种子×每期5套选优），
- *        以 git HEAD 的 predictor.js 为基线（--baseline-ref HEAD）；
+ *        以 git HEAD 的 predictor.js 为基线（--baseline-ref HEAD）；基线取 baseline-matched
+ *        模型（与候选 independent 同选项），保证基线与候选只差被测参数一个变量
+ *        （2026-11-07 修正：此前基线用默认选项的 previous-spread，零改动自检即 -17.4%）；
  *      - 采纳门槛：验证窗期级中奖率相对提升 ≥2%，且验证窗单注率不降、
  *        留出窗期级率不退化（≥基线-0.5pp）、前区≥3/后区2个相对 ≥90%；
  *   4) 采纳最优通过者（每轮最多 1 个参数），更新 scripts/tuning/state.json，
@@ -241,7 +243,7 @@ function runBacktest(tag) {
   const r = spawnSync(process.execPath,
     ['scripts/backtest-dlt-strategies.cjs', '--baseline-ref', 'HEAD',
      '--seeds', String(BACKTEST_SEEDS), '--sets', '5', '--limit', String(BACKTEST_LIMIT),
-     '--models', 'previous-spread,independent', '--out', out],
+     '--models', 'baseline-matched,independent', '--out', out],
     { cwd: ROOT, encoding: 'utf8' });
   if (r.status !== 0) throw new Error(`回测执行失败：${(r.stderr || r.stdout || '').slice(-800)}`);
   return JSON.parse(fs.readFileSync(out, 'utf8'));
@@ -394,7 +396,7 @@ async function main() {
       runCheck(['scripts/check-syntax.cjs'], '语法检查');
       runCheck(['scripts/check-dlt-predictor.cjs'], '预测器结构检查');
       const bt = runBacktest(tag);
-      const base = { val: phaseMetrics(bt, 'previous-spread', 'validation'), holdout: phaseMetrics(bt, 'previous-spread', 'holdout') };
+      const base = { val: phaseMetrics(bt, 'baseline-matched', 'validation'), holdout: phaseMetrics(bt, 'baseline-matched', 'holdout') };
       const cand = { val: phaseMetrics(bt, 'independent', 'validation'), holdout: phaseMetrics(bt, 'independent', 'holdout') };
       const bar = passesBar(base, cand);
       results.push({ ...c, bar, base, cand, backtestOut: `scratch/auto-tune/${tag}.json` });
