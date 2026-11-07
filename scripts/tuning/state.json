@@ -1,1 +1,77 @@
-{"adopted":[],"cooldownDays":7,"lastAdoptedAt":null,"lastRun":null,"version":1}
+{
+  "adopted": [
+    {
+      "at": "2026-11-07T15:06:52.734Z",
+      "strategy": "hot",
+      "strategyLabel": "热号优先",
+      "param": "STRATEGY_WEIGHTS.hot.statusBonus.hot",
+      "oldValue": 2,
+      "newValue": 2.2,
+      "trigger": {
+        "strategy": "hot",
+        "windowA": {
+          "issues": [
+            "26099",
+            "26124"
+          ],
+          "mean": 1,
+          "bestMean": 1.78,
+          "ratio": 0.562
+        },
+        "windowB": {
+          "issues": [
+            "26088",
+            "26120"
+          ],
+          "mean": 1.31,
+          "bestMean": 1.89,
+          "ratio": 0.693
+        },
+        "diagnosis": {
+          "frontMean": 0.7,
+          "backMean": 0.25,
+          "bestFrontMean": 0.8,
+          "bestBackMean": 0.4,
+          "driver": "后区"
+        }
+      },
+      "validation": {
+        "baseVal": {
+          "periodRate": 0.2638888888888889,
+          "ticketRate": 0.06111111111111111,
+          "front3Rate": 0.012777777777777779,
+          "back2Rate": 0.008333333333333333
+        },
+        "candVal": {
+          "periodRate": 0.3,
+          "ticketRate": 0.06777777777777778,
+          "front3Rate": 0.012777777777777779,
+          "back2Rate": 0.008888888888888889
+        },
+        "baseHoldout": {
+          "periodRate": 0.2777777777777778,
+          "ticketRate": 0.06472222222222222,
+          "front3Rate": 0.011944444444444445,
+          "back2Rate": 0.013333333333333334
+        },
+        "candHoldout": {
+          "periodRate": 0.28055555555555556,
+          "ticketRate": 0.06194444444444445,
+          "front3Rate": 0.01138888888888889,
+          "back2Rate": 0.012777777777777779
+        },
+        "gainRel": 0.1368
+      },
+      "backtestOut": "scratch/auto-tune/2026-11-07-hot-STRATEGY-WEIGHTS-hot-statusBonus-hot-up.json"
+    }
+  ],
+  "cooldownDays": 7,
+  "lastAdoptedAt": "2026-11-07T15:06:52.734Z",
+  "lastRun": "2026-11-07T14:58:57.311Z",
+  "version": 1,
+  "knobFailures": {
+    "STRATEGY_WEIGHTS.hot.statusBonus.hot": 0,
+    "HOT_COLD_CONFIG.hotRatio": 1,
+    "RECENT_FREQ_CONFIG.underHalfPenalty": 1
+  }
+}
