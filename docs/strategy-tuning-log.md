@@ -10,3 +10,11 @@
 - 回放产物：scratch/auto-tune/2026-11-07-hot-STRATEGY-WEIGHTS-hot-statusBonus-hot-up.json（scratch/ 不进仓库提交，由复盘任务归档）
 - 回滚：git revert <本提交>
 
+## 2026-11-18 自动调优：冷号优先 RECENT_FREQ_CONFIG.underHalfPenalty 0.82 → 0.85
+
+- 垫底策略：冷号优先（cold，连续两窗口滚动均值 < 最优 ×0.85）
+- 验证窗（240 期回放）：期级中奖率 28.89% → 30.28%；单注率 6.50% → 6.72%
+- 留出窗：期级中奖率 27.50% → 29.58%
+- 回放产物：scratch/auto-tune/2026-11-18-cold-RECENT-FREQ-CONFIG-underHalfPenalty-up.json（scratch/ 不进仓库提交，由复盘任务归档）
+- 回滚：git revert <本提交>
+

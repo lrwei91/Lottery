@@ -140,7 +140,7 @@
     frontWindow: 20,        // 前区近 20 期窗口
     backWindow: 30,         // 后区近 30 期窗口
     absentPenalty: 0.7,     // 完全没出现 → 0.7（140 条复盘显示重罚会错杀冷回补）
-    underHalfPenalty: 0.82, // ratio < 0.5 → 0.82
+    underHalfPenalty: 0.85, // ratio < 0.5 → 0.82
     underThirdPenalty: 0.92,// ratio < 0.85 → 0.92
     overHotBoost: 1.1       // ratio > 1.5 → 1.10（避免短热号过度集中）
   };
